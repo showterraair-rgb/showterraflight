@@ -4,9 +4,11 @@ import { bookingsApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import StatusBadge from '../components/common/StatusBadge';
+import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 import { formatDate } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
+import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
 
 export default function BookingsPage() {
@@ -32,6 +34,26 @@ export default function BookingsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handlePdf = async (row) => {
+    try {
+      const { data } = await bookingsApi.downloadInvoicePdf(row.id);
+      downloadBlob(data, `${row.bookingNumber}-invoice.pdf`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'PDF download failed');
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete booking ${row.bookingNumber}? This cannot be undone if payments are linked.`)) return;
+    try {
+      const { data } = await bookingsApi.delete(row.id);
+      alert(data.message || 'Booking deleted');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const columns = [
     { key: 'bookingNumber', label: 'Booking #', render: (r) => <span className="font-mono text-xs font-medium">{r.bookingNumber}</span> },
     { key: 'customerName', label: 'Customer' },
@@ -43,14 +65,17 @@ export default function BookingsPage() {
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={BOOKING_STATUS_LABELS[r.status]} /> },
     {
       key: 'actions',
-      label: '',
+      label: 'Actions',
+      cellClassName: '',
       render: (r) => (
-        <div className="flex gap-2">
-          <Link to={`/bookings/${r.id}`} className="text-sm text-brand-600 hover:underline">View</Link>
-          {can('bookings:update') && (
-            <Link to={`/bookings/${r.id}/edit`} className="text-sm text-slate-600 hover:underline">Edit</Link>
-          )}
-        </div>
+        <RowActions
+          items={[
+            can('bookings:view') && { type: 'link', label: 'View', to: `/bookings/${r.id}` },
+            (can('bookings:update') || can('bookings:view')) && { type: 'link', label: 'Edit', to: `/bookings/${r.id}/edit`, variant: 'muted' },
+            can('bookings:view') && { type: 'button', label: 'PDF', onClick: () => handlePdf(r), variant: 'muted' },
+            can('bookings:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
+          ]}
+        />
       ),
     },
   ];
@@ -60,7 +85,7 @@ export default function BookingsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Bookings</h2>
-          <p className="text-sm text-slate-500">Confirmed ticket sales and operational records</p>
+          <p className="text-sm text-slate-500">View, edit, download PDF, or delete bookings</p>
         </div>
         {can('bookings:create') && (
           <Link to="/bookings/new" className="btn-primary">New Booking</Link>

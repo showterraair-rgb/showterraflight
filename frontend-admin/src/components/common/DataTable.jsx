@@ -33,7 +33,7 @@ export default function DataTable({ columns, data, loading, emptyTitle, emptyDes
           {data.map((row) => (
             <tr key={row.id || row._id} className="hover:bg-slate-50">
               {columns.map((col) => (
-                <td key={col.key} className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">
+                <td key={col.key} className={`px-4 py-3 text-sm text-slate-700 ${col.cellClassName || 'whitespace-nowrap'}`}>
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}

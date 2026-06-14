@@ -6,6 +6,7 @@ import { suppliersApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
+import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 import { SUPPLIER_TYPES } from '../utils/constants';
 
@@ -103,16 +104,16 @@ export default function SuppliersPage() {
     { key: 'paymentTerms', label: 'Payment Terms', render: (r) => r.paymentTerms || '—' },
     {
       key: 'actions',
-      label: '',
+      label: 'Actions',
+      cellClassName: '',
       render: (r) => (
-        <div className="flex gap-2">
-          {can('suppliers:update') && (
-            <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">Edit</button>
-          )}
-          {can('suppliers:delete') && (
-            <button type="button" onClick={() => handleDelete(r)} className="text-sm text-red-600 hover:underline">Delete</button>
-          )}
-        </div>
+        <RowActions
+          items={[
+            can('suppliers:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
+            can('suppliers:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
+            can('suppliers:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
+          ]}
+        />
       ),
     },
   ];

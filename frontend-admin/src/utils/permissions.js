@@ -133,8 +133,13 @@ export const NAV_ITEMS = [
 
 export function hasPermission(userPermissions, role, required) {
   if (!required?.length) return true;
-  if (role === 'admin' || userPermissions?.includes('*')) return true;
-  return required.some((p) => userPermissions?.includes(p));
+  const normalizedRole = role?.toLowerCase?.();
+  if (normalizedRole === 'admin' || userPermissions?.includes('*')) return true;
+  return required.some((p) => {
+    if (userPermissions?.includes(p)) return true;
+    const [module] = p.split(':');
+    return userPermissions?.includes(`${module}:*`);
+  });
 }
 
 export function getVisibleNavItems(user) {

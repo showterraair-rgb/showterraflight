@@ -6,6 +6,7 @@ import { customersApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
+import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 
 const schema = z.object({
@@ -113,20 +114,16 @@ export default function CustomersPage() {
     { key: 'totalDue', label: 'Due', render: (r) => `৳${(r.totalDue || 0).toLocaleString()}` },
     {
       key: 'actions',
-      label: '',
+      label: 'Actions',
+      cellClassName: '',
       render: (r) => (
-        <div className="flex gap-2">
-          {can('customers:update') && (
-            <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">
-              Edit
-            </button>
-          )}
-          {can('customers:delete') && (
-            <button type="button" onClick={() => handleDelete(r)} className="text-sm text-red-600 hover:underline">
-              Delete
-            </button>
-          )}
-        </div>
+        <RowActions
+          items={[
+            can('customers:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
+            can('customers:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
+            can('customers:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
+          ]}
+        />
       ),
     },
   ];

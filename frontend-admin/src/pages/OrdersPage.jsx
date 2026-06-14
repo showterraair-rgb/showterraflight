@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +7,7 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
+import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 import { formatDate } from '../utils/date';
 import {
@@ -108,24 +108,6 @@ export default function OrdersPage() {
     }
   };
 
-  const handleLinkCustomer = async (row) => {
-    try {
-      await ordersApi.linkCustomer(row.id, { createCustomer: true });
-      load();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to link customer');
-    }
-  };
-
-  const handleStatusChange = async (row, status) => {
-    try {
-      await ordersApi.updateStatus(row.id, { status });
-      load();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Status update failed');
-    }
-  };
-
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete order ${row.orderNumber}? This cannot be undone.`)) return;
     try {
@@ -147,27 +129,21 @@ export default function OrdersPage() {
     {
       key: 'actions',
       label: 'Actions',
+      cellClassName: '',
       render: (r) => (
-        <div className="flex flex-wrap gap-2">
-          {can('orders:update') && (
-            <button type="button" onClick={() => openEdit(r)} className="text-xs text-brand-600 hover:underline">Edit</button>
-          )}
-          {!r.customer && can('orders:update') && (
-            <button type="button" onClick={() => handleLinkCustomer(r)} className="text-xs text-amber-600 hover:underline">Link Customer</button>
-          )}
-          {can('bookings:create') && !['closed', 'cancelled'].includes(r.status) && (
-            <Link to={`/bookings/new?orderId=${r.id}`} className="text-xs text-green-600 hover:underline">Create Booking</Link>
-          )}
-          {can('orders:update') && r.status === 'inquiry' && (
-            <button type="button" onClick={() => handleStatusChange(r, 'quoted')} className="text-xs text-slate-500 hover:underline">Mark Quoted</button>
-          )}
-          {can('orders:update') && !['closed', 'cancelled'].includes(r.status) && (
-            <button type="button" onClick={() => handleStatusChange(r, 'cancelled')} className="text-xs text-amber-600 hover:underline">Cancel</button>
-          )}
-          {can('orders:delete') && (
-            <button type="button" onClick={() => handleDelete(r)} className="text-xs text-red-600 hover:underline">Delete</button>
-          )}
-        </div>
+        <RowActions
+          items={[
+            can('orders:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
+            can('orders:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
+            can('orders:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
+            can('bookings:create') && !['closed', 'cancelled'].includes(r.status) && {
+              type: 'link',
+              label: 'Booking',
+              to: `/bookings/new?orderId=${r.id}`,
+              variant: 'muted',
+            },
+          ]}
+        />
       ),
     },
   ];
