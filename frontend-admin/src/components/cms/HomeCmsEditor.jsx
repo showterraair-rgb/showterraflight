@@ -78,12 +78,13 @@ function TrustPointsField({ value = [], onChange }) {
 }
 
 function ImageField({ label, value, onChange }) {
+  const previewSrc = value?.startsWith('/') ? value : value;
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 md:col-span-2">
       <Field label={label} value={value} onChange={onChange} />
       <input
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         className="text-xs"
         onChange={async (e) => {
           const file = e.target.files?.[0];
@@ -92,11 +93,14 @@ function ImageField({ label, value, onChange }) {
             const url = await uploadImage(file);
             onChange(url);
           } catch {
-            alert('Upload failed');
+            alert('Upload failed — check file size and login');
           }
         }}
       />
-      {value && <img src={value.startsWith('/') ? value : value} alt="" className="h-20 w-32 rounded border object-cover" />}
+      <p className="text-[11px] text-slate-500">Uploads save to VPS at /uploads/cms/ — JPG, PNG, or WebP recommended.</p>
+      {previewSrc && (
+        <img src={previewSrc} alt="" className="h-36 w-full max-w-sm rounded-lg border object-cover shadow-sm" />
+      )}
     </div>
   );
 }
@@ -189,6 +193,28 @@ export default function HomeCmsEditor({ page, canManage, onSaved, onMessage }) {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+        <p className="font-medium">Homepage photos & text</p>
+        <p className="mt-1 text-xs text-sky-800">All sections are editable here. Upload images to store on your VPS — they appear on the live site after Save.</p>
+        {canManage && (
+          <button
+            type="button"
+            className="btn-secondary mt-2 text-xs"
+            onClick={async () => {
+              if (!window.confirm('Restore default homepage photos and demo text? Your CMS edits will be replaced.')) return;
+              try {
+                await cmsApi.restoreHomeDefaults();
+                onMessage?.('Homepage restored with default photos');
+                onSaved?.();
+              } catch (err) {
+                onMessage?.(err.response?.data?.message || 'Restore failed');
+              }
+            }}
+          >
+            Restore default photos & content
+          </button>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2">
         {SECTION_TABS.map((t) => (
           <button

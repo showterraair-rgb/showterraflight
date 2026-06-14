@@ -52,6 +52,11 @@ export const updateSettings = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Settings updated' });
 });
 
+export const restoreHomeDefaults = asyncHandler(async (req, res) => {
+  const data = await cmsService.restoreHomeDefaults(req.user.id, req);
+  res.json({ success: true, data, message: 'Homepage restored with default photos and content' });
+});
+
 export const updateLogo = asyncHandler(async (req, res) => {
   const data = await cmsService.updateLogo(req.body, req.user.id, req);
   res.json({ success: true, data, message: 'Logo updated' });

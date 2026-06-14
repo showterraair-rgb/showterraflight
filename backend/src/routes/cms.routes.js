@@ -15,6 +15,7 @@ const router = Router();
 
 router.get('/pages', authorize('cms:view'), cmsController.listPages);
 router.get('/pages/:pageKey', authorize('cms:view'), cmsController.getPage);
+router.post('/pages/home/restore-defaults', authorize('cms:manage'), cmsController.restoreHomeDefaults);
 router.put('/pages/:pageKey', authorize('cms:manage'), validate(updatePageSchema), cmsController.updatePage);
 
 router.get('/notices', authorize('cms:view'), cmsController.listNotices);

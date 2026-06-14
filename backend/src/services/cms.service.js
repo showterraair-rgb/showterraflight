@@ -225,6 +225,18 @@ export async function updateLogo({ filePath, fileName, altText }, userId, req) {
   return setting.logo;
 }
 
+export async function restoreHomeDefaults(userId, req) {
+  const { seedHomeMedia } = await import('../seeds/seedHomeMedia.js');
+  const { buildFullHomeSeedContent } = await import('../config/fullHomeSeedContent.js');
+  seedHomeMedia();
+  return updatePage('home', {
+    title: 'Home',
+    slug: 'home',
+    isPublished: true,
+    content: buildFullHomeSeedContent(),
+  }, userId, req);
+}
+
 export default {
   listPages,
   getPageByKey,
@@ -237,4 +249,5 @@ export default {
   getCompanySettings,
   updateCompanySettings,
   updateLogo,
+  restoreHomeDefaults,
 };

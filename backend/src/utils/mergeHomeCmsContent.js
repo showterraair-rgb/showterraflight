@@ -1,7 +1,7 @@
 /**
  * Deep-merge CMS home page content with structured defaults (public API).
  */
-import { buildDefaultHomeContent } from '../config/homeDefaults.js';
+import { buildFullHomeSeedContent } from '../config/fullHomeSeedContent.js';
 
 function mergeList(defaultItems = [], cmsItems = [], idKey = 'id') {
   if (!Array.isArray(cmsItems) || cmsItems.length === 0) return defaultItems;
@@ -33,7 +33,7 @@ function mergeSection(defaults, cmsSection) {
 }
 
 export function mergeHomeCmsContent(cmsRaw = {}) {
-  const defaults = buildDefaultHomeContent();
+  const defaults = buildFullHomeSeedContent();
   const cmsSections = cmsRaw.sections && typeof cmsRaw.sections === 'object' ? cmsRaw.sections : {};
   const mergedSections = {};
 

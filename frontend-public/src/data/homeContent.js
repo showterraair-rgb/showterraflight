@@ -1,5 +1,6 @@
 /** Static homepage content — defaults when CMS is empty */
 
+import { CMS_HOME as M } from './mediaPaths';
 import { HOME_IMAGE_FALLBACKS } from '../utils/imageUtils';
 
 export const BRAND_NAME = 'Show Terra Flight';
@@ -79,7 +80,7 @@ export const PROMO_SLIDES = [
     subtitle: 'Flights, visa, Makkah & Madinah hotels, and airport transfers. Group sizes from 10 to 40 pilgrims.',
     cta: 'Explore Packages',
     href: '#packages',
-    image: '/images/home/promo.svg',
+    image: M.umrah,
     accent: 'from-emerald-700/92 to-teal-900/92',
   },
   {
@@ -89,7 +90,7 @@ export const PROMO_SLIDES = [
     subtitle: 'Walk in with your passport and bank statements — we check everything before embassy submission.',
     cta: 'Plan Your Trip',
     href: '/contact',
-    image: '/images/home/hero.svg',
+    image: M.hero,
     accent: 'from-brand-800/92 to-brand-950/92',
   },
   {
@@ -99,7 +100,7 @@ export const PROMO_SLIDES = [
     subtitle: 'Fixed BDT package prices for families. Custom dates and room upgrades available on request.',
     cta: 'Explore Packages',
     href: '#packages',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     accent: 'from-amber-700/90 to-orange-900/92',
   },
   {
@@ -109,7 +110,7 @@ export const PROMO_SLIDES = [
     subtitle: 'Multiple airlines and date options quoted on WhatsApp. PNR held before you transfer payment.',
     cta: 'Book Your Ticket',
     href: '/booking',
-    image: '/images/home/sky.svg',
+    image: M.sky,
     accent: 'from-sky-800/92 to-brand-950/92',
   },
 ];
@@ -124,7 +125,7 @@ export const PACKAGES = [
     priceLabel: 'Starting from',
     priceNote: 'per person · twin share',
     seasonNote: 'Winter departures · subject to seat availability',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     features: ['Return economy flights', '4★ hotel near Deira', 'Airport pickup & drop', 'Half-day Dubai city tour'],
     badge: 'Popular',
   },
@@ -137,7 +138,7 @@ export const PACKAGES = [
     priceLabel: 'Starting from',
     priceNote: 'per person · twin share',
     seasonNote: 'Includes daily breakfast',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     features: ['Return flights with baggage', 'KL city-centre hotel', 'Genting Highlands day trip', 'Tourist visa filing support'],
     badge: 'Family pick',
   },
@@ -150,7 +151,7 @@ export const PACKAGES = [
     priceLabel: 'Starting from',
     priceNote: 'per person · twin share',
     seasonNote: 'Beach extension available on request',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     features: ['Return flights', 'Pattaya beachfront hotel', 'Coral island tour', 'English-speaking local guide'],
     badge: 'Best value',
   },
@@ -163,7 +164,7 @@ export const PACKAGES = [
     priceLabel: 'Packages from',
     priceNote: 'per pilgrim · quad share',
     seasonNote: 'Ramadan & post-Ramadan slots — book early',
-    image: '/images/home/promo.svg',
+    image: M.umrah,
     features: ['Return flights + Umrah visa', 'Makkah hotel walking distance', 'Madinah stay included', 'Ziyarat & ground transport'],
     badge: 'Spiritual',
   },
@@ -176,7 +177,7 @@ export const PACKAGES = [
     priceLabel: 'Starting from',
     priceNote: 'per person · twin share',
     seasonNote: 'School-holiday dates fill quickly',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     features: ['Return flights', 'Bugis / Marina hotel', 'Sentosa day pass', 'EZ-Link metro card'],
     badge: 'Trending',
   },
@@ -189,7 +190,7 @@ export const PACKAGES = [
     priceLabel: 'Starting from',
     priceNote: 'per person · twin share',
     seasonNote: 'Visa appointment assistance included',
-    image: '/images/home/destination.svg',
+    image: M.dubai,
     features: ['Return flights', 'Sultanahmet boutique hotel', 'Bosphorus dinner cruise', 'Old city guided walk'],
     badge: 'Premium',
   },
@@ -235,7 +236,7 @@ export const TESTIMONIALS = [
     trip: 'Dubai family tickets (4 pax)',
     rating: 5,
     text: 'I compared three agencies in Sylhet for Eid Dubai tickets. Show Terra Flight gave the clearest BDT breakdown on WhatsApp and issued all four PNRs the same afternoon. No surprise add-ons at payment.',
-    avatar: '/images/home/person.svg',
+    avatar: M.team1,
   },
   {
     id: 2,
@@ -245,7 +246,7 @@ export const TESTIMONIALS = [
     trip: 'Umrah package · Feb 2025',
     rating: 5,
     text: 'Our group of 22 left from Dhaka with everything arranged — flights, visa, Makkah hotel near Haram, and Madinah stay. Tanvir bhai was reachable on WhatsApp throughout the trip when we had a bus timing question.',
-    avatar: '/images/home/person.svg',
+    avatar: M.team2,
   },
   {
     id: 3,
@@ -255,7 +256,7 @@ export const TESTIMONIALS = [
     trip: 'Malaysia business visa',
     rating: 5,
     text: 'I travel to KL every quarter. Ayesha reviewed my invitation letter and bank statements twice before submission — visa approved in nine working days. They now handle our company\'s recurring ticket bookings too.',
-    avatar: '/images/home/person.svg',
+    avatar: M.team3,
   },
   {
     id: 4,
@@ -265,7 +266,7 @@ export const TESTIMONIALS = [
     trip: 'Bangkok & Pattaya package',
     rating: 5,
     text: 'First international holiday for our family of five. The Pattaya hotel matched the photos they sent, pickup was waiting at BKK airport with our name board, and Sadia helped reschedule one flight when school dates shifted.',
-    avatar: '/images/home/person.svg',
+    avatar: M.team4,
   },
 ];
 
@@ -275,56 +276,56 @@ export const GALLERY_ITEMS = [
     category: 'tours',
     title: 'Dubai Eid group · 18 travelers',
     subtitle: 'Departure lounge, HSIA · Apr 2025',
-    image: '/images/home/gallery.svg',
+    image: M.galleryDubai,
   },
   {
     id: 2,
     category: 'visa',
     title: 'UAE visa stamped — client pickup',
     subtitle: 'Kanaighat office · visa desk',
-    image: '/images/home/gallery.svg',
+    image: M.office,
   },
   {
     id: 3,
     category: 'airport',
     title: 'Sylhet families seeing off to Jeddah',
     subtitle: 'Osmani International · Umrah season',
-    image: '/images/home/gallery.svg',
+    image: M.galleryAirport,
   },
   {
     id: 4,
     category: 'group',
     title: 'Umrah group at Masjid an-Nabawi',
     subtitle: '22 pilgrims · guided ziyarat',
-    image: '/images/home/gallery.svg',
+    image: M.umrah,
   },
   {
     id: 5,
     category: 'tours',
     title: 'Bangkok temple & river tour',
     subtitle: 'Thailand package · family of 5',
-    image: '/images/home/gallery.svg',
+    image: M.bangkok,
   },
   {
     id: 6,
     category: 'airport',
     title: 'Ticket handover before UK departure',
     subtitle: 'Show Terra Flight desk · Dhaka',
-    image: '/images/home/gallery.svg',
+    image: M.galleryAirport,
   },
   {
     id: 7,
     category: 'group',
     title: 'Corporate retreat — Kuala Lumpur',
     subtitle: '12 staff · Genting extension',
-    image: '/images/home/gallery.svg',
+    image: M.kl,
   },
   {
     id: 8,
     category: 'visa',
     title: 'Schengen file review session',
     subtitle: 'Document checklist · walk-in support',
-    image: '/images/home/gallery.svg',
+    image: M.office,
   },
 ];
 
@@ -342,28 +343,28 @@ export const TEAM = [
     name: 'Kamil Hussen',
     role: 'Managing Director',
     bio: 'Founded the Kanaighat desk in 2014. Negotiates airline allotments for Gulf and UK routes and oversees fare quotes for walk-in and WhatsApp clients.',
-    image: '/images/home/person.svg',
+    image: M.team1,
   },
   {
     id: 2,
     name: 'Ayesha Rahman',
     role: 'Visa & Documentation Officer',
     bio: 'Prepares UAE, Malaysia, Thailand, and Schengen files — checks bank statements, NOC letters, and photos before embassy submission.',
-    image: '/images/home/person.svg',
+    image: M.team2,
   },
   {
     id: 3,
     name: 'Tanvir Hasan',
     role: 'Umrah & Tour Coordinator',
     bio: 'Builds group Umrah and holiday itineraries with hotel partners in Makkah, Madinah, Dubai, and Bangkok. On-call during departures.',
-    image: '/images/home/person.svg',
+    image: M.team3,
   },
   {
     id: 4,
     name: 'Sadia Akter',
     role: 'Customer Care · WhatsApp Desk',
     bio: 'First point of contact for quotes, PNR delivery, date changes, and refund follow-ups. Replies on WhatsApp from 8am until late evening.',
-    image: '/images/home/person.svg',
+    image: M.team4,
   },
 ];
 

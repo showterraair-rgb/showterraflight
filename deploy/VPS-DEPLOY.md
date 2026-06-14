@@ -20,7 +20,22 @@ git pull --ff-only origin main
 bash deploy/scripts/deploy.sh
 ```
 
-## Fix broken homepage images
+## Load real photos (first time or reset)
+
+After deploy, copy starter photos to VPS storage and populate CMS:
+
+```bash
+cd /var/www/showterraflight/backend
+npm run seed:home
+pm2 reload sta-api
+```
+
+Or in **Admin → CMS → Homepage**, click **Restore default photos & content**.
+
+Photos are stored at `backend/uploads/cms/home/` and served at `https://showterraflight.com/uploads/cms/home/...`
+
+To replace any image: CMS tab → upload new JPG/PNG → Save homepage.
+
 
 Images live at `frontend-public/dist/images/home/*.svg` after build.
 

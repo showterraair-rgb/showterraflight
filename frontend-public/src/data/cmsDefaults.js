@@ -1,4 +1,5 @@
 import { HOME_IMAGE_FALLBACKS } from '../utils/imageUtils';
+import { CMS_HOME as M } from './mediaPaths';
 
 /** Default 3 hero slides — seeded in backend and used as client fallbacks */
 export const DEFAULT_HERO_SLIDES = [
@@ -14,7 +15,7 @@ export const DEFAULT_HERO_SLIDES = [
     primaryCtaLink: '/booking',
     secondaryCtaText: 'Explore Packages',
     secondaryCtaLink: '#packages',
-    image: HOME_IMAGE_FALLBACKS.hero,
+    image: M.hero,
     mobileImage: '',
     overlayOpacity: 0.72,
     textAlign: 'left',
@@ -36,7 +37,7 @@ export const DEFAULT_HERO_SLIDES = [
     primaryCtaLink: '/booking',
     secondaryCtaText: 'Talk on WhatsApp',
     secondaryCtaLink: 'whatsapp',
-    image: HOME_IMAGE_FALLBACKS.promo,
+    image: M.umrah,
     mobileImage: '',
     overlayOpacity: 0.72,
     textAlign: 'left',
@@ -55,7 +56,7 @@ export const DEFAULT_HERO_SLIDES = [
     primaryCtaLink: '/contact',
     secondaryCtaText: 'View Packages',
     secondaryCtaLink: '#packages',
-    image: HOME_IMAGE_FALLBACKS.destination,
+    image: M.dubai,
     mobileImage: '',
     overlayOpacity: 0.65,
     textAlign: 'left',

@@ -20,6 +20,7 @@ export const cmsApi = {
   listPages: () => api.get('/cms/pages'),
   getPage: (pageKey) => api.get(`/cms/pages/${pageKey}`),
   updatePage: (pageKey, body) => api.put(`/cms/pages/${pageKey}`, body),
+  restoreHomeDefaults: () => api.post('/cms/pages/home/restore-defaults'),
   listNotices: (params) => api.get('/cms/notices', { params }),
   createNotice: (body) => api.post('/cms/notices', body),
   updateNotice: (id, body) => api.put(`/cms/notices/${id}`, body),

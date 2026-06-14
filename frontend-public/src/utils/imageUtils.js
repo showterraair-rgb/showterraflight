@@ -1,13 +1,13 @@
 /** Local static fallbacks — never depend on external CDNs for production */
 
 export const HOME_IMAGE_FALLBACKS = {
-  hero: '/images/home/hero.svg',
-  promo: '/images/home/promo.svg',
-  destination: '/images/home/destination.svg',
-  gallery: '/images/home/gallery.svg',
-  person: '/images/home/person.svg',
-  office: '/images/home/office.svg',
-  sky: '/images/home/sky.svg',
+  hero: '/uploads/cms/home/hero.jpg',
+  promo: '/uploads/cms/home/umrah.jpg',
+  destination: '/uploads/cms/home/dubai.jpg',
+  gallery: '/uploads/cms/home/gallery-dubai.jpg',
+  person: '/uploads/cms/home/team-1.jpg',
+  office: '/uploads/cms/home/office.jpg',
+  sky: '/uploads/cms/home/sky.jpg',
   default: '/images/home/destination.svg',
 };
 

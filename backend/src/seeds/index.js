@@ -17,7 +17,8 @@ import Account from '../models/Account.js';
 import ExpenseCategory from '../models/ExpenseCategory.js';
 import Setting from '../models/Setting.js';
 import CmsPage from '../models/CmsPage.js';
-import { buildDefaultHomeContent } from '../config/defaultHomeContent.js';
+import { buildFullHomeSeedContent } from '../config/fullHomeSeedContent.js';
+import { seedHomeMedia } from './seedHomeMedia.js';
 import SecuritySetting from '../models/SecuritySetting.js';
 import SmsSetting from '../models/SmsSetting.js';
 import EmailSetting from '../models/EmailSetting.js';
@@ -93,12 +94,14 @@ async function seedSettings() {
 }
 
 async function seedCmsPages() {
+  seedHomeMedia();
+
   const pages = [
     {
       pageKey: 'home',
       title: 'Home',
       slug: 'home',
-      content: buildDefaultHomeContent(),
+      content: buildFullHomeSeedContent(),
       sections: [],
     },
     {
