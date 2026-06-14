@@ -69,6 +69,8 @@ export const PERMISSIONS = {
   'audit:view': 'View audit and login logs',
   'backup:manage': 'Trigger and view backups',
   'settings:manage': 'Company settings',
+  'notifications:view': 'View notification settings and logs',
+  'notifications:manage': 'Manage SMS, email, templates, and automation',
 };
 
 /** @type {Record<string, string[]>} */

@@ -166,6 +166,7 @@ export async function getCompanySettings() {
     company: setting.company,
     logo: setting.logo || {},
     socialLinks: setting.socialLinks || {},
+    paymentDetails: setting.paymentDetails || {},
     orderNumberPrefix: setting.orderNumberPrefix,
     bookingNumberPrefix: setting.bookingNumberPrefix,
     invoicePrefix: setting.invoicePrefix,
@@ -177,6 +178,7 @@ export async function updateCompanySettings(data, userId, req) {
   if (data.company) update.company = data.company;
   if (data.socialLinks) update.socialLinks = data.socialLinks;
   if (data.logo) update.logo = data.logo;
+  if (data.paymentDetails) update.paymentDetails = data.paymentDetails;
 
   const setting = await Setting.findOneAndUpdate(
     { key: 'company' },
@@ -197,6 +199,7 @@ export async function updateCompanySettings(data, userId, req) {
     company: setting.company,
     logo: setting.logo || {},
     socialLinks: setting.socialLinks || {},
+    paymentDetails: setting.paymentDetails || {},
   };
 }
 

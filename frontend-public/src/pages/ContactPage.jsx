@@ -3,11 +3,13 @@ import PublicLayout from '../layouts/PublicLayout';
 import PageHero from '../components/PageHero';
 import { publicApi } from '../services/api';
 import { useCompany } from '../context/CompanyContext';
+import { getDisplayName, getPhoneDigits, getWhatsAppDigits } from '../utils/companyHelpers';
 
 export default function ContactPage() {
   const { company } = useCompany();
   const [page, setPage] = useState(null);
-  const wa = company.whatsapp?.replace(/\D/g, '');
+  const wa = getWhatsAppDigits(company);
+  const phone = getPhoneDigits(company);
 
   useEffect(() => {
     publicApi.getCmsPage('contact').then(({ data }) => setPage(data.data)).catch(() => {});
@@ -31,10 +33,18 @@ export default function ContactPage() {
             <div className="rounded-xl border border-slate-200 p-6">
               <h3 className="font-semibold text-slate-900">Phone & Email</h3>
               <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                <li>Office Email: <a href={`mailto:${company.email}`} className="text-brand-600 hover:underline">{company.email}</a></li>
-                <li>WhatsApp: <a href={`https://wa.me/88${wa}`} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">{company.whatsapp}</a></li>
+                <li>Office Email: <a href={`mailto:${company.email}`} className="tap-link text-brand-600 hover:underline">{company.email}</a></li>
+                <li>WhatsApp: <a href={`https://wa.me/88${wa}`} target="_blank" rel="noreferrer" className="tap-link text-brand-600 hover:underline">{company.whatsapp}</a></li>
                 <li>Director: {company.directorName}</li>
-                <li>Director Phone: {company.directorPhone}</li>
+                <li>
+                  Director Phone:{' '}
+                  <a
+                    href={`tel:+88${phone}`}
+                    className="tap-link text-brand-600 hover:underline"
+                  >
+                    {company.directorPhone}
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

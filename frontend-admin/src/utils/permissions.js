@@ -94,6 +94,36 @@ export const NAV_ITEMS = [
     permissions: ['audit:view'],
   },
   {
+    label: 'Payment Accounts',
+    path: '/settings/payment-accounts',
+    icon: 'accounts',
+    permissions: ['accounts:view', 'settings:manage', 'notifications:view'],
+  },
+  {
+    label: 'SMS Settings',
+    path: '/settings/sms',
+    icon: 'reminders',
+    permissions: ['notifications:view', 'settings:manage'],
+  },
+  {
+    label: 'Email Settings',
+    path: '/settings/email',
+    icon: 'reminders',
+    permissions: ['notifications:view', 'settings:manage'],
+  },
+  {
+    label: 'Notification Templates',
+    path: '/settings/notification-templates',
+    icon: 'cms',
+    permissions: ['notifications:view', 'settings:manage'],
+  },
+  {
+    label: 'Notification Logs',
+    path: '/notifications/logs',
+    icon: 'reports',
+    permissions: ['notifications:view', 'settings:manage'],
+  },
+  {
     label: 'Users',
     path: '/users',
     icon: 'users',

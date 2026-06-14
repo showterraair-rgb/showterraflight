@@ -2,7 +2,7 @@ import Account from '../models/Account.js';
 import AccountTransaction from '../models/AccountTransaction.js';
 import Transfer from '../models/Transfer.js';
 import ApiError from '../utils/ApiError.js';
-import { ACCOUNT_TYPE_LABELS } from '../config/constants.js';
+import { ACCOUNT_TYPE_LABELS, MOBILE_BANKING_TYPES } from '../config/constants.js';
 import {
   parsePaginationQuery,
   buildPaginationResponse,
@@ -19,18 +19,27 @@ import { logAudit } from './audit.service.js';
 function formatAccount(doc) {
   return {
     id: doc._id.toString(),
+    title: doc.title || doc.name,
     name: doc.name,
+    accountName: doc.accountName || '',
     type: doc.type,
     typeLabel: ACCOUNT_TYPE_LABELS[doc.type] || doc.name,
     accountNumber: doc.accountNumber || '',
     bankName: doc.bankName || '',
+    branchRouting: doc.branchRouting || '',
     mobileNumber: doc.mobileNumber || '',
+    mobileBankingType: doc.mobileBankingType || null,
+    qrImagePath: doc.qrImagePath || '',
+    qrImageUrl: doc.qrImagePath ? `/uploads/${doc.qrImagePath.replace(/^uploads\//, '')}` : '',
     openingBalance: doc.openingBalance,
     currentBalance: doc.currentBalance,
     isActive: doc.isActive,
+    status: doc.isActive ? 'active' : 'inactive',
     notes: doc.notes || '',
     lastClosingDate: doc.lastClosingDate,
     lastClosingBalance: doc.lastClosingBalance,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
   };
 }
 
@@ -54,8 +63,9 @@ function formatTransaction(doc) {
   };
 }
 
-export async function listAccounts() {
-  const accounts = await Account.find({ isActive: true }).sort({ type: 1 }).lean();
+export async function listAccounts(query = {}) {
+  const filter = query.includeInactive ? {} : { isActive: true };
+  const accounts = await Account.find(filter).sort({ type: 1, name: 1 }).lean();
   return accounts.map(formatAccount);
 }
 
@@ -257,6 +267,111 @@ export async function createTransfer(data, userId, req) {
   });
 }
 
+export async function createAccount(data, userId, req) {
+  return withTransaction(async (session) => {
+    const openingBalance = Number(data.openingBalance) || 0;
+    const type = data.type;
+    let mobileBankingType = data.mobileBankingType || null;
+    if (!mobileBankingType && MOBILE_BANKING_TYPES.includes(type)) {
+      mobileBankingType = type;
+    }
+
+    const [account] = await Account.create(
+      [{
+        title: data.title || data.name,
+        name: data.name,
+        accountName: data.accountName || '',
+        type,
+        accountNumber: data.accountNumber || '',
+        bankName: data.bankName || '',
+        branchRouting: data.branchRouting || '',
+        mobileNumber: data.mobileNumber || '',
+        mobileBankingType,
+        qrImagePath: data.qrImagePath || '',
+        openingBalance,
+        currentBalance: openingBalance,
+        isActive: data.isActive !== false,
+        notes: data.notes || '',
+      }],
+      { session }
+    );
+
+    if (openingBalance !== 0) {
+      await createLedgerEntry({
+        type: 'opening_balance',
+        accountId: account._id,
+        amount: Math.abs(openingBalance),
+        balanceAfter: account.currentBalance,
+        transactionDate: new Date(),
+        notes: 'Opening balance',
+        userId,
+      }, session);
+    }
+
+    await logAudit({
+      action: 'create',
+      module: 'accounts',
+      entityType: 'Account',
+      entityId: account._id,
+      description: `Created account ${account.name}`,
+      userId,
+      req,
+    });
+
+    return formatAccount(account.toObject());
+  });
+}
+
+export async function updateAccount(id, data, userId, req) {
+  const account = await Account.findById(id);
+  if (!account) throw ApiError.notFound('Account not found');
+
+  if (data.title !== undefined) account.title = data.title;
+  if (data.name !== undefined) account.name = data.name;
+  if (data.accountName !== undefined) account.accountName = data.accountName;
+  if (data.accountNumber !== undefined) account.accountNumber = data.accountNumber;
+  if (data.bankName !== undefined) account.bankName = data.bankName;
+  if (data.branchRouting !== undefined) account.branchRouting = data.branchRouting;
+  if (data.mobileNumber !== undefined) account.mobileNumber = data.mobileNumber;
+  if (data.mobileBankingType !== undefined) account.mobileBankingType = data.mobileBankingType;
+  if (data.qrImagePath !== undefined) account.qrImagePath = data.qrImagePath;
+  if (data.notes !== undefined) account.notes = data.notes;
+
+  await account.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'accounts',
+    entityType: 'Account',
+    entityId: account._id,
+    description: `Updated account ${account.name}`,
+    userId,
+    req,
+  });
+
+  return formatAccount(account.toObject());
+}
+
+export async function updateAccountStatus(id, { isActive }, userId, req) {
+  const account = await Account.findById(id);
+  if (!account) throw ApiError.notFound('Account not found');
+
+  account.isActive = Boolean(isActive);
+  await account.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'accounts',
+    entityType: 'Account',
+    entityId: account._id,
+    description: `Account ${account.name} ${account.isActive ? 'activated' : 'deactivated'}`,
+    userId,
+    req,
+  });
+
+  return formatAccount(account.toObject());
+}
+
 export default {
   listAccounts,
   getAccountsSummary,
@@ -265,4 +380,7 @@ export default {
   setOpeningBalance,
   listTransfers,
   createTransfer,
+  createAccount,
+  updateAccount,
+  updateAccountStatus,
 };

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280" role="img" aria-label="Travel">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1929"/>
+      <stop offset="50%" stop-color="#14375e"/>
+      <stop offset="100%" stop-color="#0f2847"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1280" fill="url(#bg)"/>
+  <circle cx="1600" cy="280" r="180" fill="#38bdf8" opacity="0.08"/>
+  <path d="M420 640 L900 520 L1480 600 L1320 680 L900 640 L680 760 Z" fill="#38bdf8" opacity="0.15"/>
+  <path d="M760 580 L920 540 L980 560 L840 620 Z" fill="#fbbf24" opacity="0.35"/>
+  <text x="960" y="980" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="28" font-weight="600">Show Terra Flight</text>
+</svg>

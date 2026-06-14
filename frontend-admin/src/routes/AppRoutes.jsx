@@ -21,6 +21,11 @@ import ReportsPage from '../pages/ReportsPage';
 import CmsPage from '../pages/CmsPage';
 import BackupPage from '../pages/BackupPage';
 import SecurityPage from '../pages/SecurityPage';
+import PaymentAccountsPage from '../pages/PaymentAccountsPage';
+import SmsSettingsPage from '../pages/SmsSettingsPage';
+import EmailSettingsPage from '../pages/EmailSettingsPage';
+import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
+import NotificationLogsPage from '../pages/NotificationLogsPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
 
 export default function AppRoutes() {
@@ -53,6 +58,11 @@ export default function AppRoutes() {
             <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />
             <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
             <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />
+            <Route path="settings/payment-accounts" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentAccountsPage /></ProtectedRoute>} />
+            <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/email" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><EmailSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
+            <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
             <Route path="users" element={<ComingSoonPage module="Users" />} />
           </Route>
 

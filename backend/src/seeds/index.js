@@ -7,6 +7,8 @@ import {
   DEFAULT_EXPENSE_CATEGORIES,
   COMPANY_DEFAULTS,
   CMS_PAGE_KEYS,
+  DEFAULT_NOTIFICATION_TEMPLATES,
+  DEFAULT_AUTOMATION_RULES,
 } from '../config/constants.js';
 import { ROLE_PERMISSIONS } from '../config/permissions.js';
 import Role from '../models/Role.js';
@@ -15,7 +17,12 @@ import Account from '../models/Account.js';
 import ExpenseCategory from '../models/ExpenseCategory.js';
 import Setting from '../models/Setting.js';
 import CmsPage from '../models/CmsPage.js';
+import { buildDefaultHomeContent } from '../config/defaultHomeContent.js';
 import SecuritySetting from '../models/SecuritySetting.js';
+import SmsSetting from '../models/SmsSetting.js';
+import EmailSetting from '../models/EmailSetting.js';
+import NotificationTemplate from '../models/NotificationTemplate.js';
+import NotificationAutomationRule from '../models/NotificationAutomationRule.js';
 
 const ROLE_LABELS = {
   [ROLES.ADMIN]: 'Administrator',
@@ -42,10 +49,12 @@ async function seedRoles() {
 async function seedAccounts() {
   for (const type of ACCOUNT_TYPES) {
     await Account.findOneAndUpdate(
-      { type },
+      { type, name: ACCOUNT_TYPE_LABELS[type] },
       {
+        title: ACCOUNT_TYPE_LABELS[type],
         name: ACCOUNT_TYPE_LABELS[type],
         type,
+        mobileBankingType: ['bkash', 'nagad'].includes(type) ? type : null,
         openingBalance: 0,
         currentBalance: 0,
         isActive: true,
@@ -89,17 +98,8 @@ async function seedCmsPages() {
       pageKey: 'home',
       title: 'Home',
       slug: 'home',
-      content: {
-        heroTitle: 'Your Trusted Air Ticket Partner in Sylhet',
-        heroSubtitle:
-          'Show Terra Air provides reliable domestic and international air ticket booking with personal service from Kanaighat, Sylhet.',
-        ctaText: 'Request a Ticket',
-      },
-      sections: [
-        { type: 'feature', title: 'Best Fare Options', text: 'We compare fares across airlines to find competitive prices.' },
-        { type: 'feature', title: 'Personal Support', text: 'Speak directly with our team via phone or WhatsApp.' },
-        { type: 'feature', title: 'Local Office', text: 'Visit us at Gasbari Bazar, Kanaighat for walk-in service.' },
-      ],
+      content: buildDefaultHomeContent(),
+      sections: [],
     },
     {
       pageKey: 'about',
@@ -202,6 +202,49 @@ async function seedSecuritySettings() {
   console.log('✓ Security settings seeded');
 }
 
+async function seedNotificationSettings() {
+  await SmsSetting.findOneAndUpdate(
+    { key: 'sms' },
+    { key: 'sms', isEnabled: false },
+    { upsert: true, new: true }
+  );
+  await EmailSetting.findOneAndUpdate(
+    { key: 'email' },
+    { key: 'email', isEnabled: false, smtpPort: 587, encryption: 'tls' },
+    { upsert: true, new: true }
+  );
+  console.log('✓ SMS & email settings seeded');
+}
+
+async function seedNotificationTemplates() {
+  for (const tpl of DEFAULT_NOTIFICATION_TEMPLATES) {
+    await NotificationTemplate.findOneAndUpdate(
+      { templateKey: tpl.templateKey },
+      {
+        templateKey: tpl.templateKey,
+        name: tpl.name,
+        smsBody: tpl.smsBody,
+        emailSubject: tpl.emailSubject,
+        emailBody: tpl.emailBody,
+        isActive: true,
+      },
+      { upsert: true, new: true }
+    );
+  }
+  console.log('✓ Notification templates seeded');
+}
+
+async function seedAutomationRules() {
+  for (const rule of DEFAULT_AUTOMATION_RULES) {
+    await NotificationAutomationRule.findOneAndUpdate(
+      { eventType: rule.eventType },
+      rule,
+      { upsert: true, new: true }
+    );
+  }
+  console.log('✓ Notification automation rules seeded');
+}
+
 async function runSeed() {
   try {
     await mongoose.connect(env.mongodbUri);
@@ -213,6 +256,9 @@ async function runSeed() {
     await seedSettings();
     await seedCmsPages();
     await seedSecuritySettings();
+    await seedNotificationSettings();
+    await seedNotificationTemplates();
+    await seedAutomationRules();
     await seedAdminUser();
 
     console.log('\n✅ Seed completed successfully');

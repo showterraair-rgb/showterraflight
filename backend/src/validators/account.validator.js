@@ -6,6 +6,10 @@ export const listQuerySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
+  includeInactive: z
+    .union([z.boolean(), z.enum(['true', 'false'])])
+    .optional()
+    .transform((v) => v === true || v === 'true'),
 });
 
 export const openingBalanceSchema = z.object({
@@ -28,5 +32,7 @@ export const createTransferSchema = z.object({
   message: 'Cannot transfer to the same account',
   path: ['toAccountId'],
 });
+
+export { createAccountSchema, updateAccountSchema, accountStatusSchema } from './notification.validator.js';
 
 export default { listQuerySchema, openingBalanceSchema, idParamSchema, createTransferSchema };

@@ -1,79 +1,71 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import PublicLayout from '../layouts/PublicLayout';
 import { publicApi } from '../services/api';
-import { useCompany } from '../context/CompanyContext';
+import { HomeContentProvider } from '../context/HomeContentContext';
+import HeroSlider from '../components/home/HeroSlider';
+import PromoSlider from '../components/home/PromoSlider';
+import ServicesSection from '../components/home/ServicesSection';
+import PackagesSection from '../components/home/PackagesSection';
+import AboutSection from '../components/home/AboutSection';
+import CtaSection from '../components/home/CtaSection';
+import ContactSection from '../components/home/ContactSection';
+import {
+  GallerySectionFallback,
+  MapSectionFallback,
+  TeamSectionFallback,
+  TestimonialsSectionFallback,
+  TrustSectionFallback,
+} from '../components/home/SectionFallback';
+
+const BangladeshToWorldSection = lazy(() => import('../components/home/BangladeshToWorldSection'));
+const TestimonialsSection = lazy(() => import('../components/home/TestimonialsSection'));
+const GallerySection = lazy(() => import('../components/home/GallerySection'));
+const TeamSection = lazy(() => import('../components/home/TeamSection'));
+const TrustStatsSection = lazy(() => import('../components/home/TrustStatsSection'));
 
 export default function HomePage() {
-  const { company } = useCompany();
-  const [page, setPage] = useState(null);
+  const [cmsContent, setCmsContent] = useState({});
 
   useEffect(() => {
-    publicApi.getCmsPage('home').then(({ data }) => setPage(data.data)).catch(() => {});
+    publicApi
+      .getCmsPage('home')
+      .then(({ data }) => setCmsContent(data?.data?.content || {}))
+      .catch(() => setCmsContent({}));
   }, []);
 
-  const content = page?.content || {};
-
   return (
-    <PublicLayout
-      title="Home"
-      description="Show Terra Air - Trusted air ticket booking in Kanaighat, Sylhet, Bangladesh"
-    >
-      <section className="bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 text-white">
-        <div className="container-page py-20 md:py-28">
-          <p className="text-sm font-medium uppercase tracking-wider text-brand-200">
-            Sylhet, Bangladesh
-          </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">
-            {content.heroTitle || 'Your Trusted Air Ticket Partner in Sylhet'}
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg text-brand-100">
-            {content.heroSubtitle ||
-              'Domestic and international air tickets with personal service from our Kanaighat office.'}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link to="/booking" className="btn-primary bg-white text-brand-700 hover:bg-brand-50">
-              Request a Ticket
-            </Link>
-            <a
-              href={`https://wa.me/88${company.whatsapp?.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-outline border-white text-white hover:bg-white/10"
-            >
-              WhatsApp Us
-            </a>
+    <HomeContentProvider cmsContent={cmsContent}>
+      <PublicLayout
+        title="Home"
+        description="Show Terra Flight — Air tickets, visa, Umrah, and tour packages from Sylhet, Bangladesh. Book your next journey with trusted local experts."
+      >
+        <div className="overflow-x-hidden">
+          <div className="-mt-16 md:-mt-[4.25rem]">
+            <HeroSlider />
           </div>
+          <PromoSlider />
+          <ServicesSection />
+          <PackagesSection />
+          <Suspense fallback={<MapSectionFallback />}>
+            <BangladeshToWorldSection />
+          </Suspense>
+          <AboutSection />
+          <Suspense fallback={<TestimonialsSectionFallback />}>
+            <TestimonialsSection />
+          </Suspense>
+          <Suspense fallback={<GallerySectionFallback />}>
+            <GallerySection />
+          </Suspense>
+          <Suspense fallback={<TeamSectionFallback />}>
+            <TeamSection />
+          </Suspense>
+          <Suspense fallback={<TrustSectionFallback />}>
+            <TrustStatsSection />
+          </Suspense>
+          <CtaSection />
+          <ContactSection />
         </div>
-      </section>
-
-      <section className="container-page py-16">
-        <h2 className="section-title text-center">Why Choose {company.name}?</h2>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {(page?.sections || [
-            { title: 'Best Fare Options', text: 'Competitive fares across airlines.' },
-            { title: 'Personal Support', text: 'Direct phone and WhatsApp assistance.' },
-            { title: 'Local Office', text: 'Walk-in service at Gasbari Bazar, Kanaighat.' },
-          ]).map((item, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-slate-50 py-16">
-        <div className="container-page text-center">
-          <h2 className="section-title">Ready to Travel?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-slate-600">
-            Submit a booking request online or visit our office. Our team will find the best fare for you.
-          </p>
-          <Link to="/booking" className="btn-primary mt-8">
-            Book Now
-          </Link>
-        </div>
-      </section>
-    </PublicLayout>
+      </PublicLayout>
+    </HomeContentProvider>
   );
 }

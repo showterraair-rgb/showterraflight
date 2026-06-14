@@ -1,5 +1,6 @@
 import * as cmsService from '../services/cms.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import ApiError from '../utils/ApiError.js';
 
 export const listPages = asyncHandler(async (_req, res) => {
   const data = await cmsService.listPages();
@@ -56,6 +57,19 @@ export const updateLogo = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Logo updated' });
 });
 
+export const uploadMedia = asyncHandler(async (req, res) => {
+  if (!req.file) throw ApiError.badRequest('No file uploaded');
+  const filePath = `cms/${req.file.filename}`;
+  res.json({
+    success: true,
+    data: {
+      filePath,
+      url: `/uploads/${filePath}`,
+      fileName: req.file.originalname,
+    },
+  });
+});
+
 export default {
   listPages,
   getPage,
@@ -68,4 +82,5 @@ export default {
   getSettings,
   updateSettings,
   updateLogo,
+  uploadMedia,
 };

@@ -21,6 +21,7 @@ import userRoutes from './user.routes.js';
 import backupRoutes from './backup.routes.js';
 import auditRoutes from './audit.routes.js';
 import securityRoutes from './security.routes.js';
+import notificationRoutes from './notification.routes.js';
 import authenticate from '../middlewares/authenticate.js';
 
 const router = Router();
@@ -58,5 +59,6 @@ router.use('/users', userRoutes);
 router.use('/backups', backupRoutes);
 router.use('/audit', auditRoutes);
 router.use('/security', securityRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

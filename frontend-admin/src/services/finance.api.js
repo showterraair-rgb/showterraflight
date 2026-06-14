@@ -1,9 +1,12 @@
 import api from './api';
 
 export const accountsApi = {
-  list: () => api.get('/accounts'),
+  list: (params) => api.get('/accounts', { params }),
   summary: () => api.get('/accounts/summary'),
   get: (id) => api.get(`/accounts/${id}`),
+  create: (data) => api.post('/accounts', data),
+  update: (id, data) => api.put(`/accounts/${id}`, data),
+  updateStatus: (id, data) => api.patch(`/accounts/${id}/status`, data),
   statement: (id, params) => api.get(`/accounts/${id}/statement`, { params }),
   setOpeningBalance: (id, data) => api.put(`/accounts/${id}/opening-balance`, data),
   listTransfers: (params) => api.get('/accounts/transfers', { params }),

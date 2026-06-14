@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authorize from '../middlewares/authorize.js';
 import validate from '../middlewares/validate.js';
 import * as cmsController from '../controllers/cms.controller.js';
+import { cmsUpload } from '../middlewares/upload.js';
 import {
   updatePageSchema,
   createNoticeSchema,
@@ -25,5 +26,6 @@ router.delete('/notices/:id', authorize('cms:manage'), cmsController.deleteNotic
 router.get('/settings', authorize('cms:view'), cmsController.getSettings);
 router.put('/settings', authorize('cms:manage'), validate(updateCompanySchema), cmsController.updateSettings);
 router.put('/logo', authorize('cms:manage'), validate(updateLogoSchema), cmsController.updateLogo);
+router.post('/upload', authorize('cms:manage'), cmsUpload.single('file'), cmsController.uploadMedia);
 
 export default router;

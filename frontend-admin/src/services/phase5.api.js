@@ -27,6 +27,11 @@ export const cmsApi = {
   getSettings: () => api.get('/cms/settings'),
   updateSettings: (body) => api.put('/cms/settings', body),
   updateLogo: (body) => api.put('/cms/logo', body),
+  upload: (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/cms/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 export const backupApi = {

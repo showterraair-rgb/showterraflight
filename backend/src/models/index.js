@@ -19,3 +19,8 @@ export { default as Setting } from './Setting.js';
 export { default as BackupLog } from './BackupLog.js';
 export { default as AuditLog } from './AuditLog.js';
 export { default as LoginLog } from './LoginLog.js';
+export { default as SmsSetting } from './SmsSetting.js';
+export { default as EmailSetting } from './EmailSetting.js';
+export { default as NotificationTemplate } from './NotificationTemplate.js';
+export { default as NotificationAutomationRule } from './NotificationAutomationRule.js';
+export { default as NotificationLog } from './NotificationLog.js';

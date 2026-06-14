@@ -6,6 +6,8 @@ import Expense from '../models/Expense.js';
 import ApiError from '../utils/ApiError.js';
 import { parsePaginationQuery, buildPaginationResponse } from '../utils/pagination.js';
 import { sendNotification, resolveReminderChannel } from './notification.service.js';
+import { triggerNotificationEvent } from './notificationOrchestrator.service.js';
+import { buildBookingNotificationContext } from '../utils/notificationContext.js';
 import { logAudit } from './audit.service.js';
 
 function formatReminder(doc) {
@@ -284,6 +286,38 @@ export async function sendPendingReminders() {
   let failed = 0;
 
   for (const reminder of pending) {
+    if (reminder.type === 'customer_due' && reminder.booking) {
+      reminder.attemptCount = (reminder.attemptCount || 0) + 1;
+      try {
+        const result = await triggerNotificationEvent('payment_due_reminder', buildBookingNotificationContext(
+          reminder.booking,
+          reminder.customer,
+          { dueAmount: reminder.booking.customerDue ?? 0 }
+        ));
+        if (result?.sent > 0 || result?.results?.some((r) => r.success)) {
+          reminder.status = 'sent';
+          reminder.sentAt = new Date();
+          sent += 1;
+        } else if (result?.skipped) {
+          reminder.status = 'sent';
+          reminder.sentAt = new Date();
+          sent += 1;
+        } else {
+          reminder.status = 'failed';
+          reminder.failedAt = new Date();
+          reminder.failureReason = result?.error || 'No notification channels available';
+          failed += 1;
+        }
+      } catch (err) {
+        reminder.status = 'failed';
+        reminder.failedAt = new Date();
+        reminder.failureReason = err.message;
+        failed += 1;
+      }
+      await reminder.save();
+      continue;
+    }
+
     const channel = resolveReminderChannel(reminder.type);
     const to =
       reminder.customer?.phone ||

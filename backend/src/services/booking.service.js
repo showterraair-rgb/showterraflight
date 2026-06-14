@@ -1,5 +1,6 @@
 import Booking from '../models/Booking.js';
 import Order from '../models/Order.js';
+import Customer from '../models/Customer.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
@@ -9,6 +10,8 @@ import {
 import { generateBookingNumber } from './numberGenerator.service.js';
 import { findOrCreateFromOrder } from './customer.service.js';
 import { logAudit } from './audit.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildBookingNotificationContext } from '../utils/notificationContext.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -96,6 +99,17 @@ function pushTimeline(booking, status, note, userId) {
   booking.statusTimeline.push({ status, note: note || '', changedBy: userId, changedAt: new Date() });
 }
 
+async function fireBookingNotification(eventType, booking, customerDoc = null) {
+  try {
+    const customer = customerDoc || (booking.customer
+      ? await Customer.findById(booking.customer).lean()
+      : null);
+    triggerNotificationEventSafe(eventType, buildBookingNotificationContext(booking, customer));
+  } catch (err) {
+    console.error('[notification] booking context failed', eventType, err.message);
+  }
+}
+
 export async function listBookings(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query, 'departureDate');
   const filter = buildBookingFilter(query);
@@ -180,6 +194,8 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     req,
   });
 
+  await fireBookingNotification('manual_order_created', booking);
+
   return getBookingById(booking._id);
 }
 
@@ -236,6 +252,8 @@ export async function updateBooking(id, data, userId, req) {
   const booking = await Booking.findById(id);
   if (!booking) throw ApiError.notFound('Booking not found');
 
+  const hadTicket = Boolean(booking.ticketCopyPath);
+
   if (data.supplierId !== undefined) booking.supplier = data.supplierId || undefined;
   if (data.airline) booking.airline = data.airline;
   if (data.route) booking.route = data.route;
@@ -266,6 +284,10 @@ export async function updateBooking(id, data, userId, req) {
     userId,
     req,
   });
+
+  if (data.ticketCopyPath && !hadTicket) {
+    await fireBookingNotification('ticket_issued', booking);
+  }
 
   return getBookingById(id);
 }
@@ -310,6 +332,16 @@ export async function updateBookingStatus(id, { status, note }, userId, req) {
     userId,
     req,
   });
+
+  if (status === 'confirmed' && prev !== 'confirmed') {
+    await fireBookingNotification('booking_approved', booking);
+  }
+  if (status === 'ticket_issued' && prev !== 'ticket_issued') {
+    await fireBookingNotification('ticket_issued', booking);
+  }
+  if (status === 'cancelled' && prev !== 'cancelled') {
+    await fireBookingNotification('booking_canceled', booking);
+  }
 
   return getBookingById(id);
 }

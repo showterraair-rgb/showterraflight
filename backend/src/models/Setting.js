@@ -34,6 +34,15 @@ const settingSchema = new mongoose.Schema(
     orderNumberPrefix: { type: String, default: 'ORD' },
     bookingNumberPrefix: { type: String, default: 'BKG' },
     invoicePrefix: { type: String, default: 'INV' },
+    paymentDetails: {
+      bankName: { type: String, default: '' },
+      bankAccountName: { type: String, default: '' },
+      bankAccountNumber: { type: String, default: '' },
+      bankBranch: { type: String, default: '' },
+      bkashNumber: { type: String, default: '' },
+      nagadNumber: { type: String, default: '' },
+      paymentNote: { type: String, default: '' },
+    },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

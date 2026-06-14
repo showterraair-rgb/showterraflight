@@ -52,6 +52,17 @@ export const updateCompanySchema = z.object({
       linkedin: z.string().optional(),
     })
     .optional(),
+  paymentDetails: z
+    .object({
+      bankName: z.string().optional(),
+      bankAccountName: z.string().optional(),
+      bankAccountNumber: z.string().optional(),
+      bankBranch: z.string().optional(),
+      bkashNumber: z.string().optional(),
+      nagadNumber: z.string().optional(),
+      paymentNote: z.string().optional(),
+    })
+    .optional(),
   logo: z
     .object({
       filePath: z.string().optional(),

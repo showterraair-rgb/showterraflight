@@ -11,6 +11,8 @@ import { withTransaction, postCredit, derivePaymentStatus } from './ledger.servi
 import { generateCustomerPaymentNumber } from './numberGenerator.service.js';
 import { syncBookingFinancials, syncCustomerTotals } from './financialSync.service.js';
 import { logAudit } from './audit.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildPaymentNotificationContext } from '../utils/notificationContext.js';
 
 function formatPayment(doc) {
   return {
@@ -152,10 +154,15 @@ export async function createCustomerPayment(data, userId, req) {
     });
 
     const populated = await CustomerPayment.findById(payment._id)
-      .populate('customer', 'name')
+      .populate('customer', 'name phone email')
       .populate('booking', 'bookingNumber')
       .populate('account', 'name')
       .lean();
+
+    triggerNotificationEventSafe(
+      'payment_received',
+      buildPaymentNotificationContext(populated, populated.customer, populated.booking)
+    );
 
     return formatPayment(populated);
   });

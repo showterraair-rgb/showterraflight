@@ -1,20 +1,30 @@
 import { Helmet } from 'react-helmet-async';
-import Header from './Header';
-import Footer from './Footer';
-import WhatsAppButton from './WhatsAppButton';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import WhatsAppButton from '../components/WhatsAppButton';
+import { useScrollToHash } from '../hooks/useScrollToSection';
+import { BRAND_NAME } from '../data/homeContent';
 
 export default function PublicLayout({ children, title, description }) {
-  const pageTitle = title ? `${title} | Show Terra Air` : 'Show Terra Air — Air Ticket Booking Sylhet';
+  useScrollToHash();
+
+  const pageTitle = title
+    ? `${title} | ${BRAND_NAME}`
+    : `${BRAND_NAME} — Air Tickets, Visa & Tour Packages from Bangladesh`;
+
+  const defaultDescription =
+    description ||
+    'Premium air ticket booking, visa processing, Umrah packages, and holiday tours from Sylhet, Bangladesh. Book with Show Terra Flight today.';
 
   return (
     <>
       <Helmet>
         <title>{pageTitle}</title>
-        {description && <meta name="description" content={description} />}
+        <meta name="description" content={defaultDescription} />
       </Helmet>
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 overflow-x-hidden">{children}</main>
         <Footer />
         <WhatsAppButton />
       </div>

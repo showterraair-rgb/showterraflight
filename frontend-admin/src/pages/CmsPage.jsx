@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { cmsApi } from '../services/phase5.api';
+import HomeCmsEditor from '../components/cms/HomeCmsEditor';
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
@@ -65,12 +66,20 @@ export default function CmsPage() {
       logoAlt: data.data.logo?.altText || '',
       facebook: data.data.socialLinks?.facebook || '',
       instagram: data.data.socialLinks?.instagram || '',
+      bankName: data.data.paymentDetails?.bankName || '',
+      bankAccountName: data.data.paymentDetails?.bankAccountName || '',
+      bankAccountNumber: data.data.paymentDetails?.bankAccountNumber || '',
+      bankBranch: data.data.paymentDetails?.bankBranch || '',
+      bkashNumber: data.data.paymentDetails?.bkashNumber || '',
+      nagadNumber: data.data.paymentDetails?.nagadNumber || '',
+      paymentNote: data.data.paymentDetails?.paymentNote || '',
     });
   }, [settingsForm]);
 
   useEffect(() => {
     setMsg('');
-    if (['home', 'about', 'services', 'faq', 'contact'].includes(tab)) loadPage(tab);
+    if (tab === 'home') loadPage('home');
+    if (['about', 'services', 'faq', 'contact'].includes(tab)) loadPage(tab);
     if (tab === 'notices') loadNotices();
     if (tab === 'settings') loadSettings();
   }, [tab, loadPage, loadNotices, loadSettings]);
@@ -130,6 +139,15 @@ export default function CmsPage() {
           ownerEmail: values.ownerEmail,
         },
         socialLinks: { facebook: values.facebook, instagram: values.instagram },
+        paymentDetails: {
+          bankName: values.bankName,
+          bankAccountName: values.bankAccountName,
+          bankAccountNumber: values.bankAccountNumber,
+          bankBranch: values.bankBranch,
+          bkashNumber: values.bkashNumber,
+          nagadNumber: values.nagadNumber,
+          paymentNote: values.paymentNote,
+        },
       });
       if (values.logoPath) {
         await cmsApi.updateLogo({
@@ -186,7 +204,16 @@ export default function CmsPage() {
 
       {msg && <p className="text-sm text-brand-700">{msg}</p>}
 
-      {['home', 'about', 'services', 'faq', 'contact'].includes(tab) && (
+      {tab === 'home' && (
+        <HomeCmsEditor
+          page={page}
+          canManage={can('cms:manage')}
+          onSaved={() => loadPage('home')}
+          onMessage={setMsg}
+        />
+      )}
+
+      {['about', 'services', 'faq', 'contact'].includes(tab) && (
         <form onSubmit={pageForm.handleSubmit(savePage)} className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
           {loading ? <p className="text-sm text-slate-500">Loading…</p> : (
             <>
@@ -224,10 +251,23 @@ export default function CmsPage() {
             <div><label className="mb-1 block text-sm font-medium">WhatsApp</label><input className="input-field" {...settingsForm.register('whatsapp')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Director</label><input className="input-field" {...settingsForm.register('directorName')} disabled={!can('cms:manage')} /></div>
             <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Address</label><textarea className="input-field" rows={2} {...settingsForm.register('address')} disabled={!can('cms:manage')} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Logo path (upload placeholder)</label><input className="input-field" placeholder="/uploads/logo.png" {...settingsForm.register('logoPath')} disabled={!can('cms:manage')} /></div>
+            <div><label className="mb-1 block text-sm font-medium">Logo path</label><input className="input-field" placeholder="/uploads/logo.png" {...settingsForm.register('logoPath')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Logo filename</label><input className="input-field" {...settingsForm.register('logoFileName')} disabled={!can('cms:manage')} /></div>
           </div>
-          {can('cms:manage') && <button type="submit" className="btn-primary">Save contact & logo</button>}
+          <div className="border-t border-slate-200 pt-4">
+            <h3 className="mb-3 text-sm font-semibold text-slate-900">Payment details (shown on homepage footer)</h3>
+            <p className="mb-3 text-xs text-slate-500">For full ledger accounts, use Settings → Payment Accounts. SMS, email, and templates are under Notification settings in the sidebar.</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div><label className="mb-1 block text-sm font-medium">Bank name</label><input className="input-field" {...settingsForm.register('bankName')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">Account holder</label><input className="input-field" {...settingsForm.register('bankAccountName')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">Account number</label><input className="input-field" {...settingsForm.register('bankAccountNumber')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">Branch</label><input className="input-field" {...settingsForm.register('bankBranch')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">bKash number</label><input className="input-field" {...settingsForm.register('bkashNumber')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">Nagad number</label><input className="input-field" {...settingsForm.register('nagadNumber')} disabled={!can('cms:manage')} /></div>
+              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Payment note</label><textarea className="input-field" rows={2} {...settingsForm.register('paymentNote')} disabled={!can('cms:manage')} /></div>
+            </div>
+          </div>
+          {can('cms:manage') && <button type="submit" className="btn-primary">Save contact & payments</button>}
         </form>
       )}
 

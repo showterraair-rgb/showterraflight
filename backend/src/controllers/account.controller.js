@@ -1,9 +1,24 @@
 import * as accountService from '../services/account.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
-export const list = asyncHandler(async (_req, res) => {
-  const data = await accountService.listAccounts();
+export const list = asyncHandler(async (req, res) => {
+  const data = await accountService.listAccounts(req.query);
   res.json({ success: true, data });
+});
+
+export const create = asyncHandler(async (req, res) => {
+  const data = await accountService.createAccount(req.body, req.user.id, req);
+  res.status(201).json({ success: true, data, message: 'Payment account created' });
+});
+
+export const update = asyncHandler(async (req, res) => {
+  const data = await accountService.updateAccount(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Payment account updated' });
+});
+
+export const updateStatus = asyncHandler(async (req, res) => {
+  const data = await accountService.updateAccountStatus(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Account status updated' });
 });
 
 export const summary = asyncHandler(async (_req, res) => {
@@ -36,4 +51,4 @@ export const createTransfer = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data, message: 'Transfer completed' });
 });
 
-export default { list, summary, getById, statement, setOpeningBalance, listTransfers, createTransfer };
+export default { list, summary, getById, statement, setOpeningBalance, listTransfers, createTransfer, create, update, updateStatus };

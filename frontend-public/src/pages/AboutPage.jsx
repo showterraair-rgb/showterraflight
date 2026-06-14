@@ -3,10 +3,12 @@ import PublicLayout from '../layouts/PublicLayout';
 import PageHero from '../components/PageHero';
 import { publicApi } from '../services/api';
 import { useCompany } from '../context/CompanyContext';
+import { getDisplayName } from '../utils/companyHelpers';
 
 export default function AboutPage() {
   const { company } = useCompany();
   const [page, setPage] = useState(null);
+  const displayName = getDisplayName(company);
 
   useEffect(() => {
     publicApi.getCmsPage('about').then(({ data }) => setPage(data.data)).catch(() => {});
@@ -15,14 +17,14 @@ export default function AboutPage() {
   const content = page?.content || {};
 
   return (
-    <PublicLayout title="About Us" description={`About ${company.name} - Air ticket sales in Sylhet`}>
-      <PageHero title={content.heading || 'About Us'} subtitle={company.name} />
+    <PublicLayout title="About Us" description={`About ${displayName} - Air ticket sales in Sylhet`}>
+      <PageHero title={content.heading || 'About Us'} subtitle={displayName} />
 
       <section className="container-page py-16">
         <div className="mx-auto max-w-3xl">
           <p className="text-lg leading-relaxed text-slate-700">
             {content.body ||
-              `${company.name} is a Sylhet-based air ticket sales company located at ${company.address}. Led by Director ${company.directorName}, we help travelers book domestic and international flights with honest pricing and dedicated follow-up.`}
+              `${displayName} is a Sylhet-based air ticket sales company located at ${company?.address ?? ''}. Led by Director ${company?.directorName ?? ''}, we help travelers book domestic and international flights with honest pricing and dedicated follow-up.`}
           </p>
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2">

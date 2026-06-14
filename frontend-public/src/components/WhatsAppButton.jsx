@@ -1,13 +1,14 @@
 import { useCompany } from '../context/CompanyContext';
+import { getWhatsAppDigits } from '../utils/companyHelpers';
 
 export default function WhatsAppButton() {
   const { company } = useCompany();
-  const wa = company.whatsapp?.replace(/\D/g, '');
+  const wa = getWhatsAppDigits(company);
   if (!wa) return null;
 
   return (
     <a
-      href={`https://wa.me/88${wa}?text=Hello%20Show%20Terra%20Air,%20I%20need%20help%20with%20air%20ticket%20booking.`}
+      href={`https://wa.me/88${wa}?text=Hello%20Show%20Terra%20Flight,%20I%20need%20help%20with%20travel%20booking.`}
       target="_blank"
       rel="noreferrer"
       className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition hover:bg-green-600 hover:shadow-xl"

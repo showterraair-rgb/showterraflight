@@ -17,12 +17,16 @@ const PAGE_TITLES = {
   '/expenses': 'Expenses',
   '/payments/customers': 'Customer Payments',
   '/payments/suppliers': 'Supplier Payments',
-  '/expenses': 'Expenses',
   '/reminders': 'Reminders',
   '/reports': 'Reports',
   '/cms': 'CMS',
   '/backup': 'Backup',
   '/security': 'Security',
+  '/settings/payment-accounts': 'Payment Accounts',
+  '/settings/sms': 'SMS Settings',
+  '/settings/email': 'Email Settings',
+  '/settings/notification-templates': 'Notification Templates',
+  '/notifications/logs': 'Notification Logs',
   '/users': 'Users',
 };
 

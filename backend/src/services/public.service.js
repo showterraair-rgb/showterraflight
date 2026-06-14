@@ -3,6 +3,9 @@ import CmsPage from '../models/CmsPage.js';
 import CmsNotice from '../models/CmsNotice.js';
 import Order from '../models/Order.js';
 import { generateOrderNumber } from './numberGenerator.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildOrderNotificationContext } from '../utils/notificationContext.js';
+import { mergeHomeCmsContent } from '../utils/mergeHomeCmsContent.js';
 import ApiError from '../utils/ApiError.js';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
 
@@ -28,6 +31,7 @@ export async function getCompanySettings() {
     },
     logo,
     socialLinks: settings?.socialLinks || {},
+    paymentDetails: settings?.paymentDetails || {},
   };
 }
 
@@ -42,7 +46,7 @@ export async function getCmsPage(pageKey) {
     pageKey: page.pageKey,
     title: page.title,
     slug: page.slug,
-    content: page.content,
+    content: pageKey === 'home' ? mergeHomeCmsContent(page.content || {}) : page.content,
     sections: page.sections,
     seo: page.seo,
     updatedAt: page.updatedAt,
@@ -97,6 +101,14 @@ export async function createBookingRequest(data) {
     isFromWebsite: true,
     websiteBookingId: orderNumber,
   });
+
+  triggerNotificationEventSafe(
+    'admin_new_booking_alert',
+    buildOrderNotificationContext(order, {
+      customerPhone: data.customerPhone,
+      customerEmail: data.customerEmail,
+    })
+  );
 
   return {
     orderNumber: order.orderNumber,

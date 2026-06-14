@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Travel office">
+  <rect width="800" height="600" fill="#0f172a"/>
+  <rect x="120" y="180" width="560" height="320" rx="8" fill="#1e293b"/>
+  <rect x="160" y="220" width="120" height="160" fill="#334155"/>
+  <rect x="320" y="220" width="120" height="160" fill="#475569"/>
+  <rect x="480" y="220" width="120" height="160" fill="#334155"/>
+  <rect x="280" y="420" width="240" height="40" fill="#38bdf8" opacity="0.4"/>
+</svg>

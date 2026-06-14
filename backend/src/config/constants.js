@@ -45,6 +45,91 @@ export const ACCOUNT_TYPE_LABELS = {
   nagad: 'Nagad',
 };
 
+export const MOBILE_BANKING_TYPES = ['bkash', 'nagad'];
+
+export const NOTIFICATION_EVENT_TYPES = [
+  'website_order_created',
+  'manual_order_created',
+  'admin_new_booking_alert',
+  'booking_approved',
+  'ticket_issued',
+  'payment_received',
+  'payment_due_reminder',
+  'booking_canceled',
+];
+
+export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'failed'];
+
+export const DEFAULT_NOTIFICATION_TEMPLATES = [
+  {
+    templateKey: 'website_order_created',
+    name: 'Website order received',
+    smsBody: 'Thank you {{customerName}}. We received your travel request {{orderNumber}}. Show Terra Flight will contact you shortly.',
+    emailSubject: 'We received your travel request — {{orderNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nThank you for submitting your travel request ({{orderNumber}}). Our team will review it and contact you on {{customerPhone}}.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'manual_order_created',
+    name: 'Manual booking created',
+    smsBody: 'Hello {{customerName}}, your booking {{bookingNumber}} has been created. Sale amount: ৳{{salePrice}}. — Show Terra Flight',
+    emailSubject: 'Your booking {{bookingNumber}} has been created',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is recorded.\nRoute: {{route}}\nDeparture: {{departureDate}}\nAmount: ৳{{salePrice}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'admin_new_booking_alert',
+    name: 'Admin alert — new website order',
+    smsBody: 'New website order {{orderNumber}} from {{customerName}} ({{customerPhone}}). Route: {{route}}',
+    emailSubject: 'New website order — {{orderNumber}}',
+    emailBody: 'A new website booking request was submitted.\n\nOrder: {{orderNumber}}\nCustomer: {{customerName}}\nPhone: {{customerPhone}}\nRoute: {{route}}\n\nPlease review in admin panel.',
+  },
+  {
+    templateKey: 'booking_approved',
+    name: 'Booking approved',
+    smsBody: 'Good news {{customerName}}! Booking {{bookingNumber}} is approved. We will issue your ticket soon. — Show Terra Flight',
+    emailSubject: 'Booking {{bookingNumber}} approved',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been approved.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'ticket_issued',
+    name: 'Ticket issued',
+    smsBody: 'Ticket issued for booking {{bookingNumber}}. PNR: {{pnr}}. Contact us for delivery. — Show Terra Flight',
+    emailSubject: 'Ticket issued — {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nYour ticket for booking {{bookingNumber}} has been issued.\nPNR: {{pnr}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'payment_received',
+    name: 'Payment received',
+    smsBody: 'Payment of ৳{{amount}} received for booking {{bookingNumber}}. Thank you {{customerName}}. — Show Terra Flight',
+    emailSubject: 'Payment received — ৳{{amount}}',
+    emailBody: 'Hello {{customerName}},\n\nWe received your payment of ৳{{amount}} for booking {{bookingNumber}}.\nReference: {{paymentNumber}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'payment_due_reminder',
+    name: 'Payment due reminder',
+    smsBody: 'Reminder: ৳{{dueAmount}} is due for booking {{bookingNumber}}. Please pay to confirm. — Show Terra Flight',
+    emailSubject: 'Payment reminder — booking {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nThis is a reminder that ৳{{dueAmount}} is outstanding for booking {{bookingNumber}}.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'booking_canceled',
+    name: 'Booking canceled',
+    smsBody: 'Booking {{bookingNumber}} has been canceled. Contact Show Terra Flight if you have questions.',
+    emailSubject: 'Booking {{bookingNumber}} canceled',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been canceled.\n\n— Show Terra Flight',
+  },
+];
+
+export const DEFAULT_AUTOMATION_RULES = [
+  { eventType: 'website_order_created', notifyCustomer: false, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: false },
+  { eventType: 'admin_new_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'booking_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'ticket_issued', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+];
+
 export const TRANSACTION_TYPES = [
   'customer_payment',
   'supplier_payment',
@@ -115,6 +200,10 @@ export default {
   JOURNEY_TYPES,
   TRAVEL_CLASSES,
   ACCOUNT_TYPES,
+  ACCOUNT_TYPE_LABELS,
+  MOBILE_BANKING_TYPES,
+  NOTIFICATION_EVENT_TYPES,
+  NOTIFICATION_LOG_STATUSES,
   TRANSACTION_TYPES,
   REMINDER_TYPES,
   CMS_PAGE_KEYS,
