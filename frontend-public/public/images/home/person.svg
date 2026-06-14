@@ -1,11 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="Team member">
   <defs>
-    <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#334155"/>
-      <stop offset="100%" stop-color="#1e293b"/>
+    <linearGradient id="pb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
     </linearGradient>
   </defs>
-  <rect width="400" height="400" fill="url(#p)"/>
-  <circle cx="200" cy="150" r="70" fill="#64748b"/>
-  <ellipse cx="200" cy="320" rx="110" ry="90" fill="#64748b"/>
+  <rect width="400" height="400" fill="#f1f5f9"/>
+  <circle cx="200" cy="200" r="200" fill="url(#pb)"/>
+  <!-- head -->
+  <circle cx="200" cy="155" r="72" fill="#fcd9b6"/>
+  <!-- hair -->
+  <path d="M128 155 Q128 90 200 85 Q272 90 272 155 Q272 120 200 115 Q128 120 128 155" fill="#1e293b"/>
+  <!-- shoulders -->
+  <ellipse cx="200" cy="320" rx="110" ry="90" fill="#0369a1"/>
+  <ellipse cx="200" cy="300" rx="95" ry="70" fill="#0284c7"/>
+  <!-- collar -->
+  <path d="M160 250 L200 290 L240 250 L240 320 L160 320 Z" fill="#f8fafc"/>
 </svg>

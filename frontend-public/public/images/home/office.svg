@@ -1,8 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Travel office">
-  <rect width="800" height="600" fill="#0f172a"/>
-  <rect x="120" y="180" width="560" height="320" rx="8" fill="#1e293b"/>
-  <rect x="160" y="220" width="120" height="160" fill="#334155"/>
-  <rect x="320" y="220" width="120" height="160" fill="#475569"/>
-  <rect x="480" y="220" width="120" height="160" fill="#334155"/>
-  <rect x="280" y="420" width="240" height="40" fill="#38bdf8" opacity="0.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Kanaighat office">
+  <defs>
+    <linearGradient id="ob" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="#e2e8f0"/>
+  <!-- building -->
+  <rect x="120" y="120" width="560" height="420" fill="url(#ob)" rx="4"/>
+  <rect x="160" y="160" width="480" height="340" fill="#475569"/>
+  <!-- windows grid -->
+  <g fill="#fef08a" opacity="0.7">
+    <rect x="190" y="190" width="50" height="60" rx="2"/><rect x="260" y="190" width="50" height="60" rx="2"/>
+    <rect x="330" y="190" width="50" height="60" rx="2"/><rect x="400" y="190" width="50" height="60" rx="2"/>
+    <rect x="470" y="190" width="50" height="60" rx="2"/><rect x="540" y="190" width="50" height="60" rx="2"/>
+    <rect x="190" y="270" width="50" height="60" rx="2"/><rect x="260" y="270" width="50" height="60" rx="2"/>
+    <rect x="330" y="270" width="50" height="60" rx="2"/><rect x="400" y="270" width="50" height="60" rx="2"/>
+    <rect x="470" y="270" width="50" height="60" rx="2"/><rect x="540" y="270" width="50" height="60" rx="2"/>
+  </g>
+  <!-- door / sign -->
+  <rect x="340" y="380" width="120" height="160" fill="#1e293b" rx="4"/>
+  <rect x="300" y="100" width="200" height="50" rx="6" fill="#0369a1"/>
+  <text x="400" y="133" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="18" font-weight="700">SHOW TERRA FLIGHT</text>
+  <text x="400" y="560" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="16">Kanaighat, Sylhet</text>
 </svg>

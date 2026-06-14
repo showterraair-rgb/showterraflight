@@ -37,9 +37,15 @@ else
 fi
 pm2 save
 
-# Nginx test (requires sudo)
+# Nginx reload — only test; never auto-install site configs (multi-project VPS).
+# To update Show Terra nginx: see deploy/VPS-DEPLOY.md
 if command -v nginx &>/dev/null; then
-  sudo nginx -t && sudo systemctl reload nginx || echo "WARN: nginx reload skipped (check config/ssl)"
+  if sudo nginx -t 2>/dev/null; then
+    sudo systemctl reload nginx
+  else
+    echo "WARN: nginx -t failed — fix config before reload (see deploy/VPS-DEPLOY.md)"
+    echo "      If show-terra-air.conf was enabled by mistake: sudo rm -f /etc/nginx/sites-enabled/show-terra-air.conf"
+  fi
 fi
 
 bash deploy/scripts/health-check.sh

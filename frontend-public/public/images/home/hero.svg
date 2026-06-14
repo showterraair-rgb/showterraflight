@@ -1,14 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280" role="img" aria-label="Travel">
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="International travel from Bangladesh">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0c1929"/>
-      <stop offset="50%" stop-color="#14375e"/>
-      <stop offset="100%" stop-color="#0f2847"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="45%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0c1929"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
     </linearGradient>
   </defs>
-  <rect width="1920" height="1280" fill="url(#bg)"/>
-  <circle cx="1600" cy="280" r="180" fill="#38bdf8" opacity="0.08"/>
-  <path d="M420 640 L900 520 L1480 600 L1320 680 L900 640 L680 760 Z" fill="#38bdf8" opacity="0.15"/>
-  <path d="M760 580 L920 540 L980 560 L840 620 Z" fill="#fbbf24" opacity="0.35"/>
-  <text x="960" y="980" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="28" font-weight="600">Show Terra Flight</text>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <circle cx="1550" cy="220" r="120" fill="url(#sun)" opacity="0.9"/>
+  <circle cx="1550" cy="220" r="160" fill="#fde68a" opacity="0.15"/>
+  <!-- clouds -->
+  <ellipse cx="420" cy="260" rx="180" ry="55" fill="#fff" opacity="0.12"/>
+  <ellipse cx="580" cy="240" rx="140" ry="45" fill="#fff" opacity="0.1"/>
+  <ellipse cx="1100" cy="180" rx="200" ry="60" fill="#fff" opacity="0.08"/>
+  <!-- city silhouette -->
+  <path fill="#0f172a" opacity="0.85" d="M0 720 L0 1080 L1920 1080 L1920 680 L1780 720 L1720 620 L1650 700 L1580 580 L1500 680 L1420 560 L1340 660 L1280 520 L1200 640 L1120 500 L1040 620 L980 480 L900 600 L820 460 L740 580 L680 440 L600 560 L520 420 L440 540 L360 400 L280 520 L200 380 L120 500 L0 560 Z"/>
+  <!-- airplane -->
+  <g transform="translate(780 420) rotate(-8)">
+    <ellipse cx="200" cy="40" rx="220" ry="28" fill="url(#wing)" opacity="0.95"/>
+    <path d="M40 40 L360 40 L320 52 L80 52 Z" fill="#f8fafc"/>
+    <path d="M180 10 L240 40 L180 70 Z" fill="#cbd5e1"/>
+    <path d="M60 40 L20 28 L40 48 Z" fill="#94a3b8"/>
+    <rect x="120" y="28" width="80" height="24" rx="4" fill="#38bdf8" opacity="0.5"/>
+  </g>
+  <!-- runway lights -->
+  <g fill="#fbbf24" opacity="0.6">
+    <circle cx="960" cy="900" r="4"/><circle cx="920" cy="920" r="3"/><circle cx="1000" cy="920" r="3"/>
+    <circle cx="880" cy="940" r="3"/><circle cx="1040" cy="940" r="3"/>
+  </g>
+  <text x="960" y="1020" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="22" font-weight="600" letter-spacing="0.08em">SHOW TERRA FLIGHT · SYLHET</text>
 </svg>

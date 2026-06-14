@@ -35,6 +35,7 @@ npm ci --omit=dev
 cd "$ROOT"
 
 echo "==> Build complete"
+bash deploy/scripts/verify-static-assets.sh
 echo "    frontend-admin/dist"
 echo "    frontend-public/dist"
 echo "    backend/node_modules (production)"

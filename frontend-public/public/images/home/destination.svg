@@ -1,11 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="640" viewBox="0 0 800 640" role="img" aria-label="Destination">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="640" viewBox="0 0 800 640" role="img" aria-label="Holiday destination">
   <defs>
-    <linearGradient id="d" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0369a1"/>
+    <linearGradient id="ds" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="55%" stop-color="#0284c7"/>
       <stop offset="100%" stop-color="#0c4a6e"/>
     </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
   </defs>
-  <rect width="800" height="640" fill="url(#d)"/>
-  <path d="M0 480 Q200 400 400 440 T800 420 L800 640 L0 640 Z" fill="#0284c7" opacity="0.5"/>
-  <circle cx="640" cy="180" r="60" fill="#fde68a" opacity="0.85"/>
+  <rect width="800" height="640" fill="url(#ds)"/>
+  <circle cx="620" cy="120" r="70" fill="#fde68a" opacity="0.95"/>
+  <!-- sea -->
+  <path d="M0 380 Q200 340 400 360 T800 340 L800 640 L0 640 Z" fill="#0369a1" opacity="0.7"/>
+  <path d="M0 420 Q250 390 500 410 T800 390 L800 640 L0 640 Z" fill="#0ea5e9" opacity="0.4"/>
+  <!-- beach -->
+  <path d="M0 480 Q400 440 800 500 L800 640 L0 640 Z" fill="url(#sand)" opacity="0.85"/>
+  <!-- Burj-like tower -->
+  <g transform="translate(520 180)" fill="#0f172a" opacity="0.75">
+    <path d="M40 320 L60 0 L80 320 Z"/>
+    <path d="M52 280 L60 40 L68 280 Z" fill="#334155"/>
+    <rect x="35" y="320" width="50" height="20" rx="2"/>
+  </g>
+  <!-- hotel blocks -->
+  <g fill="#1e293b" opacity="0.8">
+    <rect x="80" y="320" width="90" height="120" rx="2"/>
+    <rect x="100" y="300" width="50" height="20"/>
+    <rect x="200" y="280" width="110" height="160" rx="2"/>
+    <rect x="230" y="260" width="50" height="20"/>
+    <rect x="320" y="340" width="80" height="100" rx="2"/>
+  </g>
+  <!-- windows -->
+  <g fill="#fef08a" opacity="0.5">
+    <rect x="95" y="340" width="12" height="12"/><rect x="115" y="340" width="12" height="12"/>
+    <rect x="95" y="360" width="12" height="12"/><rect x="115" y="360" width="12" height="12"/>
+    <rect x="220" y="300" width="14" height="14"/><rect x="245" y="300" width="14" height="14"/>
+    <rect x="220" y="325" width="14" height="14"/><rect x="245" y="325" width="14" height="14"/>
+  </g>
+  <text x="400" y="600" text-anchor="middle" fill="#e0f2fe" font-family="system-ui,sans-serif" font-size="18" font-weight="600">Dubai · KL · Bangkok · Jeddah</text>
 </svg>

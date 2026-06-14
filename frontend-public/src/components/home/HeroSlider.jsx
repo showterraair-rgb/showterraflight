@@ -158,7 +158,7 @@ export default function HeroSlider() {
             />
           </div>
           <div
-            className="absolute inset-0 bg-gradient-to-br from-brand-950 via-brand-900/80 to-brand-800/70"
+            className="absolute inset-0 bg-gradient-to-br from-brand-950/85 via-brand-900/55 to-brand-800/45"
             style={{ opacity: overlay }}
           />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_20%,_rgba(56,189,248,0.12),_transparent_45%)]" />
