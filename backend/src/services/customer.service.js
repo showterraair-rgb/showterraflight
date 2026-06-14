@@ -1,6 +1,7 @@
 import Customer from '../models/Customer.js';
 import Order from '../models/Order.js';
 import Booking from '../models/Booking.js';
+import CustomerPayment from '../models/CustomerPayment.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
@@ -118,6 +119,44 @@ export async function updateCustomer(id, data, userId, req) {
   return formatCustomer(customer.toObject());
 }
 
+export async function deleteCustomer(id, userId, req) {
+  const customer = await Customer.findById(id);
+  if (!customer) throw ApiError.notFound('Customer not found');
+
+  const [orderCount, bookingCount, paymentCount] = await Promise.all([
+    Order.countDocuments({ customer: id }),
+    Booking.countDocuments({ customer: id }),
+    CustomerPayment.countDocuments({ customer: id }),
+  ]);
+
+  if (orderCount || bookingCount || paymentCount) {
+    customer.isActive = false;
+    await customer.save();
+    await logAudit({
+      action: 'delete',
+      module: 'customers',
+      entityType: 'Customer',
+      entityId: customer._id,
+      description: `Archived customer ${customer.name} (linked records exist)`,
+      userId,
+      req,
+    });
+    return { id, archived: true, message: 'Customer archived because linked orders, bookings, or payments exist' };
+  }
+
+  await Customer.findByIdAndDelete(id);
+  await logAudit({
+    action: 'delete',
+    module: 'customers',
+    entityType: 'Customer',
+    entityId: id,
+    description: `Deleted customer ${customer.name}`,
+    userId,
+    req,
+  });
+  return { id, deleted: true, message: 'Customer deleted' };
+}
+
 /** Find by phone or create from order snapshot fields */
 export async function findOrCreateFromOrder({ name, phone, email }, userId) {
   let customer = await Customer.findOne({ phone });
@@ -132,4 +171,4 @@ export async function findOrCreateFromOrder({ name, phone, email }, userId) {
   return customer;
 }
 
-export default { listCustomers, getCustomerById, createCustomer, updateCustomer, findOrCreateFromOrder };
+export default { listCustomers, getCustomerById, createCustomer, updateCustomer, deleteCustomer, findOrCreateFromOrder };

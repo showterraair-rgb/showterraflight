@@ -9,7 +9,8 @@
     "start:prod": "NODE_ENV=production node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seeds/index.js",
-    "seed:home": "node src/seeds/seedHomeContent.js"
+    "seed:home": "node src/seeds/seedHomeContent.js",
+    "recalculate-financials": "node src/scripts/recalculateFinancials.js"
   },
   "keywords": ["travel-agency", "air-tickets", "mern"],
   "author": "Show Terra Air",

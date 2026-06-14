@@ -21,4 +21,9 @@ export const update = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Supplier updated' });
 });
 
-export default { list, getById, create, update };
+export const remove = asyncHandler(async (req, res) => {
+  const data = await supplierService.deleteSupplier(req.params.id, req.user.id, req);
+  res.json({ success: true, data, message: data.message });
+});
+
+export default { list, getById, create, update, remove };

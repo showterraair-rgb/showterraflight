@@ -1,5 +1,6 @@
 import Supplier from '../models/Supplier.js';
 import Booking from '../models/Booking.js';
+import SupplierPayment from '../models/SupplierPayment.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
@@ -103,4 +104,41 @@ export async function updateSupplier(id, data, userId, req) {
   return formatSupplier(supplier.toObject());
 }
 
-export default { listSuppliers, getSupplierById, createSupplier, updateSupplier };
+export async function deleteSupplier(id, userId, req) {
+  const supplier = await Supplier.findById(id);
+  if (!supplier) throw ApiError.notFound('Supplier not found');
+
+  const [bookingCount, paymentCount] = await Promise.all([
+    Booking.countDocuments({ supplier: id }),
+    SupplierPayment.countDocuments({ supplier: id }),
+  ]);
+
+  if (bookingCount || paymentCount) {
+    supplier.isActive = false;
+    await supplier.save();
+    await logAudit({
+      action: 'delete',
+      module: 'suppliers',
+      entityType: 'Supplier',
+      entityId: supplier._id,
+      description: `Archived supplier ${supplier.name} (linked records exist)`,
+      userId,
+      req,
+    });
+    return { id, archived: true, message: 'Supplier archived because linked bookings or payments exist' };
+  }
+
+  await Supplier.findByIdAndDelete(id);
+  await logAudit({
+    action: 'delete',
+    module: 'suppliers',
+    entityType: 'Supplier',
+    entityId: id,
+    description: `Deleted supplier ${supplier.name}`,
+    userId,
+    req,
+  });
+  return { id, deleted: true, message: 'Supplier deleted' };
+}
+
+export default { listSuppliers, getSupplierById, createSupplier, updateSupplier, deleteSupplier };

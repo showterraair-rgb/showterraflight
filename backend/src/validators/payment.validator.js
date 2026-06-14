@@ -20,6 +20,10 @@ export const createCustomerPaymentSchema = z.object({
   paymentMethod: z.string().max(50).optional(),
   referenceNumber: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
+  onAccount: z.boolean().optional().default(false),
+}).refine((d) => d.onAccount || d.bookingId, {
+  message: 'Select a booking or mark as on-account advance',
+  path: ['bookingId'],
 });
 
 export const createSupplierPaymentSchema = z.object({
@@ -31,6 +35,14 @@ export const createSupplierPaymentSchema = z.object({
   paymentMethod: z.string().max(50).optional(),
   referenceNumber: z.string().max(100).optional(),
   notes: z.string().max(1000).optional(),
+  onAccount: z.boolean().optional().default(false),
+}).refine((d) => d.onAccount || d.bookingId, {
+  message: 'Select a booking or mark as on-account advance',
+  path: ['bookingId'],
+});
+
+export const voidReasonSchema = z.object({
+  reason: z.string().max(500).optional(),
 });
 
 export const idParamSchema = z.object({
@@ -41,5 +53,6 @@ export default {
   listQuerySchema,
   createCustomerPaymentSchema,
   createSupplierPaymentSchema,
+  voidReasonSchema,
   idParamSchema,
 };

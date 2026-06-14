@@ -63,6 +63,18 @@ export default function TransfersPage() {
     }
   };
 
+  const handleVoid = async (row) => {
+    const reason = window.prompt(`Void transfer ${row.transferNumber}? Enter reason (optional):`);
+    if (reason === null) return;
+    try {
+      const { data } = await accountsApi.voidTransfer(row.id, { reason: reason || undefined });
+      alert(data.message || 'Transfer voided');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Void failed');
+    }
+  };
+
   const columns = [
     { key: 'number', label: 'Transfer #', render: (r) => <span className="font-mono text-xs">{r.transferNumber}</span> },
     { key: 'from', label: 'From', render: (r) => r.fromAccount?.name || ACCOUNT_TYPE_LABELS[r.fromAccount?.type] },
@@ -70,6 +82,13 @@ export default function TransfersPage() {
     { key: 'amount', label: 'Amount', render: (r) => formatCurrency(r.amount) },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.transferDate) },
     { key: 'ref', label: 'Reference', render: (r) => r.referenceNumber || '—' },
+    {
+      key: 'actions',
+      label: '',
+      render: (r) => can('transfers:create') ? (
+        <button type="button" onClick={() => handleVoid(r)} className="text-xs text-red-600 hover:underline">Void</button>
+      ) : null,
+    },
   ];
 
   return (

@@ -43,7 +43,7 @@ export async function getDashboardSummary(user) {
         },
       },
     ]),
-    Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Expense.aggregate([{ $match: { isVoided: false } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     Account.find({ isActive: true }).select('name type currentBalance').sort({ type: 1 }).lean(),
     Reminder.countDocuments({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } }),
   ]);

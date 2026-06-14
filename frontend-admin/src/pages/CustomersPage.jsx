@@ -95,6 +95,17 @@ export default function CustomersPage() {
     }
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete customer "${row.name}"? Records with linked orders or payments will be archived instead.`)) return;
+    try {
+      const { data } = await customersApi.delete(row.id);
+      alert(data.message || 'Customer removed');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const columns = [
     { key: 'name', label: 'Name', render: (r) => <span className="font-medium text-slate-900">{r.name}</span> },
     { key: 'phone', label: 'Phone' },
@@ -103,12 +114,20 @@ export default function CustomersPage() {
     {
       key: 'actions',
       label: '',
-      render: (r) =>
-        can('customers:update') ? (
-          <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">
-            Edit
-          </button>
-        ) : null,
+      render: (r) => (
+        <div className="flex gap-2">
+          {can('customers:update') && (
+            <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">
+              Edit
+            </button>
+          )}
+          {can('customers:delete') && (
+            <button type="button" onClick={() => handleDelete(r)} className="text-sm text-red-600 hover:underline">
+              Delete
+            </button>
+          )}
+        </div>
+      ),
     },
   ];
 

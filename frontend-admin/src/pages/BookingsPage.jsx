@@ -45,7 +45,12 @@ export default function BookingsPage() {
       key: 'actions',
       label: '',
       render: (r) => (
-        <Link to={`/bookings/${r.id}`} className="text-sm text-brand-600 hover:underline">View</Link>
+        <div className="flex gap-2">
+          <Link to={`/bookings/${r.id}`} className="text-sm text-brand-600 hover:underline">View</Link>
+          {can('bookings:update') && (
+            <Link to={`/bookings/${r.id}/edit`} className="text-sm text-slate-600 hover:underline">Edit</Link>
+          )}
+        </div>
       ),
     },
   ];

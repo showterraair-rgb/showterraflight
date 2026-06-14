@@ -126,6 +126,17 @@ export default function OrdersPage() {
     }
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete order ${row.orderNumber}? This cannot be undone.`)) return;
+    try {
+      const { data } = await ordersApi.delete(row.id);
+      alert(data.message || 'Order deleted');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const columns = [
     { key: 'orderNumber', label: 'Order #', render: (r) => <span className="font-mono text-xs font-medium">{r.orderNumber}</span> },
     { key: 'customerName', label: 'Customer' },
@@ -149,6 +160,12 @@ export default function OrdersPage() {
           )}
           {can('orders:update') && r.status === 'inquiry' && (
             <button type="button" onClick={() => handleStatusChange(r, 'quoted')} className="text-xs text-slate-500 hover:underline">Mark Quoted</button>
+          )}
+          {can('orders:update') && !['closed', 'cancelled'].includes(r.status) && (
+            <button type="button" onClick={() => handleStatusChange(r, 'cancelled')} className="text-xs text-amber-600 hover:underline">Cancel</button>
+          )}
+          {can('orders:delete') && (
+            <button type="button" onClick={() => handleDelete(r)} className="text-xs text-red-600 hover:underline">Delete</button>
           )}
         </div>
       ),

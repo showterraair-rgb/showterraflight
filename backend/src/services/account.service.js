@@ -267,6 +267,50 @@ export async function createTransfer(data, userId, req) {
   });
 }
 
+export async function voidTransfer(id, { reason } = {}, userId, req) {
+  return withTransaction(async (session) => {
+    const transfer = await Transfer.findOne({ _id: id, isVoided: false }).session(session);
+    if (!transfer) throw ApiError.notFound('Transfer not found');
+
+    transfer.isVoided = true;
+    await transfer.save({ session });
+
+    await postCredit({
+      type: 'refund',
+      accountId: transfer.fromAccount,
+      relatedAccountId: transfer.toAccount,
+      amount: transfer.amount,
+      transactionDate: new Date(),
+      notes: reason || `Void transfer ${transfer.transferNumber} (return to source)`,
+      transferId: transfer._id,
+      userId,
+    }, session);
+
+    await postDebit({
+      type: 'refund',
+      accountId: transfer.toAccount,
+      relatedAccountId: transfer.fromAccount,
+      amount: transfer.amount,
+      transactionDate: new Date(),
+      notes: reason || `Void transfer ${transfer.transferNumber} (reverse credit)`,
+      transferId: transfer._id,
+      userId,
+    }, session);
+
+    await logAudit({
+      action: 'delete',
+      module: 'transfers',
+      entityType: 'Transfer',
+      entityId: transfer._id,
+      description: `Voided transfer ${transfer.transferNumber}`,
+      userId,
+      req,
+    });
+
+    return { id, voided: true, message: 'Transfer voided' };
+  });
+}
+
 export async function createAccount(data, userId, req) {
   return withTransaction(async (session) => {
     const openingBalance = Number(data.openingBalance) || 0;
@@ -380,6 +424,7 @@ export default {
   setOpeningBalance,
   listTransfers,
   createTransfer,
+  voidTransfer,
   createAccount,
   updateAccount,
   updateAccountStatus,

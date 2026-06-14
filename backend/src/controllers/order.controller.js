@@ -36,4 +36,9 @@ export const linkCustomer = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Customer linked to order' });
 });
 
-export default { list, getById, create, update, updateStatus, addFollowUp, linkCustomer };
+export const remove = asyncHandler(async (req, res) => {
+  const data = await orderService.deleteOrder(req.params.id, req.user.id, req);
+  res.json({ success: true, data, message: data.message });
+});
+
+export default { list, getById, create, update, updateStatus, addFollowUp, linkCustomer, remove };

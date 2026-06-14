@@ -21,4 +21,9 @@ export const create = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data, message: 'Expense recorded' });
 });
 
-export default { listCategories, list, getById, create };
+export const voidExpense = asyncHandler(async (req, res) => {
+  const data = await expenseService.voidExpense(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: data.message });
+});
+
+export default { listCategories, list, getById, create, voidExpense };

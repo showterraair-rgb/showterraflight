@@ -69,15 +69,30 @@ export default function SupplierPaymentsPage() {
       await paymentsApi.createSupplier({
         ...values,
         amount: Number(values.amount),
-        bookingId: values.bookingId || undefined,
+        bookingId: values.onAccount ? undefined : (values.bookingId || undefined),
+        onAccount: Boolean(values.onAccount),
       });
       setModalOpen(false);
-      form.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Bank Transfer', amount: 0 });
+      form.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Bank Transfer', amount: 0, onAccount: false });
       load();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to record payment');
     }
   };
+
+  const handleVoid = async (row) => {
+    const reason = window.prompt(`Void payment ${row.paymentNumber}? Enter reason (optional):`);
+    if (reason === null) return;
+    try {
+      const { data } = await paymentsApi.voidSupplier(row.id, { reason: reason || undefined });
+      alert(data.message || 'Payment voided');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Void failed');
+    }
+  };
+
+  const onAccount = form.watch('onAccount');
 
   const columns = [
     { key: 'number', label: 'Payment #', render: (r) => <span className="font-mono text-xs">{r.paymentNumber}</span> },
@@ -87,6 +102,13 @@ export default function SupplierPaymentsPage() {
     { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium text-red-600">{formatCurrency(r.amount)}</span> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.paymentDate) },
     { key: 'status', label: 'Status', render: (r) => <span className="capitalize">{r.status}</span> },
+    {
+      key: 'actions',
+      label: '',
+      render: (r) => can('payments:supplier') ? (
+        <button type="button" onClick={() => handleVoid(r)} className="text-xs text-red-600 hover:underline">Void</button>
+      ) : null,
+    },
   ];
 
   return (
@@ -118,13 +140,19 @@ export default function SupplierPaymentsPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Booking (optional)</label>
-              <select className="input-field" {...form.register('bookingId')}>
-                <option value="">No booking link</option>
+              <label className="mb-1 block text-sm font-medium">Booking *</label>
+              <select className="input-field" {...form.register('bookingId')} disabled={onAccount}>
+                <option value="">Select booking</option>
                 {bookings.map((b) => (
                   <option key={b.id} value={b.id}>{b.bookingNumber} — Payable ৳{b.supplierPayable?.toLocaleString()}</option>
                 ))}
               </select>
+            </div>
+            <div className="flex items-end sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" {...form.register('onAccount')} />
+                On-account advance (no booking link)
+              </label>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Paying Account *</label>

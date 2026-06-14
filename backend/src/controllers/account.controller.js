@@ -51,4 +51,9 @@ export const createTransfer = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data, message: 'Transfer completed' });
 });
 
-export default { list, summary, getById, statement, setOpeningBalance, listTransfers, createTransfer, create, update, updateStatus };
+export const voidTransfer = asyncHandler(async (req, res) => {
+  const data = await accountService.voidTransfer(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: data.message });
+});
+
+export default { list, summary, getById, statement, setOpeningBalance, listTransfers, createTransfer, voidTransfer, create, update, updateStatus };

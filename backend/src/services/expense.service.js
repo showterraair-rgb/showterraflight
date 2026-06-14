@@ -6,7 +6,7 @@ import {
   buildPaginationResponse,
   buildSearchFilter,
 } from '../utils/pagination.js';
-import { withTransaction, postDebit } from './ledger.service.js';
+import { withTransaction, postDebit, postCredit } from './ledger.service.js';
 import { generateExpenseNumber } from './numberGenerator.service.js';
 import { logAudit } from './audit.service.js';
 
@@ -145,4 +145,36 @@ export async function createExpense(data, userId, req) {
   });
 }
 
-export default { listExpenseCategories, listExpenses, getExpenseById, createExpense };
+export async function voidExpense(id, { reason } = {}, userId, req) {
+  return withTransaction(async (session) => {
+    const expense = await Expense.findOne({ _id: id, isVoided: false }).session(session);
+    if (!expense) throw ApiError.notFound('Expense not found');
+
+    expense.isVoided = true;
+    await expense.save({ session });
+
+    await postCredit({
+      type: 'refund',
+      accountId: expense.account,
+      amount: expense.amount,
+      transactionDate: new Date(),
+      notes: reason || `Void expense ${expense.expenseNumber}`,
+      expenseId: expense._id,
+      userId,
+    }, session);
+
+    await logAudit({
+      action: 'delete',
+      module: 'expenses',
+      entityType: 'Expense',
+      entityId: expense._id,
+      description: `Voided expense ${expense.expenseNumber}`,
+      userId,
+      req,
+    });
+
+    return { id, voided: true, message: 'Expense voided' };
+  });
+}
+
+export default { listExpenseCategories, listExpenses, getExpenseById, createExpense, voidExpense };

@@ -30,15 +30,13 @@ export const createBookingSchema = z.object({
   purchasePrice: z.coerce.number().min(0).default(0),
   salePrice: z.coerce.number().min(0).default(0),
   directCosts: z.coerce.number().min(0).default(0),
-  amountPaid: z.coerce.number().min(0).default(0),
-  supplierPaid: z.coerce.number().min(0).default(0),
   notes: z.string().max(2000).optional(),
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
 });
 
-export const updateBookingSchema = createBookingSchema.partial().omit({ orderId: true, customerId: true });
+export const updateBookingSchema = createBookingSchema.partial().omit({ orderId: true });
 
 export const updateBookingStatusSchema = z.object({
   status: z.enum(BOOKING_STATUSES),

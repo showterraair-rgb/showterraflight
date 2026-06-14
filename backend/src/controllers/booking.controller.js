@@ -46,6 +46,19 @@ export const getTimeline = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+export const remove = asyncHandler(async (req, res) => {
+  const data = await bookingService.deleteBooking(req.params.id, req.user.id, req);
+  res.json({ success: true, data, message: data.message });
+});
+
+export const downloadInvoicePdf = asyncHandler(async (req, res) => {
+  const { generateBookingInvoicePdf } = await import('../services/pdf.service.js');
+  const { buffer, filename } = await generateBookingInvoicePdf(req.params.id);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+});
+
 export default {
   list,
   getById,
@@ -55,4 +68,6 @@ export default {
   updateStatus,
   addNote,
   getTimeline,
+  remove,
+  downloadInvoicePdf,
 };

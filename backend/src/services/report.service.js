@@ -200,27 +200,33 @@ export async function incomeVsExpenseSummary(query) {
   const from = dateRange.$gte || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const to = dateRange.$lte || new Date();
 
-  const [customerPayments, expenses] = await Promise.all([
+  const [customerPayments, supplierPayments, expenses] = await Promise.all([
     CustomerPayment.find({ paymentDate: { $gte: from, $lte: to }, isVoided: false }).lean(),
+    SupplierPayment.find({ paymentDate: { $gte: from, $lte: to }, isVoided: false }).lean(),
     Expense.find({ expenseDate: { $gte: from, $lte: to }, isVoided: false }).lean(),
   ]);
 
-  const income = customerPayments.reduce((s, p) => s + p.amount, 0);
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0);
-  const net = income - expenseTotal;
+  const cashIn = customerPayments.reduce((s, p) => s + p.amount, 0);
+  const supplierOut = supplierPayments.reduce((s, p) => s + p.amount, 0);
+  const operatingExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const totalOut = supplierOut + operatingExpenses;
+  const netCash = cashIn - totalOut;
 
   const rows = [
-    { label: 'Customer payments (income)', amount: income },
-    { label: 'Operating expenses', amount: expenseTotal },
-    { label: 'Net (income - expense)', amount: net },
+    { label: 'Customer payments (cash in)', amount: cashIn },
+    { label: 'Supplier / ticket payments (cash out)', amount: supplierOut },
+    { label: 'Operating expenses (cash out)', amount: operatingExpenses },
+    { label: 'Net cash flow', amount: netCash },
   ];
 
   return {
     ...exportMeta('income-vs-expense', rows, ['label', 'amount']),
+    title: 'Cash flow summary',
     period: { from, to },
-    income,
-    expenseTotal,
-    net,
+    income: cashIn,
+    supplierPayments: supplierOut,
+    expenseTotal: operatingExpenses,
+    net: netCash,
   };
 }
 
@@ -248,8 +254,12 @@ export async function monthlySummary(query) {
     const start = new Date(year, m, 1);
     const end = new Date(year, m + 1, 0, 23, 59, 59, 999);
 
-    const [payments, expenses, bookings] = await Promise.all([
+    const [payments, supplierPayments, expenses, bookings] = await Promise.all([
       CustomerPayment.aggregate([
+        { $match: { paymentDate: { $gte: start, $lte: end }, isVoided: false } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      SupplierPayment.aggregate([
         { $match: { paymentDate: { $gte: start, $lte: end }, isVoided: false } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
@@ -263,14 +273,23 @@ export async function monthlySummary(query) {
       ]),
     ]);
 
+    const cashIn = payments[0]?.total || 0;
+    const supplierOut = supplierPayments[0]?.total || 0;
+    const expenseOut = expenses[0]?.total || 0;
+
     months.push({
       month: m + 1,
       monthLabel: start.toLocaleString('en', { month: 'short' }),
-      income: payments[0]?.total || 0,
-      expenses: expenses[0]?.total || 0,
-      net: (payments[0]?.total || 0) - (expenses[0]?.total || 0),
+      cashIn,
+      supplierPayments: supplierOut,
+      operatingExpenses: expenseOut,
+      netCashFlow: cashIn - supplierOut - expenseOut,
       bookingProfit: bookings[0]?.profit || 0,
       bookingSales: bookings[0]?.sales || 0,
+      // legacy keys for existing UI
+      income: cashIn,
+      expenses: expenseOut,
+      net: cashIn - supplierOut - expenseOut,
     });
   }
 

@@ -1,6 +1,8 @@
 import Booking from '../models/Booking.js';
 import Order from '../models/Order.js';
 import Customer from '../models/Customer.js';
+import CustomerPayment from '../models/CustomerPayment.js';
+import SupplierPayment from '../models/SupplierPayment.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
@@ -12,6 +14,7 @@ import { findOrCreateFromOrder } from './customer.service.js';
 import { logAudit } from './audit.service.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 import { buildBookingNotificationContext } from '../utils/notificationContext.js';
+import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from './financialSync.service.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -164,8 +167,8 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     purchasePrice: data.purchasePrice ?? 0,
     salePrice: data.salePrice ?? 0,
     directCosts: data.directCosts ?? 0,
-    amountPaid: data.amountPaid ?? 0,
-    supplierPaid: data.supplierPaid ?? 0,
+    amountPaid: 0,
+    supplierPaid: 0,
     notes: data.notes || '',
     ticketCopyPath: data.ticketCopyPath,
     ticketCopyFileName: data.ticketCopyFileName,
@@ -195,6 +198,8 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
   });
 
   await fireBookingNotification('manual_order_created', booking);
+
+  await syncBookingFinancials(booking._id);
 
   return getBookingById(booking._id);
 }
@@ -235,8 +240,6 @@ export async function createBookingFromOrder(orderId, data, userId, req) {
     purchasePrice: data.purchasePrice ?? 0,
     salePrice: data.salePrice ?? order.quotedSalePrice ?? 0,
     directCosts: data.directCosts ?? 0,
-    amountPaid: data.amountPaid ?? 0,
-    supplierPaid: data.supplierPaid ?? 0,
     pnr: data.pnr,
     ticketNumber: data.ticketNumber,
     notes: data.notes || order.internalNotes || '',
@@ -252,9 +255,12 @@ export async function updateBooking(id, data, userId, req) {
   const booking = await Booking.findById(id);
   if (!booking) throw ApiError.notFound('Booking not found');
 
+  const prevCustomer = booking.customer?.toString();
+  const prevSupplier = booking.supplier?.toString();
   const hadTicket = Boolean(booking.ticketCopyPath);
 
   if (data.supplierId !== undefined) booking.supplier = data.supplierId || undefined;
+  if (data.customerId) booking.customer = data.customerId;
   if (data.airline) booking.airline = data.airline;
   if (data.route) booking.route = data.route;
   if (data.sector !== undefined) booking.sector = data.sector;
@@ -265,12 +271,17 @@ export async function updateBooking(id, data, userId, req) {
   if (data.purchasePrice !== undefined) booking.purchasePrice = data.purchasePrice;
   if (data.salePrice !== undefined) booking.salePrice = data.salePrice;
   if (data.directCosts !== undefined) booking.directCosts = data.directCosts;
-  if (data.amountPaid !== undefined) booking.amountPaid = data.amountPaid;
-  if (data.supplierPaid !== undefined) booking.supplierPaid = data.supplierPaid;
   if (data.notes !== undefined) booking.notes = data.notes;
   if (data.ticketCopyPath !== undefined) booking.ticketCopyPath = data.ticketCopyPath;
   if (data.ticketCopyFileName !== undefined) booking.ticketCopyFileName = data.ticketCopyFileName;
   if (data.passengerCount) booking.passengerCount = data.passengerCount;
+
+  if (data.status && data.status !== booking.status) {
+    pushTimeline(booking, data.status, 'Updated via edit form', userId);
+    booking.status = data.status;
+    if (data.status === 'delivered') booking.deliveredAt = new Date();
+    if (data.status === 'completed') booking.completedAt = new Date();
+  }
 
   applyPaymentStatuses(booking);
   await booking.save();
@@ -287,6 +298,14 @@ export async function updateBooking(id, data, userId, req) {
 
   if (data.ticketCopyPath && !hadTicket) {
     await fireBookingNotification('ticket_issued', booking);
+  }
+
+  await syncBookingFinancials(id);
+  if (prevCustomer && prevCustomer !== booking.customer?.toString()) {
+    await syncCustomerTotals(prevCustomer);
+  }
+  if (prevSupplier && prevSupplier !== booking.supplier?.toString()) {
+    await syncSupplierTotals(prevSupplier);
   }
 
   return getBookingById(id);
@@ -382,6 +401,40 @@ export async function getBookingTimeline(id) {
   };
 }
 
+export async function deleteBooking(id, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+
+  const [customerPayCount, supplierPayCount] = await Promise.all([
+    CustomerPayment.countDocuments({ booking: id }),
+    SupplierPayment.countDocuments({ booking: id }),
+  ]);
+
+  if (customerPayCount || supplierPayCount) {
+    throw ApiError.badRequest('Cannot delete booking with linked payment records. Remove payments first.');
+  }
+
+  const bookingNumber = booking.bookingNumber;
+  const customerId = booking.customer;
+  const supplierId = booking.supplier;
+  await Booking.findByIdAndDelete(id);
+
+  if (customerId) await syncCustomerTotals(customerId);
+  if (supplierId) await syncSupplierTotals(supplierId);
+
+  await logAudit({
+    action: 'delete',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: id,
+    description: `Deleted booking ${bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return { id, deleted: true, message: 'Booking deleted' };
+}
+
 export default {
   listBookings,
   getBookingById,
@@ -391,4 +444,5 @@ export default {
   updateBookingStatus,
   addBookingNote,
   getBookingTimeline,
+  deleteBooking,
 };

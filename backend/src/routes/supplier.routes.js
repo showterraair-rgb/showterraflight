@@ -15,5 +15,6 @@ router.get('/', authorize('suppliers:view'), validate(listQuerySchema, 'query'),
 router.post('/', authorize('suppliers:create'), validate(createSupplierSchema), supplierController.create);
 router.get('/:id', authorize('suppliers:view'), validate(idParamSchema, 'params'), supplierController.getById);
 router.put('/:id', authorize('suppliers:update'), validate(idParamSchema, 'params'), validate(updateSupplierSchema), supplierController.update);
+router.delete('/:id', authorize('suppliers:delete'), validate(idParamSchema, 'params'), supplierController.remove);
 
 export default router;

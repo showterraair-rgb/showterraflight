@@ -84,6 +84,17 @@ export default function SuppliersPage() {
     }
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete supplier "${row.name}"? Linked bookings or payments will be archived instead.`)) return;
+    try {
+      const { data } = await suppliersApi.delete(row.id);
+      alert(data.message || 'Supplier removed');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const columns = [
     { key: 'name', label: 'Name', render: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'company', label: 'Company', render: (r) => r.company || '—' },
@@ -93,10 +104,16 @@ export default function SuppliersPage() {
     {
       key: 'actions',
       label: '',
-      render: (r) =>
-        can('suppliers:update') ? (
-          <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">Edit</button>
-        ) : null,
+      render: (r) => (
+        <div className="flex gap-2">
+          {can('suppliers:update') && (
+            <button type="button" onClick={() => openEdit(r)} className="text-sm text-brand-600 hover:underline">Edit</button>
+          )}
+          {can('suppliers:delete') && (
+            <button type="button" onClick={() => handleDelete(r)} className="text-sm text-red-600 hover:underline">Delete</button>
+          )}
+        </div>
+      ),
     },
   ];
 

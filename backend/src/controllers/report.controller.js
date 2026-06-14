@@ -38,4 +38,13 @@ export const exportCsv = asyncHandler(async (req, res) => {
   res.send(lines.join('\n'));
 });
 
-export default { listTypes, run, exportCsv };
+export const exportPdf = asyncHandler(async (req, res) => {
+  const { reportKey } = req.params;
+  const { generateReportPdf } = await import('../services/pdf.service.js');
+  const { buffer, filename } = await generateReportPdf(reportKey, req.query);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+});
+
+export default { listTypes, run, exportCsv, exportPdf };

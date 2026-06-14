@@ -14,6 +14,8 @@ export const reportsApi = {
   run: (reportKey, params) => api.get(`/reports/${reportKey}`, { params }),
   exportCsv: (reportKey, params) =>
     api.get(`/reports/${reportKey}/export/csv`, { params, responseType: 'blob' }),
+  exportPdf: (reportKey, params) =>
+    api.get(`/reports/${reportKey}/export/pdf`, { params, responseType: 'blob' }),
 };
 
 export const cmsApi = {

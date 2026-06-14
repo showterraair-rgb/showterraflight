@@ -6,6 +6,7 @@ import DataTable from '../components/common/DataTable';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { formatCurrency } from '../utils/currency';
 import { formatDate } from '../utils/date';
+import { downloadBlob } from '../utils/download';
 import { usePermission } from '../hooks/usePermission';
 
 const REPORTS = [
@@ -14,7 +15,7 @@ const REPORTS = [
   { key: 'supplier-payable', label: 'Supplier payable', filters: ['supplier', 'status'] },
   { key: 'expense-category', label: 'Expense by category', filters: ['from', 'to'] },
   { key: 'account-statement', label: 'Account statement', filters: ['from', 'to', 'account'] },
-  { key: 'income-vs-expense', label: 'Income vs expense', filters: ['from', 'to'] },
+  { key: 'income-vs-expense', label: 'Cash flow', filters: ['from', 'to'] },
   { key: 'account-balance', label: 'Account balance', filters: [] },
   { key: 'monthly-summary', label: 'Monthly summary', filters: ['year'] },
 ];
@@ -86,11 +87,14 @@ export default function ReportsPage() {
     const params = { ...filters };
     Object.keys(params).forEach((k) => { if (!params[k]) delete params[k]; });
     const { data } = await reportsApi.exportCsv(selected, params);
-    const url = window.URL.createObjectURL(new Blob([data]));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selected}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    downloadBlob(data, `${selected}-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  const exportPdf = async () => {
+    const params = { ...filters };
+    Object.keys(params).forEach((k) => { if (!params[k]) delete params[k]; });
+    const { data } = await reportsApi.exportPdf(selected, params);
+    downloadBlob(data, `${selected}-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const columns = buildColumns(result?.rows);
@@ -155,7 +159,10 @@ export default function ReportsPage() {
           )}
           <button type="button" onClick={runReport} className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700">Run</button>
           {can('reports:export') && (
-            <button type="button" onClick={exportCsv} className="rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Export CSV</button>
+            <>
+              <button type="button" onClick={exportCsv} className="rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Export CSV</button>
+              <button type="button" onClick={exportPdf} className="rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Export PDF</button>
+            </>
           )}
         </div>
       </div>

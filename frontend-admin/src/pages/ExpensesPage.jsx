@@ -76,6 +76,18 @@ export default function ExpensesPage() {
     }
   };
 
+  const handleVoid = async (row) => {
+    const reason = window.prompt(`Void expense ${row.expenseNumber}? Enter reason (optional):`);
+    if (reason === null) return;
+    try {
+      const { data } = await expensesApi.void(row.id, { reason: reason || undefined });
+      alert(data.message || 'Expense voided');
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Void failed');
+    }
+  };
+
   const columns = [
     { key: 'number', label: 'Expense #', render: (r) => <span className="font-mono text-xs">{r.expenseNumber}</span> },
     { key: 'title', label: 'Title', render: (r) => r.title },
@@ -84,6 +96,13 @@ export default function ExpensesPage() {
     { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium text-red-600">{formatCurrency(r.amount)}</span> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.expenseDate) },
     { key: 'recurring', label: 'Recurring', render: (r) => r.isRecurring ? 'Yes' : '—' },
+    {
+      key: 'actions',
+      label: '',
+      render: (r) => can('expenses:create') ? (
+        <button type="button" onClick={() => handleVoid(r)} className="text-xs text-red-600 hover:underline">Void</button>
+      ) : null,
+    },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { bookingsApi } from '../services/crm.api';
 import { paymentsApi } from '../services/finance.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -7,10 +7,12 @@ import StatusBadge from '../components/common/StatusBadge';
 import { usePermission } from '../hooks/usePermission';
 import { formatDate, formatDateTime } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
+import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { can } = usePermission();
   const [booking, setBooking] = useState(null);
   const [timeline, setTimeline] = useState(null);
@@ -61,6 +63,26 @@ export default function BookingDetailPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      const { data } = await bookingsApi.downloadInvoicePdf(id);
+      downloadBlob(data, `${booking?.bookingNumber || 'booking'}-invoice.pdf`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'PDF download failed');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete booking ${booking?.bookingNumber}? This cannot be undone if no payments are linked.`)) return;
+    try {
+      const { data } = await bookingsApi.delete(id);
+      alert(data.message || 'Booking deleted');
+      navigate('/bookings');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   if (loading) return <LoadingSpinner className="py-20" />;
   if (!booking) return <p>Booking not found</p>;
 
@@ -76,6 +98,19 @@ export default function BookingDetailPage() {
               <span className="text-sm text-slate-500">Order: {booking.orderNumber}</span>
             )}
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={handleDownloadPdf} className="btn-secondary text-sm">
+            Download PDF
+          </button>
+          {can('bookings:update') && (
+            <Link to={`/bookings/${id}/edit`} className="btn-primary text-sm">Edit Booking</Link>
+          )}
+          {can('bookings:delete') && (
+            <button type="button" onClick={handleDelete} className="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+              Delete
+            </button>
+          )}
         </div>
       </div>
 

@@ -287,6 +287,28 @@ export async function linkOrderCustomer(id, { customerId, createCustomer }, user
   return formatOrder(order.toObject());
 }
 
+export async function deleteOrder(id, userId, req) {
+  const order = await Order.findById(id);
+  if (!order) throw ApiError.notFound('Order not found');
+
+  const linkedBooking = await Booking.findOne({ order: id }).select('_id bookingNumber').lean();
+  if (linkedBooking) {
+    throw ApiError.badRequest(`Cannot delete order — linked booking ${linkedBooking.bookingNumber} exists. Delete the booking first.`);
+  }
+
+  await Order.findByIdAndDelete(id);
+  await logAudit({
+    action: 'delete',
+    module: 'orders',
+    entityType: 'Order',
+    entityId: id,
+    description: `Deleted order ${order.orderNumber}`,
+    userId,
+    req,
+  });
+  return { id, deleted: true, message: 'Order deleted' };
+}
+
 export default {
   listOrders,
   getOrderById,
@@ -295,4 +317,5 @@ export default {
   updateOrderStatus,
   addFollowUp,
   linkOrderCustomer,
+  deleteOrder,
 };

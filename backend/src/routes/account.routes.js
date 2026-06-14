@@ -11,6 +11,7 @@ import {
   updateAccountSchema,
   accountStatusSchema,
 } from '../validators/account.validator.js';
+import { voidReasonSchema } from '../validators/payment.validator.js';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.post('/', authorize('accounts:manage'), validate(createAccountSchema), ac
 router.get('/summary', authorize('accounts:view'), accountController.summary);
 router.get('/transfers', authorize('accounts:view'), validate(listQuerySchema, 'query'), accountController.listTransfers);
 router.post('/transfers', authorize('transfers:create'), validate(createTransferSchema), accountController.createTransfer);
+router.post('/transfers/:id/void', authorize('transfers:create'), validate(idParamSchema, 'params'), validate(voidReasonSchema), accountController.voidTransfer);
 router.get('/:id/statement', authorize('accounts:view'), validate(idParamSchema, 'params'), validate(listQuerySchema, 'query'), accountController.statement);
 router.put('/:id/opening-balance', authorize('accounts:manage'), validate(idParamSchema, 'params'), validate(openingBalanceSchema), accountController.setOpeningBalance);
 router.patch('/:id/status', authorize('accounts:manage'), validate(idParamSchema, 'params'), validate(accountStatusSchema), accountController.updateStatus);

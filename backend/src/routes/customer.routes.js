@@ -15,5 +15,6 @@ router.get('/', authorize('customers:view'), validate(listQuerySchema, 'query'),
 router.post('/', authorize('customers:create'), validate(createCustomerSchema), customerController.create);
 router.get('/:id', authorize('customers:view'), validate(idParamSchema, 'params'), customerController.getById);
 router.put('/:id', authorize('customers:update'), validate(idParamSchema, 'params'), validate(updateCustomerSchema), customerController.update);
+router.delete('/:id', authorize('customers:delete'), validate(idParamSchema, 'params'), customerController.remove);
 
 export default router;
