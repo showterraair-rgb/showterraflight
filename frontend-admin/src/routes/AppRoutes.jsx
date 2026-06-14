@@ -1,0 +1,64 @@
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from '../context/AuthContext';
+import ProtectedRoute from '../components/layout/ProtectedRoute';
+import AdminLayout from '../components/layout/AdminLayout';
+import LoginPage from '../pages/LoginPage';
+import DashboardPage from '../pages/DashboardPage';
+import CustomersPage from '../pages/CustomersPage';
+import SuppliersPage from '../pages/SuppliersPage';
+import OrdersPage from '../pages/OrdersPage';
+import BookingsPage from '../pages/BookingsPage';
+import BookingFormPage from '../pages/BookingFormPage';
+import BookingDetailPage from '../pages/BookingDetailPage';
+import ExpensesPage from '../pages/ExpensesPage';
+import TransfersPage from '../pages/TransfersPage';
+import AccountsPage from '../pages/AccountsPage';
+import AccountStatementPage from '../pages/AccountStatementPage';
+import CustomerPaymentsPage from '../pages/CustomerPaymentsPage';
+import SupplierPaymentsPage from '../pages/SupplierPaymentsPage';
+import RemindersPage from '../pages/RemindersPage';
+import ReportsPage from '../pages/ReportsPage';
+import CmsPage from '../pages/CmsPage';
+import BackupPage from '../pages/BackupPage';
+import SecurityPage from '../pages/SecurityPage';
+import ComingSoonPage from '../pages/ComingSoonPage';
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<ProtectedRoute permissions={['dashboard:view']}><DashboardPage /></ProtectedRoute>} />
+
+            <Route path="customers" element={<ProtectedRoute permissions={['customers:view']}><CustomersPage /></ProtectedRoute>} />
+            <Route path="suppliers" element={<ProtectedRoute permissions={['suppliers:view']}><SuppliersPage /></ProtectedRoute>} />
+            <Route path="orders" element={<ProtectedRoute permissions={['orders:view']}><OrdersPage /></ProtectedRoute>} />
+
+            <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
+            <Route path="bookings/:id" element={<ProtectedRoute permissions={['bookings:view']}><BookingDetailPage /></ProtectedRoute>} />
+
+            <Route path="accounts" element={<ProtectedRoute permissions={['accounts:view']}><AccountsPage /></ProtectedRoute>} />
+            <Route path="accounts/:id/statement" element={<ProtectedRoute permissions={['accounts:view']}><AccountStatementPage /></ProtectedRoute>} />
+            <Route path="payments/customers" element={<ProtectedRoute permissions={['payments:customer']}><CustomerPaymentsPage /></ProtectedRoute>} />
+            <Route path="payments/suppliers" element={<ProtectedRoute permissions={['payments:supplier']}><SupplierPaymentsPage /></ProtectedRoute>} />
+            <Route path="expenses" element={<ProtectedRoute permissions={['expenses:view']}><ExpensesPage /></ProtectedRoute>} />
+            <Route path="transfers" element={<ProtectedRoute permissions={['transfers:create', 'accounts:view']}><TransfersPage /></ProtectedRoute>} />
+            <Route path="reminders" element={<ProtectedRoute permissions={['reminders:view']}><RemindersPage /></ProtectedRoute>} />
+            <Route path="reports" element={<ProtectedRoute permissions={['reports:view']}><ReportsPage /></ProtectedRoute>} />
+            <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />
+            <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
+            <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />
+            <Route path="users" element={<ComingSoonPage module="Users" />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

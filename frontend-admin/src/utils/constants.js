@@ -1,0 +1,70 @@
+export const ORDER_STATUSES = [
+  'inquiry', 'quoted', 'pending_purchase', 'purchased',
+  'ticket_added', 'delivered', 'closed', 'cancelled',
+];
+
+export const ORDER_STATUS_LABELS = {
+  inquiry: 'Inquiry',
+  quoted: 'Quoted',
+  pending_purchase: 'Pending Purchase',
+  purchased: 'Purchased',
+  ticket_added: 'Ticket Added',
+  delivered: 'Delivered',
+  closed: 'Closed',
+  cancelled: 'Cancelled',
+};
+
+export const ORDER_SOURCES = ['website', 'phone', 'whatsapp', 'walk_in'];
+export const ORDER_SOURCE_LABELS = {
+  website: 'Website',
+  phone: 'Phone',
+  whatsapp: 'WhatsApp',
+  walk_in: 'Walk-in',
+};
+
+export const BOOKING_STATUSES = [
+  'draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled',
+];
+
+export const BOOKING_STATUS_LABELS = {
+  draft: 'Draft',
+  confirmed: 'Confirmed',
+  ticket_issued: 'Ticket Issued',
+  delivered: 'Delivered',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+export const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
+export const JOURNEY_LABELS = { one_way: 'One Way', round_trip: 'Round Trip', multi_city: 'Multi City' };
+
+export const TRAVEL_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
+export const CLASS_LABELS = {
+  economy: 'Economy',
+  premium_economy: 'Premium Economy',
+  business: 'Business',
+  first: 'First Class',
+};
+
+export const SUPPLIER_TYPES = ['agent', 'supplier', 'airline_office', 'other'];
+
+export const STATUS_COLORS = {
+  inquiry: 'bg-slate-100 text-slate-700',
+  quoted: 'bg-blue-100 text-blue-700',
+  pending_purchase: 'bg-amber-100 text-amber-800',
+  purchased: 'bg-indigo-100 text-indigo-700',
+  ticket_added: 'bg-purple-100 text-purple-700',
+  delivered: 'bg-green-100 text-green-700',
+  closed: 'bg-slate-200 text-slate-600',
+  cancelled: 'bg-red-100 text-red-700',
+  draft: 'bg-slate-100 text-slate-600',
+  confirmed: 'bg-blue-100 text-blue-700',
+  ticket_issued: 'bg-purple-100 text-purple-700',
+  completed: 'bg-green-100 text-green-700',
+  pending: 'bg-amber-100 text-amber-800',
+  sent: 'bg-blue-100 text-blue-700',
+  failed: 'bg-red-100 text-red-700',
+  dismissed: 'bg-slate-200 text-slate-600',
+  success: 'bg-green-100 text-green-700',
+  in_progress: 'bg-blue-100 text-blue-700',
+};

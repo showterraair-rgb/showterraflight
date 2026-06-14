@@ -1,0 +1,22 @@
+/var/log/show-terra-air/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 sta sta
+    sharedscripts
+    postrotate
+        pm2 reloadLogs 2>/dev/null || true
+    endscript
+}
+
+/var/www/show-terra-air/backend/uploads/backups/*.gz {
+    weekly
+    missingok
+    rotate 8
+    compress
+    delaycompress
+    notifempty
+}

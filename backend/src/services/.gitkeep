@@ -1,0 +1,2 @@
+// Services — domain logic, transactions, ledger updates (Phase 2+)
+export {};

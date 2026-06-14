@@ -1,0 +1,20 @@
+# Fail2ban jail snippet — copy relevant parts to /etc/fail2ban/jail.local
+# Install: sudo apt install fail2ban
+#
+# Protects SSH and optional Nginx limit_req bans.
+# See docs/SERVER-HARDENING.md for full setup.
+
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+backend  = systemd
+
+[sshd]
+enabled = true
+port    = ssh
+logpath = %(sshd_log)s
+
+# Optional: ban repeated 404/401 on admin (requires custom filter)
+# [nginx-http-auth]
+# enabled = false
