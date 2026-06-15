@@ -19,6 +19,7 @@ const router = Router();
 router.get('/settings/sms', authorize('notifications:view', 'settings:manage'), notificationController.getSmsSettings);
 router.put('/settings/sms', authorize('notifications:manage', 'settings:manage'), validate(updateSmsSettingsSchema), notificationController.updateSmsSettings);
 router.post('/settings/sms/test', authorize('notifications:manage', 'settings:manage'), validate(testSmsSchema), notificationController.testSms);
+router.get('/settings/sms/balance', authorize('notifications:view', 'settings:manage'), notificationController.smsBalance);
 
 router.get('/settings/email', authorize('notifications:view', 'settings:manage'), notificationController.getEmailSettings);
 router.put('/settings/email', authorize('notifications:manage', 'settings:manage'), validate(updateEmailSettingsSchema), notificationController.updateEmailSettings);

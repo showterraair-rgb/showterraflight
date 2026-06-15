@@ -5,8 +5,8 @@ import { COMPANY_DEFAULTS } from '../config/constants.js';
 import { logAudit } from './audit.service.js';
 
 const SMS_DEFAULTS = {
-  providerName: '',
-  apiUrl: '',
+  providerName: 'BulkSMSBD',
+  apiUrl: 'http://bulksmsbd.net/api/smsapi',
   apiKey: '',
   apiToken: '',
   senderId: '',

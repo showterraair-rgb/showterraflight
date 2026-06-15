@@ -44,6 +44,13 @@ export const env = {
     dir: process.env.BACKUP_DIR || 'uploads/backups',
     cron: process.env.BACKUP_CRON || '0 2 * * *',
   },
+  sms: {
+    apiUrl: process.env.BULKSMSBD_API_URL || 'http://bulksmsbd.net/api/smsapi',
+    balanceUrl: process.env.BULKSMSBD_BALANCE_URL || 'http://bulksmsbd.net/api/getBalanceApi',
+    apiKey: process.env.BULKSMSBD_API_KEY || '',
+    senderId: process.env.BULKSMSBD_SENDER_ID || '',
+    enabled: process.env.BULKSMSBD_ENABLED === 'true',
+  },
   isProduction: process.env.NODE_ENV === 'production',
 };
 

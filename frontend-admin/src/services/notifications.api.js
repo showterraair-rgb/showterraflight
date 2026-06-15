@@ -4,6 +4,7 @@ export const notificationsApi = {
   getSmsSettings: () => api.get('/notifications/settings/sms'),
   updateSmsSettings: (data) => api.put('/notifications/settings/sms', data),
   testSms: (data) => api.post('/notifications/settings/sms/test', data),
+  getSmsBalance: () => api.get('/notifications/settings/sms/balance'),
 
   getEmailSettings: () => api.get('/notifications/settings/email'),
   updateEmailSettings: (data) => api.put('/notifications/settings/email', data),

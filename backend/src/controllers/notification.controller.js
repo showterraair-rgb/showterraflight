@@ -4,6 +4,7 @@ import {
   sendTestSms,
   sendTestEmail,
   listNotificationLogs,
+  getSmsBalance,
 } from '../services/notificationOrchestrator.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
@@ -22,6 +23,12 @@ export const testSms = asyncHandler(async (req, res) => {
   const result = await sendTestSms(req.body);
   if (!result.success) throw ApiError.badRequest(result.error || 'Test SMS failed');
   res.json({ success: true, data: result, message: 'Test SMS dispatched' });
+});
+
+export const smsBalance = asyncHandler(async (_req, res) => {
+  const result = await getSmsBalance();
+  if (!result.success) throw ApiError.badRequest(result.error || 'Could not fetch SMS balance');
+  res.json({ success: true, data: result });
 });
 
 export const getEmailSettings = asyncHandler(async (_req, res) => {
@@ -84,6 +91,7 @@ export default {
   getSmsSettings,
   updateSmsSettings,
   testSms,
+  smsBalance,
   getEmailSettings,
   updateEmailSettings,
   testEmail,

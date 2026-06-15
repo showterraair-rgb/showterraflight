@@ -10,7 +10,8 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/seeds/index.js",
     "seed:home": "node src/seeds/seedHomeContent.js",
-    "recalculate-financials": "node src/scripts/recalculateFinancials.js"
+    "recalculate-financials": "node src/scripts/recalculateFinancials.js",
+    "configure-sms": "node src/scripts/configureSms.js"
   },
   "keywords": ["travel-agency", "air-tickets", "mern"],
   "author": "Show Terra Air",

@@ -206,9 +206,18 @@ async function seedSecuritySettings() {
 }
 
 async function seedNotificationSettings() {
+  const smsFromEnv = {
+    providerName: 'BulkSMSBD',
+    apiUrl: process.env.BULKSMSBD_API_URL || 'http://bulksmsbd.net/api/smsapi',
+    apiKey: process.env.BULKSMSBD_API_KEY || '',
+    senderId: process.env.BULKSMSBD_SENDER_ID || '',
+    isEnabled: process.env.BULKSMSBD_ENABLED === 'true'
+      || Boolean(process.env.BULKSMSBD_API_KEY && process.env.BULKSMSBD_SENDER_ID),
+  };
+
   await SmsSetting.findOneAndUpdate(
     { key: 'sms' },
-    { key: 'sms', isEnabled: false },
+    { key: 'sms', ...smsFromEnv },
     { upsert: true, new: true }
   );
   await EmailSetting.findOneAndUpdate(

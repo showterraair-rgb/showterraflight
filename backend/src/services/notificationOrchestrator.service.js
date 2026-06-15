@@ -14,6 +14,8 @@ import {
   renderTemplate,
 } from './notificationTemplate.service.js';
 import { DEFAULT_AUTOMATION_RULES, DEFAULT_NOTIFICATION_TEMPLATES } from '../config/constants.js';
+import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
+import { resolveSmsConfig } from '../utils/smsConfig.js';
 
 async function createLogEntry(payload) {
   try {
@@ -40,7 +42,7 @@ async function finalizeLog(logId, result) {
 }
 
 export async function sendSmsMessage({ to, message }) {
-  const settings = await getSmsSettingsRaw();
+  const settings = resolveSmsConfig(await getSmsSettingsRaw());
   const recipient = String(to || '').replace(/\D/g, '');
 
   if (!recipient) {
@@ -52,18 +54,48 @@ export async function sendSmsMessage({ to, message }) {
     return { success: true, channel: 'sms', messageId: `sms-disabled-${Date.now()}`, mocked: true };
   }
 
-  if (!settings.apiUrl) {
+  if (!settings.isConfigured) {
     console.log('[NOTIFICATION:sms:no-config]', recipient, message?.slice(0, 100));
-    return { success: true, channel: 'sms', messageId: `sms-mock-${Date.now()}`, mocked: true };
+    return { success: false, channel: 'sms', error: 'SMS gateway not configured (API key and sender ID required)' };
   }
 
   try {
-    // Provider hook — integrate Bangladesh SMS gateway here
-    console.log('[NOTIFICATION:sms:send]', settings.providerName, recipient, message?.slice(0, 80));
-    return { success: true, channel: 'sms', messageId: `sms-${Date.now()}` };
+    const result = await sendBulkSmsBd({
+      apiUrl: settings.apiUrl,
+      apiKey: settings.apiKey,
+      senderId: settings.senderId,
+      number: recipient,
+      message,
+    });
+
+    if (!result.success) {
+      console.error('[NOTIFICATION:sms:failed]', recipient, result.error);
+    } else {
+      console.log('[NOTIFICATION:sms:sent]', settings.providerName, recipient, result.messageId);
+    }
+
+    return {
+      success: result.success,
+      channel: 'sms',
+      messageId: result.messageId || '',
+      error: result.error,
+      provider: settings.providerName,
+      mocked: false,
+    };
   } catch (err) {
     return { success: false, channel: 'sms', error: err.message || 'SMS send failed' };
   }
+}
+
+export async function getSmsBalance() {
+  const settings = resolveSmsConfig(await getSmsSettingsRaw());
+  if (!settings.apiKey) {
+    return { success: false, error: 'SMS API key is not configured' };
+  }
+  return getBulkSmsBdBalance({
+    apiKey: settings.apiKey,
+    balanceUrl: settings.balanceUrl,
+  });
 }
 
 export async function sendEmailMessage({ to, subject, message, replyTo }) {
@@ -268,4 +300,5 @@ export default {
   listNotificationLogs,
   sendSmsMessage,
   sendEmailMessage,
+  getSmsBalance,
 };
