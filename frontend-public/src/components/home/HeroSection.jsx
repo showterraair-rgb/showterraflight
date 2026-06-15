@@ -5,6 +5,7 @@ import { useCompany } from '../../context/CompanyContext';
 import { useHomeContent } from '../../context/HomeContentContext';
 import SafeImage from '../common/SafeImage';
 import PaymentStrip from './PaymentStrip';
+import DestinationPicker from '../common/DestinationPicker';
 import { getPhoneDigits, getWhatsAppDigits } from '../../utils/companyHelpers';
 
 export default function HeroSection() {
@@ -131,7 +132,7 @@ export default function HeroSection() {
 
           <motion.div
             {...fade(0.18)}
-            className="rounded-2xl border border-white/10 bg-white shadow-2xl md:rounded-3xl lg:sticky lg:top-24"
+            className="overflow-visible rounded-2xl border border-white/10 bg-white shadow-2xl md:rounded-3xl lg:sticky lg:top-24"
           >
             <div className="border-b border-slate-100 bg-slate-50 px-5 py-4 md:px-7 md:py-5">
               <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Free quote · no obligation</p>
@@ -139,18 +140,13 @@ export default function HeroSection() {
               <p className="mt-1 text-sm text-slate-600">We reply on WhatsApp with fare options and package pricing in BDT</p>
             </div>
             <form onSubmit={handleQuickInquiry} className="space-y-4 p-5 md:p-7">
-              <div>
-                <label htmlFor="hero-destination" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Destination or route
-                </label>
-                <input
-                  id="hero-destination"
-                  className="input-field"
-                  placeholder="Dubai, Jeddah, Kuala Lumpur, London…"
-                  value={form.destination}
-                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
-                />
-              </div>
+              <DestinationPicker
+                id="hero-destination"
+                label="Destination or route"
+                placeholder="Dubai, Jeddah, Kuala Lumpur, London…"
+                value={form.destination}
+                onChange={(destination) => setForm((f) => ({ ...f, destination }))}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="hero-date" className="mb-1.5 block text-sm font-semibold text-slate-700">

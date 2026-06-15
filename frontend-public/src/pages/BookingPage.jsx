@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import PublicLayout from '../layouts/PublicLayout';
 import PageHero from '../components/PageHero';
+import DestinationPicker from '../components/common/DestinationPicker';
 import { publicApi } from '../services/api';
 
 const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
@@ -37,6 +39,7 @@ const CLASS_LABELS = {
 };
 
 export default function BookingPage() {
+  const [searchParams] = useSearchParams();
   const [page, setPage] = useState(null);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState('');
@@ -47,6 +50,7 @@ export default function BookingPage() {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(bookingSchema),
@@ -56,10 +60,16 @@ export default function BookingPage() {
       passengerCount: 1,
       customerEmail: '',
       requestNotes: '',
+      fromDestination: 'DAC',
+      toDestination: searchParams.get('destination')?.toUpperCase() || '',
+      journeyDate: searchParams.get('date') || '',
+      customerPhone: searchParams.get('phone') || '',
     },
   });
 
   const journeyType = watch('journeyType');
+  const fromDestination = watch('fromDestination');
+  const toDestination = watch('toDestination');
 
   useEffect(() => {
     publicApi.getCmsPage('booking').then(({ data }) => setPage(data.data)).catch(() => {});
@@ -142,17 +152,23 @@ export default function BookingPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">From *</label>
-                <input className="input-field" placeholder="e.g. DAC" {...register('fromDestination')} />
-                {errors.fromDestination && <p className="mt-1 text-xs text-red-600">{errors.fromDestination.message}</p>}
-              </div>
+              <DestinationPicker
+                mode="airport"
+                label="From *"
+                placeholder="e.g. DAC"
+                value={fromDestination}
+                onChange={(v) => setValue('fromDestination', v, { shouldValidate: true })}
+                error={errors.fromDestination?.message}
+              />
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">To *</label>
-                <input className="input-field" placeholder="e.g. DXB" {...register('toDestination')} />
-                {errors.toDestination && <p className="mt-1 text-xs text-red-600">{errors.toDestination.message}</p>}
-              </div>
+              <DestinationPicker
+                mode="airport"
+                label="To *"
+                placeholder="e.g. DXB"
+                value={toDestination}
+                onChange={(v) => setValue('toDestination', v, { shouldValidate: true })}
+                error={errors.toDestination?.message}
+              />
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Journey Date *</label>
