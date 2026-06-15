@@ -16,7 +16,7 @@ export const listQuerySchema = z.object({
   dateTo: z.string().optional(),
 });
 
-export const createBookingSchema = z.object({
+export const createBookingBaseSchema = z.object({
   orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   customerId: z.string().regex(/^[a-f\d]{24}$/i),
   supplierId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
@@ -39,12 +39,15 @@ export const createBookingSchema = z.object({
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
-}).refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
-  message: 'Return date required for round trip',
-  path: ['returnDate'],
+
 });
 
-export const updateBookingSchema = createBookingSchema.partial().omit({ orderId: true });
+export const createBookingSchema = createBookingBaseSchema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
+ message: 'Return date required for round trip',
+ path: ['returnDate'],
+});
+
+export const updateBookingSchema = createBookingBaseSchema.partial().omit({ orderId: true });
 
 export const updateBookingStatusSchema = z.object({
   status: z.enum(BOOKING_STATUSES),

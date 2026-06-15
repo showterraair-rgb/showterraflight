@@ -5,6 +5,7 @@ import validate from '../middlewares/validate.js';
 import {
   listQuerySchema,
   createBookingSchema,
+  createBookingBaseSchema,
   updateBookingSchema,
   updateBookingStatusSchema,
   addBookingNoteSchema,
@@ -18,7 +19,7 @@ const router = Router();
 
 router.get('/', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.list);
 router.post('/', authorize('bookings:create'), validate(createBookingSchema), bookingController.create);
-router.post('/from-order/:orderId', authorize('bookings:create'), validate(fromOrderParamSchema, 'params'), validate(createBookingSchema.partial()), bookingController.createFromOrder);
+router.post('/from-order/:orderId', authorize('bookings:create'), validate(fromOrderParamSchema, 'params'), validate(createBookingBaseSchema.partial()), bookingController.createFromOrder);
 router.get('/:id', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getById);
 router.put('/:id', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingSchema), bookingController.update);
 router.patch('/:id/status', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingStatusSchema), bookingController.updateStatus);
