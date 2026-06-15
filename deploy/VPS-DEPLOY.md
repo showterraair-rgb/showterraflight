@@ -56,12 +56,13 @@ sudo certbot certonly --nginx \
   -d admin.showterraflight.com
 ```
 
-Then reload nginx:
+Then reload nginx (update SSL path if certbot used `-0001` suffix):
 
 ```bash
 cd /var/www/showterraflight
 sudo cp deploy/nginx/showterraflight.com.conf /etc/nginx/sites-available/showterraflight.com
 sudo ln -sf /etc/nginx/sites-available/showterraflight.com /etc/nginx/sites-enabled/
+# If cert path differs, check: sudo certbot certificates
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
