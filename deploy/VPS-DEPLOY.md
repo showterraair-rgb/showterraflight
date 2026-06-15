@@ -3,6 +3,80 @@
 **App folder on VPS:** `/var/www/showterraflight`  
 **Do not modify other projects** under `/var/www/`.
 
+## DNS setup (fix “site not showing” / NXDOMAIN)
+
+If **admin.showterraflight.com** shows `DNS_PROBE_FINISHED_NXDOMAIN`, or **showterraflight.com** works on some networks but not others, the domain DNS is incomplete or still propagating.
+
+### 1) Get your VPS public IP (on the server)
+
+```bash
+curl -4 ifconfig.me
+```
+
+Example result: `123.45.67.89` — use this IP in DNS records below.
+
+### 2) Add DNS records at your domain registrar
+
+Log in where you bought **showterraflight.com** (Hostinger, Namecheap, Cloudflare, etc.) → **DNS / DNS Zone**.
+
+Add these **A records** (all pointing to the same VPS IP):
+
+| Type | Name / Host | Value | TTL |
+|------|-------------|-------|-----|
+| A | `@` (or blank) | `YOUR_VPS_IP` | 300–3600 |
+| A | `www` | `YOUR_VPS_IP` | 300–3600 |
+| A | `admin` | `YOUR_VPS_IP` | 300–3600 |
+
+**Important:** The `admin` record is required for the admin panel. Without it you get **NXDOMAIN** and login will never work.
+
+Optional: if you use Cloudflare, set records to **DNS only** (grey cloud) until SSL on VPS is working, then you can enable proxy (orange cloud).
+
+### 3) Wait for propagation (5 min – 48 hours)
+
+Check from your PC:
+
+```bash
+nslookup showterraflight.com
+nslookup www.showterraflight.com
+nslookup admin.showterraflight.com
+```
+
+All three must return your **VPS IP**. If `admin` fails, the A record is missing at the registrar.
+
+Online check: https://dnschecker.org — search `showterraflight.com` and `admin.showterraflight.com`.
+
+### 4) SSL certificate must include admin subdomain (on VPS)
+
+After DNS resolves globally:
+
+```bash
+sudo certbot certonly --nginx \
+  -d showterraflight.com \
+  -d www.showterraflight.com \
+  -d admin.showterraflight.com
+```
+
+Then reload nginx:
+
+```bash
+cd /var/www/showterraflight
+sudo cp deploy/nginx/showterraflight.com.conf /etc/nginx/sites-available/showterraflight.com
+sudo ln -sf /etc/nginx/sites-available/showterraflight.com /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 5) Why some IPs / networks see the site and others don’t
+
+| Cause | Fix |
+|-------|-----|
+| DNS not propagated yet | Wait; lower TTL; flush local DNS (`ipconfig /flushdns` on Windows) |
+| Missing `admin` A record | Add `admin` → VPS IP at registrar |
+| Only `www` works, root `@` missing | Add `@` A record |
+| Old wrong IP cached | Update A records to current VPS IP |
+| Cloudflare proxy misconfigured | Use DNS-only or correct SSL mode |
+
+---
+
 ## Update after Git push
 
 ```bash
