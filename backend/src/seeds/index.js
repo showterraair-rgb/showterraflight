@@ -196,6 +196,35 @@ async function seedAdminUser() {
   console.log('  ⚠ Change the default password after first login');
 }
 
+async function seedDemoUser() {
+  if (process.env.SEED_DEMO_USER !== 'true') return;
+
+  const email = (process.env.DEMO_USER_EMAIL || 'demo@showterraair.com').toLowerCase();
+  const password = process.env.DEMO_USER_PASSWORD || 'Demo@123456';
+  const role = process.env.DEMO_USER_ROLE || ROLES.ADMIN;
+
+  const existing = await User.findOne({ email });
+  if (existing) {
+    existing.name = 'Demo User';
+    existing.phone = '01700000000';
+    existing.role = role;
+    existing.password = password;
+    existing.isActive = true;
+    await existing.save();
+  } else {
+    await User.create({
+      name: 'Demo User',
+      email,
+      phone: '01700000000',
+      password,
+      role,
+      isActive: true,
+    });
+  }
+
+  console.log(`✓ Demo user ready: ${email} (${role})`);
+}
+
 async function seedSecuritySettings() {
   await SecuritySetting.findOneAndUpdate(
     { key: 'security' },
@@ -272,6 +301,7 @@ async function runSeed() {
     await seedNotificationTemplates();
     await seedAutomationRules();
     await seedAdminUser();
+    await seedDemoUser();
 
     console.log('\n✅ Seed completed successfully');
   } catch (err) {

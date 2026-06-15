@@ -11,7 +11,8 @@
     "seed": "node src/seeds/index.js",
     "seed:home": "node src/seeds/seedHomeContent.js",
     "recalculate-financials": "node src/scripts/recalculateFinancials.js",
-    "configure-sms": "node src/scripts/configureSms.js"
+    "configure-sms": "node src/scripts/configureSms.js",
+    "create-demo-user": "node src/scripts/createDemoUser.js"
   },
   "keywords": ["travel-agency", "air-tickets", "mern"],
   "author": "Show Terra Air",
