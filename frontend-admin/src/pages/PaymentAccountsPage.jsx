@@ -157,8 +157,19 @@ export default function PaymentAccountsPage() {
 
       <DataTable columns={columns} data={accounts} loading={loading} emptyMessage="No payment accounts yet" />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit payment account' : 'New payment account'} wide>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Edit payment account' : 'New payment account'}
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="payment-account-form" className="btn-primary">Save</button>
+          </div>
+        )}
+      >
+        <form id="payment-account-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
               <span className="text-slate-600">Title</span>
@@ -226,10 +237,6 @@ export default function PaymentAccountsPage() {
               <span className="text-slate-600">QR image path (optional)</span>
               <input {...form.register('qrImagePath')} className="input mt-1 w-full" placeholder="uploads/qr/account.png" />
             </label>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Save</button>
           </div>
         </form>
       </Modal>

@@ -141,8 +141,18 @@ export default function RemindersPage() {
       <DataTable columns={columns} rows={items} loading={loading} emptyMessage="No reminders found" />
       {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Manual reminder">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Manual reminder"
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="reminder-form" className="btn-primary">Create</button>
+          </div>
+        )}
+      >
+        <form id="reminder-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div>
             <label className="mb-1 block text-sm font-medium">Title</label>
@@ -165,10 +175,6 @@ export default function RemindersPage() {
                 <option value="high">High</option>
               </select>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Create</button>
           </div>
         </form>
       </Modal>

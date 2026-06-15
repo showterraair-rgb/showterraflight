@@ -115,6 +115,7 @@ export default function CustomersPage() {
     {
       key: 'actions',
       label: 'Actions',
+      stickyRight: true,
       cellClassName: '',
       render: (r) => (
         <RowActions
@@ -160,8 +161,21 @@ export default function CustomersPage() {
         <Pagination pagination={pagination} onPageChange={setPage} />
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Customer' : 'Add Customer'} wide>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Edit Customer' : 'Add Customer'}
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="customer-form" disabled={isSubmitting} className="btn-primary">
+              {isSubmitting ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        )}
+      >
+        <form id="customer-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -198,12 +212,6 @@ export default function CustomersPage() {
               <label className="mb-1 block text-sm font-medium">Notes</label>
               <textarea rows={3} className="input-field" {...register('notes')} />
             </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="btn-primary">
-              {isSubmitting ? 'Saving...' : 'Save'}
-            </button>
           </div>
         </form>
       </Modal>

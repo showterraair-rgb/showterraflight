@@ -66,6 +66,7 @@ export default function BookingsPage() {
     {
       key: 'actions',
       label: 'Actions',
+      stickyRight: true,
       cellClassName: '',
       render: (r) => (
         <RowActions

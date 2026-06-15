@@ -156,8 +156,19 @@ export default function NotificationTemplatesPage() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={`Edit: ${selected?.name || ''}`} wide>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={`Edit: ${selected?.name || ''}`}
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="notification-template-form" className="btn-primary">Save template</button>
+          </div>
+        )}
+      >
+        <form id="notification-template-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <label className="block text-sm">
             <span className="text-slate-600">Name</span>
             <input {...form.register('name', { required: true })} className="input mt-1 w-full" />
@@ -182,10 +193,6 @@ export default function NotificationTemplatesPage() {
             <span className="text-slate-600">Email body</span>
             <textarea {...form.register('emailBody')} rows={6} className="input mt-1 w-full font-mono text-xs" />
           </label>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Save template</button>
-          </div>
         </form>
       </Modal>
     </div>

@@ -128,8 +128,19 @@ export default function SupplierPaymentsPage() {
         <Pagination pagination={pagination} onPageChange={setPage} />
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Record Supplier Payment" wide>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Record Supplier Payment"
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="supplier-payment-form" className="btn-primary">Record Payment</button>
+          </div>
+        )}
+      >
+        <form id="supplier-payment-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -183,10 +194,6 @@ export default function SupplierPaymentsPage() {
               <label className="mb-1 block text-sm font-medium">Notes</label>
               <textarea rows={2} className="input-field" {...form.register('notes')} />
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Record Payment</button>
           </div>
         </form>
       </Modal>

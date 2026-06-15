@@ -122,8 +122,19 @@ export default function ExpensesPage() {
         <Pagination pagination={pagination} onPageChange={setPage} />
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Expense" wide>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Add Expense"
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="expense-form" className="btn-primary">Save Expense</button>
+          </div>
+        )}
+      >
+        <form id="expense-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -184,10 +195,6 @@ export default function ExpensesPage() {
               <label className="mb-1 block text-sm font-medium">Notes</label>
               <textarea rows={2} className="input-field" {...form.register('notes')} />
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Save Expense</button>
           </div>
         </form>
       </Modal>

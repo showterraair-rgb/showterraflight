@@ -109,8 +109,18 @@ export default function TransfersPage() {
         <Pagination pagination={pagination} onPageChange={setPage} />
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Transfer Between Accounts">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Transfer Between Accounts"
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="transfer-form" className="btn-primary">Complete Transfer</button>
+          </div>
+        )}
+      >
+        <form id="transfer-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div>
             <label className="mb-1 block text-sm font-medium">From Account *</label>
@@ -141,10 +151,6 @@ export default function TransfersPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">Notes</label>
             <textarea rows={2} className="input-field" {...form.register('notes')} />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Complete Transfer</button>
           </div>
         </form>
       </Modal>

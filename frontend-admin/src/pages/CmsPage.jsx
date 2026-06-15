@@ -271,8 +271,15 @@ export default function CmsPage() {
         </form>
       )}
 
-      <Modal open={noticeModal} onClose={() => setNoticeModal(false)} title={editingNotice ? 'Edit notice' : 'New notice'}>
-        <form onSubmit={noticeForm.handleSubmit(saveNotice)} className="space-y-3">
+      <Modal
+        open={noticeModal}
+        onClose={() => setNoticeModal(false)}
+        title={editingNotice ? 'Edit notice' : 'New notice'}
+        footer={(
+          <button type="submit" form="notice-form" className="btn-primary w-full sm:w-auto">Save</button>
+        )}
+      >
+        <form id="notice-form" onSubmit={noticeForm.handleSubmit(saveNotice)} className="space-y-3">
           <input className="input-field" placeholder="Title" {...noticeForm.register('title', { required: true })} />
           <textarea className="input-field" rows={4} placeholder="Content" {...noticeForm.register('content', { required: true })} />
           <select className="input-field" {...noticeForm.register('type')}>
@@ -282,7 +289,6 @@ export default function CmsPage() {
             <option value="announcement">Announcement</option>
           </select>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" {...noticeForm.register('isPublished')} /> Published</label>
-          <button type="submit" className="btn-primary w-full">Save</button>
         </form>
       </Modal>
     </div>

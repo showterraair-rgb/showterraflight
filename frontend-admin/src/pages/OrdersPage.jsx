@@ -129,6 +129,7 @@ export default function OrdersPage() {
     {
       key: 'actions',
       label: 'Actions',
+      stickyRight: true,
       cellClassName: '',
       render: (r) => (
         <RowActions
@@ -182,8 +183,19 @@ export default function OrdersPage() {
         <Pagination pagination={pagination} onPageChange={setPage} />
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Order' : 'New Order'} wide>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Edit Order' : 'New Order'}
+        wide
+        footer={(
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
+            <button type="submit" form="order-form" className="btn-primary">Save Order</button>
+          </div>
+        )}
+      >
+        <form id="order-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="mb-1 block text-sm font-medium">Customer Name *</label><input className="input-field" {...form.register('customerName')} /></div>
@@ -218,10 +230,6 @@ export default function OrdersPage() {
             <div><label className="mb-1 block text-sm font-medium">Next Follow-up</label><input type="date" className="input-field" {...form.register('nextFollowUpDate')} /></div>
             <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium">Customer Notes</label><textarea rows={2} className="input-field" {...form.register('requestNotes')} /></div>
             <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium">Internal Notes</label><textarea rows={2} className="input-field" {...form.register('internalNotes')} /></div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Save Order</button>
           </div>
         </form>
       </Modal>
