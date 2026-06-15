@@ -23,9 +23,9 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
       },
-      error_file: '/var/log/show-terra-air/pm2-error.log',
-      out_file: '/var/log/show-terra-air/pm2-out.log',
-      log_file: '/var/log/show-terra-air/pm2-combined.log',
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_file: './logs/pm2-combined.log',
       time: true,
       merge_logs: true,
       kill_timeout: 5000,

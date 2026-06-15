@@ -103,3 +103,37 @@ git log -1 --oneline
 pm2 status sta-api
 bash deploy/scripts/health-check.sh
 ```
+
+## Login shows 502 / "Login failed"
+
+A **502** on `/api/v1/auth/login` means the **backend API is down** (not wrong password).
+
+Run on VPS:
+
+```bash
+cd /var/www/showterraflight
+git pull --ff-only origin main
+bash deploy/scripts/repair-api.sh
+```
+
+Or step by step:
+
+```bash
+cd /var/www/showterraflight
+pm2 status sta-api
+pm2 logs sta-api --lines 50
+sudo systemctl status mongod
+curl -s http://127.0.0.1:5000/api/v1/health
+cd backend && npm run create-admin-user
+```
+
+**Main admin:** `admin@showterraair.com` / `Admin@123456`  
+**Demo (read-only):** `demo@showterraair.com` / `Demo@123456`
+
+Ensure `backend/.env` has:
+
+```
+CLIENT_ADMIN_URL=https://admin.showterraflight.com
+CLIENT_PUBLIC_URL=https://showterraflight.com
+COOKIE_SECURE=true
+```

@@ -26,8 +26,11 @@ if [[ "$SKIP_BUILD" == false ]]; then
 fi
 
 # Ensure upload/backup dirs exist
-mkdir -p backend/uploads/backups
-chmod 750 backend/uploads backend/uploads/backups
+mkdir -p backend/uploads/backups backend/uploads/passports backend/logs
+chmod 750 backend/uploads backend/uploads/backups backend/uploads/passports 2>/dev/null || true
+
+# PM2 log dir (ecosystem writes here)
+sudo mkdir -p /var/log/show-terra-air 2>/dev/null || mkdir -p /var/log/show-terra-air 2>/dev/null || true
 
 # PM2
 if pm2 describe sta-api &>/dev/null; then
