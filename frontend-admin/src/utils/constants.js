@@ -57,6 +57,15 @@ export const APPROVAL_STATUS_LABELS = {
 
 export const SUPPLIER_TYPES = ['agent', 'supplier', 'airline_office', 'other'];
 
+export const USER_ROLES = ['admin', 'accountant', 'executive', 'demo'];
+
+export const USER_ROLE_LABELS = {
+  admin: 'Administrator',
+  accountant: 'Accountant',
+  executive: 'Executive',
+  demo: 'Demo (Read-only)',
+};
+
 export const STATUS_COLORS = {
   inquiry: 'bg-slate-100 text-slate-700',
   quoted: 'bg-blue-100 text-blue-700',

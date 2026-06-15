@@ -26,7 +26,7 @@ import SmsSettingsPage from '../pages/SmsSettingsPage';
 import EmailSettingsPage from '../pages/EmailSettingsPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
-import ComingSoonPage from '../pages/ComingSoonPage';
+import UsersPage from '../pages/UsersPage';
 
 export default function AppRoutes() {
   return (
@@ -64,7 +64,7 @@ export default function AppRoutes() {
             <Route path="settings/email" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><EmailSettingsPage /></ProtectedRoute>} />
             <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
             <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
-            <Route path="users" element={<ComingSoonPage module="Users" />} />
+            <Route path="users" element={<ProtectedRoute permissions={['users:view']}><UsersPage /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -55,3 +55,11 @@ export const bookingsApi = {
   delete: (id) => api.delete(`/bookings/${id}`),
   downloadInvoicePdf: (id) => api.get(`/bookings/${id}/invoice/pdf`, { responseType: 'blob' }),
 };
+
+export const usersApi = {
+  list: (params) => api.get('/users', { params }),
+  get: (id) => api.get(`/users/${id}`),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  deactivate: (id) => api.delete(`/users/${id}`),
+};
