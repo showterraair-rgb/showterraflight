@@ -112,7 +112,7 @@ export async function createBookingRequest(data) {
 
   return {
     orderNumber: order.orderNumber,
-    message: 'Your booking request has been submitted. We will contact you shortly.',
+    message: 'Your booking request has been submitted. We will contact you shortly. Save your order reference — our team will follow up on WhatsApp or phone.',
   };
 }
 

@@ -106,7 +106,8 @@ export default function BookingPage() {
             <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-6 text-center">
               <p className="text-lg font-semibold text-green-800">Request Submitted!</p>
               <p className="mt-2 text-sm text-green-700">{success.message}</p>
-              <p className="mt-1 text-sm font-medium text-green-800">Reference: {success.orderNumber}</p>
+              <p className="mt-1 text-sm font-medium text-green-800">Order reference: {success.orderNumber}</p>
+              <p className="mt-2 text-xs text-green-700">This is a booking inquiry. Our team will quote the fare and contact you soon.</p>
             </div>
           )}
 

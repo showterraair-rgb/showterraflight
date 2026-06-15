@@ -20,6 +20,7 @@ export async function getDashboardSummary(user) {
 
   const [
     todayOrders,
+    websiteInquiries,
     pendingPurchases,
     issuedTickets,
     bookingAggregates,
@@ -28,6 +29,7 @@ export async function getDashboardSummary(user) {
     pendingReminders,
   ] = await Promise.all([
     Order.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+    Order.countDocuments({ isFromWebsite: true, status: { $in: ['inquiry', 'quoted', 'pending_purchase'] } }),
     Order.countDocuments({ status: 'pending_purchase' }),
     Booking.countDocuments({ status: { $in: ['ticket_issued', 'delivered', 'completed'] } }),
     Booking.aggregate([
@@ -62,6 +64,7 @@ export async function getDashboardSummary(user) {
 
   const summary = {
     todayOrders,
+    websiteInquiries,
     pendingPurchases,
     issuedTickets,
     customerDue: agg.customerDue,
@@ -94,7 +97,7 @@ export async function getRecentActivity() {
     Order.find()
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('orderNumber customerName status source createdAt')
+      .select('orderNumber customerName status source isFromWebsite createdAt')
       .lean(),
     Booking.find()
       .sort({ createdAt: -1 })
@@ -110,6 +113,7 @@ export async function getRecentActivity() {
       customerName: o.customerName,
       status: o.status,
       source: o.source,
+      isFromWebsite: o.isFromWebsite,
       createdAt: o.createdAt,
     })),
     bookings: recentBookings.map((b) => ({

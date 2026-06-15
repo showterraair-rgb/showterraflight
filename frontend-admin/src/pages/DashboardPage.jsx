@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { dashboardApi } from '../services/auth.api';
 import StatCard from '../components/common/StatCard';
@@ -47,19 +48,20 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Today's Orders" value={s.todayOrders ?? 0} accent="blue" />
+        <StatCard label="Website Requests" value={s.websiteInquiries ?? 0} accent="blue" subtext="Open inquiries from showterraflight.com" />
         <StatCard label="Pending Purchases" value={s.pendingPurchases ?? 0} accent="amber" />
         <StatCard label="Issued Tickets" value={s.issuedTickets ?? 0} accent="green" />
-        <StatCard label="Pending Reminders" value={s.pendingReminders ?? 0} accent="slate" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Pending Reminders" value={s.pendingReminders ?? 0} accent="slate" />
         <StatCard label="Customer Due" value={formatCurrency(s.customerDue)} accent="red" />
         <StatCard label="Supplier Payable" value={formatCurrency(s.supplierPayable)} accent="amber" />
         <StatCard label="Gross Profit" value={formatCurrency(s.grossProfit)} accent="green" />
-        <StatCard label="Net Position" value={formatCurrency(s.netPosition)} accent="blue" subtext="Total account balance" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Net Position" value={formatCurrency(s.netPosition)} accent="blue" subtext="Total account balance" />
         <StatCard label="Total Sales" value={formatCurrency(s.totalSales)} accent="blue" />
         <StatCard label="Total Purchase" value={formatCurrency(s.totalPurchase)} accent="slate" />
         <StatCard label="Expense Total" value={formatCurrency(s.expenseTotal)} accent="red" />
@@ -81,13 +83,23 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">Recent Orders</h3>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-900">Recent Orders</h3>
+            {can('orders:view') && (
+              <Link to="/orders" className="text-xs font-semibold text-brand-600 hover:underline">View all</Link>
+            )}
+          </div>
           {activity?.orders?.length ? (
             <ul className="divide-y divide-slate-100">
               {activity.orders.map((o) => (
                 <li key={o.id} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{o.orderNumber}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {o.orderNumber}
+                      {o.isFromWebsite && (
+                        <span className="ml-2 rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-sky-800">Web</span>
+                      )}
+                    </p>
                     <p className="text-xs text-slate-500">{o.customerName}</p>
                   </div>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
@@ -97,7 +109,7 @@ export default function DashboardPage() {
               ))}
             </ul>
           ) : (
-            <EmptyState title="No orders yet" description="Orders will appear here once created." />
+            <EmptyState title="No orders yet" description="Website booking requests and manual orders appear here." />
           )}
         </div>
 

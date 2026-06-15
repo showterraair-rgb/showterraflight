@@ -14,12 +14,14 @@ export const NAV_ITEMS = [
     path: '/orders',
     icon: 'orders',
     permissions: ['orders:view'],
+    description: 'Website requests (ORD-)',
   },
   {
     label: 'Bookings',
     path: '/bookings',
     icon: 'bookings',
     permissions: ['bookings:view'],
+    description: 'Confirmed tickets (BKG-)',
   },
   {
     label: 'Customers',

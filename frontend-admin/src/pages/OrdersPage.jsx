@@ -124,7 +124,16 @@ export default function OrdersPage() {
     { key: 'customerName', label: 'Customer' },
     { key: 'route', label: 'Route', render: (r) => `${r.fromDestination} → ${r.toDestination}` },
     { key: 'journeyDate', label: 'Travel Date', render: (r) => formatDate(r.journeyDate) },
-    { key: 'source', label: 'Source', render: (r) => ORDER_SOURCE_LABELS[r.source] || r.source },
+    { key: 'source', label: 'Source', render: (r) => (
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <span>{ORDER_SOURCE_LABELS[r.source] || r.source}</span>
+        {r.isFromWebsite && (
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-800">
+            Website
+          </span>
+        )}
+      </span>
+    ) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={ORDER_STATUS_LABELS[r.status]} /> },
     {
       key: 'actions',
@@ -154,7 +163,7 @@ export default function OrdersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Orders</h2>
-          <p className="text-sm text-slate-500">Booking inquiries and manual orders</p>
+          <p className="text-sm text-slate-500">Website booking requests (ORD-) and manual inquiries — convert to a booking when ticket is confirmed</p>
         </div>
         {can('orders:create') && (
           <button type="button" onClick={openCreate} className="btn-primary">New Order</button>
