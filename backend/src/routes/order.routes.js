@@ -11,6 +11,8 @@ import {
   linkCustomerSchema,
   idParamSchema,
 } from '../validators/order.validator.js';
+import { updateApprovalSchema } from '../validators/approval.validator.js';
+import { passportUpload } from '../middlewares/upload.js';
 
 const router = Router();
 
@@ -19,6 +21,8 @@ router.post('/', authorize('orders:create'), validate(createOrderSchema), orderC
 router.get('/:id', authorize('orders:view'), validate(idParamSchema, 'params'), orderController.getById);
 router.put('/:id', authorize('orders:update'), validate(idParamSchema, 'params'), validate(updateOrderSchema), orderController.update);
 router.patch('/:id/status', authorize('orders:update'), validate(idParamSchema, 'params'), validate(updateOrderStatusSchema), orderController.updateStatus);
+router.patch('/:id/approval', authorize('orders:update'), validate(idParamSchema, 'params'), validate(updateApprovalSchema), orderController.updateApproval);
+router.post('/:id/passport', authorize('orders:update'), validate(idParamSchema, 'params'), passportUpload.single('passport'), orderController.uploadPassport);
 router.post('/:id/follow-up', authorize('orders:update'), validate(idParamSchema, 'params'), validate(followUpSchema), orderController.addFollowUp);
 router.post('/:id/link-customer', authorize('orders:update'), validate(idParamSchema, 'params'), validate(linkCustomerSchema), orderController.linkCustomer);
 router.delete('/:id', authorize('orders:delete'), validate(idParamSchema, 'params'), orderController.remove);

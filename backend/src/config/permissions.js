@@ -133,6 +133,23 @@ export const ROLE_PERMISSIONS = {
     'reminders:manage',
     'cms:view',
   ],
+
+  /** Read-only demo / preview access — view lists and reports only */
+  [ROLES.DEMO]: [
+    'dashboard:view',
+    'orders:view',
+    'bookings:view',
+    'customers:view',
+    'suppliers:view',
+    'accounts:view',
+    'expenses:view',
+    'reminders:view',
+    'reports:view',
+    'cms:view',
+    'audit:view',
+    'users:view',
+    'notifications:view',
+  ],
 };
 
 /**

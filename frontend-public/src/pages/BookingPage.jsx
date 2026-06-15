@@ -42,6 +42,9 @@ export default function BookingPage() {
   const [searchParams] = useSearchParams();
   const [page, setPage] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [passportFile, setPassportFile] = useState(null);
+  const [passportMsg, setPassportMsg] = useState('');
+  const [passportUploading, setPassportUploading] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,12 +87,29 @@ export default function BookingPage() {
       const { data: res } = await publicApi.submitBookingRequest(payload);
       setSuccess(res.data);
       reset();
+      setPassportFile(null);
+      setPassportMsg('');
     } catch (err) {
       const msg = err.response?.data?.message || 'Submission failed. Please try again.';
       const fieldErrors = err.response?.data?.errors;
       setError(fieldErrors?.length ? fieldErrors.map((e) => e.message).join(', ') : msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePassportUpload = async () => {
+    if (!success?.orderNumber || !passportFile) return;
+    setPassportUploading(true);
+    setPassportMsg('');
+    try {
+      const { data: res } = await publicApi.uploadPassport(success.orderNumber, passportFile);
+      setPassportMsg(res.message || 'Passport uploaded successfully.');
+      setPassportFile(null);
+    } catch (err) {
+      setPassportMsg(err.response?.data?.message || 'Passport upload failed.');
+    } finally {
+      setPassportUploading(false);
     }
   };
 
@@ -103,11 +123,37 @@ export default function BookingPage() {
       <section className="container-page py-12">
         <div className="mx-auto max-w-2xl">
           {success && (
-            <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-6 text-center">
-              <p className="text-lg font-semibold text-green-800">Request Submitted!</p>
-              <p className="mt-2 text-sm text-green-700">{success.message}</p>
-              <p className="mt-1 text-sm font-medium text-green-800">Order reference: {success.orderNumber}</p>
-              <p className="mt-2 text-xs text-green-700">This is a booking inquiry. Our team will quote the fare and contact you soon.</p>
+            <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-6">
+              <p className="text-center text-lg font-semibold text-green-800">Request Submitted!</p>
+              <p className="mt-2 text-center text-sm text-green-700">{success.message}</p>
+              <p className="mt-1 text-center text-sm font-medium text-green-800">Order reference: {success.orderNumber}</p>
+              <p className="mt-2 text-center text-xs text-green-700">This is a booking inquiry. Our team will quote the fare and contact you soon.</p>
+
+              <div className="mt-6 rounded-lg border border-green-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">Upload passport copy (optional)</p>
+                <p className="mt-1 text-xs text-slate-500">JPEG, PNG or PDF — max 8MB. Speeds up ticket processing.</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="text-sm"
+                    onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePassportUpload}
+                    disabled={!passportFile || passportUploading}
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {passportUploading ? 'Uploading…' : 'Upload passport'}
+                  </button>
+                </div>
+                {passportMsg && (
+                  <p className={`mt-2 text-sm ${passportMsg.includes('failed') ? 'text-red-600' : 'text-green-700'}`}>
+                    {passportMsg}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

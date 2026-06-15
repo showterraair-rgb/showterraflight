@@ -4,6 +4,7 @@ import {
   ORDER_STATUSES,
   JOURNEY_TYPES,
   TRAVEL_CLASSES,
+  APPROVAL_STATUSES,
 } from '../config/constants.js';
 
 export const listQuerySchema = z.object({
@@ -13,6 +14,7 @@ export const listQuerySchema = z.object({
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   status: z.enum(ORDER_STATUSES).optional(),
+  approvalStatus: z.enum(APPROVAL_STATUSES).optional(),
   source: z.enum(ORDER_SOURCES).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),

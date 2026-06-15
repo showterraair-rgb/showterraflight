@@ -9,6 +9,10 @@ import {
 import { generateOrderNumber } from './numberGenerator.service.js';
 import { findOrCreateFromOrder } from './customer.service.js';
 import { logAudit } from './audit.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildOrderNotificationContext } from '../utils/notificationContext.js';
+import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
+import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 
 function formatOrder(doc) {
   return {
@@ -20,6 +24,18 @@ function formatOrder(doc) {
     customerEmail: doc.customerEmail || '',
     source: doc.source,
     status: doc.status,
+    approvalStatus: doc.approvalStatus || 'pending',
+    approvalTimeline: doc.approvalTimeline?.map((t) => ({
+      status: t.status,
+      note: t.note || '',
+      changedBy: t.changedBy?.toString?.() || t.changedBy,
+      changedAt: t.changedAt,
+    })) || [],
+    passportFilePath: doc.passportFilePath || '',
+    passportFileName: doc.passportFileName || '',
+    passportMimeType: doc.passportMimeType || '',
+    passportUploadedAt: doc.passportUploadedAt,
+    passportUrl: doc.passportFilePath ? `/uploads/${String(doc.passportFilePath).replace(/^uploads\//, '')}` : '',
     journeyType: doc.journeyType,
     fromDestination: doc.fromDestination,
     toDestination: doc.toDestination,
@@ -50,6 +66,7 @@ function buildOrderFilter(query) {
   const filter = { ...buildSearchFilter(query.search, ['orderNumber', 'customerName', 'customerPhone', 'fromDestination', 'toDestination']) };
 
   if (query.status) filter.status = query.status;
+  if (query.approvalStatus) filter.approvalStatus = query.approvalStatus;
   if (query.source) filter.source = query.source;
   if (query.isFromWebsite === 'true') filter.isFromWebsite = true;
   if (query.isFromWebsite === 'false') filter.isFromWebsite = false;
@@ -138,6 +155,8 @@ export async function createOrder(data, userId, req) {
     assignedTo: data.assignedTo,
     createdBy: userId,
     isFromWebsite: false,
+    approvalStatus: 'pending',
+    approvalTimeline: [{ status: 'pending', note: 'Order created', changedBy: userId, changedAt: new Date() }],
   });
 
   await logAudit({
@@ -149,6 +168,12 @@ export async function createOrder(data, userId, req) {
     userId,
     req,
   });
+
+  const ctx = buildOrderNotificationContext(order, {
+    vars: { approvalStatus: APPROVAL_STATUS_LABELS.pending },
+  });
+  triggerNotificationEventSafe('admin_manual_order_alert', ctx);
+  fireApprovalSms(order, 'order');
 
   return formatOrder(order.toObject());
 }
@@ -309,12 +334,63 @@ export async function deleteOrder(id, userId, req) {
   return { id, deleted: true, message: 'Order deleted' };
 }
 
+export async function updateOrderApproval(id, data, userId, req) {
+  const order = await Order.findById(id);
+  if (!order) throw ApiError.notFound('Order not found');
+
+  const changed = applyApprovalUpdate(order, data, userId);
+  if (!changed) return formatOrder(order.toObject());
+
+  await order.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'orders',
+    entityType: 'Order',
+    entityId: order._id,
+    description: `Order ${order.orderNumber} approval → ${order.approvalStatus}`,
+    userId,
+    req,
+  });
+
+  fireApprovalSms(order, 'order');
+  return formatOrder(order.toObject());
+}
+
+export async function uploadOrderPassport(id, file, userId, req) {
+  const order = await Order.findById(id);
+  if (!order) throw ApiError.notFound('Order not found');
+  if (!file) throw ApiError.badRequest('No passport file uploaded');
+
+  applyPassportFile(order, {
+    path: `passports/${file.filename}`,
+    fileName: file.originalname,
+    mimeType: file.mimetype,
+  });
+
+  await order.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'orders',
+    entityType: 'Order',
+    entityId: order._id,
+    description: `Passport uploaded for order ${order.orderNumber}`,
+    userId,
+    req,
+  });
+
+  return formatOrder(order.toObject());
+}
+
 export default {
   listOrders,
   getOrderById,
   createOrder,
   updateOrder,
   updateOrderStatus,
+  updateOrderApproval,
+  uploadOrderPassport,
   addFollowUp,
   linkOrderCustomer,
   deleteOrder,

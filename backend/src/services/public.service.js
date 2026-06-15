@@ -90,6 +90,8 @@ export async function createBookingRequest(data) {
     customerEmail: data.customerEmail || undefined,
     source: 'website',
     status: 'inquiry',
+    approvalStatus: 'pending',
+    approvalTimeline: [{ status: 'pending', note: 'Website booking submitted', changedAt: new Date() }],
     journeyType: data.journeyType,
     fromDestination: data.fromDestination,
     toDestination: data.toDestination,
@@ -102,17 +104,40 @@ export async function createBookingRequest(data) {
     websiteBookingId: orderNumber,
   });
 
-  triggerNotificationEventSafe(
-    'admin_new_booking_alert',
-    buildOrderNotificationContext(order, {
-      customerPhone: data.customerPhone,
-      customerEmail: data.customerEmail,
-    })
-  );
+  const ctx = buildOrderNotificationContext(order, {
+    customerPhone: data.customerPhone,
+    customerEmail: data.customerEmail,
+  });
+
+  triggerNotificationEventSafe('admin_new_booking_alert', ctx);
+  triggerNotificationEventSafe('approval_pending', {
+    ...ctx,
+    vars: { ...ctx.vars, referenceNumber: order.orderNumber, approvalStatus: 'Pending' },
+  });
+
+  return {
+    orderId: order._id.toString(),
+    orderNumber: order.orderNumber,
+    message: 'Your booking request has been submitted. We will contact you shortly. Save your order reference — our team will follow up on WhatsApp or phone.',
+  };
+}
+
+export async function uploadPassportByOrderNumber(orderNumber, file) {
+  const order = await Order.findOne({ orderNumber });
+  if (!order) throw ApiError.notFound('Order not found');
+
+  if (!file) throw ApiError.badRequest('No passport file uploaded');
+
+  order.passportFilePath = `passports/${file.filename}`;
+  order.passportFileName = file.originalname;
+  order.passportMimeType = file.mimetype;
+  order.passportUploadedAt = new Date();
+  await order.save();
 
   return {
     orderNumber: order.orderNumber,
-    message: 'Your booking request has been submitted. We will contact you shortly. Save your order reference — our team will follow up on WhatsApp or phone.',
+    passportFileName: order.passportFileName,
+    message: 'Passport uploaded successfully. Our team will review your documents.',
   };
 }
 
@@ -121,4 +146,5 @@ export default {
   getCmsPage,
   getPublishedNotices,
   createBookingRequest,
+  uploadPassportByOrderNumber,
 };

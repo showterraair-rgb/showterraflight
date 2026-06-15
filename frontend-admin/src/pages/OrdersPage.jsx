@@ -13,7 +13,10 @@ import { formatDate } from '../utils/date';
 import {
   ORDER_STATUSES, ORDER_STATUS_LABELS, ORDER_SOURCES, ORDER_SOURCE_LABELS,
   JOURNEY_TYPES, JOURNEY_LABELS, TRAVEL_CLASSES, CLASS_LABELS,
+  APPROVAL_STATUS_LABELS,
 } from '../utils/constants';
+import ApprovalControls from '../components/bookings/ApprovalPanel';
+import PassportUpload from '../components/bookings/PassportUpload';
 
 const schema = z.object({
   customerName: z.string().min(2),
@@ -43,6 +46,7 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [error, setError] = useState('');
 
   const form = useForm({ resolver: zodResolver(schema), defaultValues: {
@@ -73,6 +77,13 @@ export default function OrdersPage() {
 
   const openEdit = async (row) => {
     setEditing(row);
+    setDetail(null);
+    try {
+      const { data } = await ordersApi.get(row.id);
+      setDetail(data.data);
+    } catch {
+      setDetail(row);
+    }
     form.reset({
       customerName: row.customerName,
       customerPhone: row.customerPhone,
@@ -135,6 +146,9 @@ export default function OrdersPage() {
       </span>
     ) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={ORDER_STATUS_LABELS[r.status]} /> },
+    { key: 'approvalStatus', label: 'Approval', render: (r) => (
+      <StatusBadge status={r.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[r.approvalStatus || 'pending']} />
+    ) },
     {
       key: 'actions',
       label: 'Actions',
@@ -195,17 +209,20 @@ export default function OrdersPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Edit Order' : 'New Order'}
+        title={editing ? (can('orders:update') ? 'Edit Order' : 'View Order') : 'New Order'}
         wide
         footer={(
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" form="order-form" className="btn-primary">Save Order</button>
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-secondary">{can('orders:update') || !editing ? 'Cancel' : 'Close'}</button>
+            {((!editing && can('orders:create')) || (editing && can('orders:update'))) && (
+              <button type="submit" form="order-form" className="btn-primary">Save Order</button>
+            )}
           </div>
         )}
       >
         <form id="order-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <fieldset disabled={Boolean(editing && !can('orders:update'))} className="space-y-4 disabled:opacity-90">
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="mb-1 block text-sm font-medium">Customer Name *</label><input className="input-field" {...form.register('customerName')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Phone *</label><input className="input-field" {...form.register('customerPhone')} /></div>
@@ -240,6 +257,36 @@ export default function OrdersPage() {
             <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium">Customer Notes</label><textarea rows={2} className="input-field" {...form.register('requestNotes')} /></div>
             <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium">Internal Notes</label><textarea rows={2} className="input-field" {...form.register('internalNotes')} /></div>
           </div>
+          </fieldset>
+
+          {editing && detail && (
+            <div className="mt-6 space-y-4 border-t border-slate-200 pt-4">
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-slate-900">Approval workflow</h4>
+                <ApprovalControls
+                  approvalStatus={detail.approvalStatus}
+                  disabled={!can('orders:update')}
+                  onUpdate={async (payload) => {
+                    const { data } = await ordersApi.updateApproval(editing.id, payload);
+                    setDetail(data.data);
+                    load();
+                  }}
+                />
+              </div>
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-slate-900">Passport copy</h4>
+                <PassportUpload
+                  record={detail}
+                  disabled={!can('orders:update')}
+                  onUpload={async (file) => {
+                    const { data } = await ordersApi.uploadPassport(editing.id, file);
+                    setDetail(data.data);
+                    load();
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </form>
       </Modal>
     </div>

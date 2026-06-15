@@ -4,7 +4,9 @@ import {
   ORDER_STATUSES,
   JOURNEY_TYPES,
   TRAVEL_CLASSES,
+  APPROVAL_STATUSES,
 } from '../config/constants.js';
+import { approvalTimelineSchema, passportFields } from '../schemas/approvalFields.js';
 
 const followUpNoteSchema = new mongoose.Schema(
   {
@@ -33,6 +35,14 @@ const orderSchema = new mongoose.Schema(
       default: 'inquiry',
       index: true,
     },
+    approvalStatus: {
+      type: String,
+      enum: APPROVAL_STATUSES,
+      default: 'pending',
+      index: true,
+    },
+    approvalTimeline: [approvalTimelineSchema],
+    ...passportFields,
     journeyType: {
       type: String,
       enum: JOURNEY_TYPES,

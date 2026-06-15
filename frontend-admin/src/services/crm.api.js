@@ -22,6 +22,14 @@ export const ordersApi = {
   create: (data) => api.post('/orders', data),
   update: (id, data) => api.put(`/orders/${id}`, data),
   updateStatus: (id, data) => api.patch(`/orders/${id}/status`, data),
+  updateApproval: (id, data) => api.patch(`/orders/${id}/approval`, data),
+  uploadPassport: (id, file) => {
+    const form = new FormData();
+    form.append('passport', file);
+    return api.post(`/orders/${id}/passport`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   addFollowUp: (id, data) => api.post(`/orders/${id}/follow-up`, data),
   linkCustomer: (id, data) => api.post(`/orders/${id}/link-customer`, data),
   delete: (id) => api.delete(`/orders/${id}`),
@@ -34,6 +42,14 @@ export const bookingsApi = {
   createFromOrder: (orderId, data) => api.post(`/bookings/from-order/${orderId}`, data),
   update: (id, data) => api.put(`/bookings/${id}`, data),
   updateStatus: (id, data) => api.patch(`/bookings/${id}/status`, data),
+  updateApproval: (id, data) => api.patch(`/bookings/${id}/approval`, data),
+  uploadPassport: (id, file) => {
+    const form = new FormData();
+    form.append('passport', file);
+    return api.post(`/bookings/${id}/passport`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   addNote: (id, data) => api.post(`/bookings/${id}/notes`, data),
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
   delete: (id) => api.delete(`/bookings/${id}`),

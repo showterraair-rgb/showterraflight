@@ -2,7 +2,9 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as publicController from '../controllers/public.controller.js';
 import { bookingRequestSchema } from '../validators/public.validator.js';
+import { publicPassportUploadSchema } from '../validators/approval.validator.js';
 import validate from '../middlewares/validate.js';
+import { passportUpload } from '../middlewares/upload.js';
 
 const router = Router();
 
@@ -22,6 +24,14 @@ router.post(
   bookingLimiter,
   validate(bookingRequestSchema),
   publicController.createBookingRequest
+);
+
+router.post(
+  '/booking-requests/passport',
+  bookingLimiter,
+  passportUpload.single('passport'),
+  validate(publicPassportUploadSchema),
+  publicController.uploadPassport
 );
 
 export default router;

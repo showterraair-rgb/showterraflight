@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES } from '../config/constants.js';
+import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+import { approvalTimelineSchema, passportFields } from '../schemas/approvalFields.js';
 
 const statusTimelineSchema = new mongoose.Schema(
   {
@@ -38,6 +39,14 @@ const bookingSchema = new mongoose.Schema(
       enum: TRAVEL_CLASSES,
       default: 'economy',
     },
+    approvalStatus: {
+      type: String,
+      enum: APPROVAL_STATUSES,
+      default: 'pending',
+      index: true,
+    },
+    approvalTimeline: [approvalTimelineSchema],
+    ...passportFields,
     airline: { type: String, required: true, trim: true },
     route: { type: String, required: true, trim: true },
     sector: { type: String, trim: true },

@@ -15,6 +15,8 @@ import { logAudit } from './audit.service.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 import { buildBookingNotificationContext } from '../utils/notificationContext.js';
 import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from './financialSync.service.js';
+import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
+import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -57,6 +59,18 @@ function formatBooking(doc) {
     paymentStatus: doc.paymentStatus,
     supplierPaymentStatus: doc.supplierPaymentStatus,
     status: doc.status,
+    approvalStatus: doc.approvalStatus || 'pending',
+    approvalTimeline: doc.approvalTimeline?.map((t) => ({
+      status: t.status,
+      note: t.note || '',
+      changedBy: t.changedBy?.toString?.() || t.changedBy,
+      changedAt: t.changedAt,
+    })) || [],
+    passportFilePath: doc.passportFilePath || '',
+    passportFileName: doc.passportFileName || '',
+    passportMimeType: doc.passportMimeType || '',
+    passportUploadedAt: doc.passportUploadedAt,
+    passportUrl: doc.passportFilePath ? `/uploads/${String(doc.passportFilePath).replace(/^uploads\//, '')}` : '',
     notes: doc.notes || '',
     ticketCopyPath: doc.ticketCopyPath || '',
     ticketCopyFileName: doc.ticketCopyFileName || '',
@@ -80,6 +94,7 @@ function buildBookingFilter(query) {
   const filter = { ...buildSearchFilter(query.search, ['bookingNumber', 'pnr', 'ticketNumber', 'airline', 'route']) };
 
   if (query.status) filter.status = query.status;
+  if (query.approvalStatus) filter.approvalStatus = query.approvalStatus;
   if (query.customerId) filter.customer = query.customerId;
   if (query.supplierId) filter.supplier = query.supplierId;
   if (query.orderId) filter.order = query.orderId;
@@ -106,12 +121,12 @@ function pushTimeline(booking, status, note, userId) {
   booking.statusTimeline.push({ status, note: note || '', changedBy: userId, changedAt: new Date() });
 }
 
-async function fireBookingNotification(eventType, booking, customerDoc = null) {
+async function fireBookingNotification(eventType, booking, customerDoc = null, extra = {}) {
   try {
     const customer = customerDoc || (booking.customer
       ? await Customer.findById(booking.customer).lean()
       : null);
-    triggerNotificationEventSafe(eventType, buildBookingNotificationContext(booking, customer));
+    triggerNotificationEventSafe(eventType, buildBookingNotificationContext(booking, customer, extra));
   } catch (err) {
     console.error('[notification] booking context failed', eventType, err.message);
   }
@@ -182,6 +197,14 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     ticketCopyFileName: data.ticketCopyFileName,
     status: data.status || 'draft',
     createdBy: userId,
+    approvalStatus: orderDoc?.approvalStatus || 'pending',
+    approvalTimeline: orderDoc?.approvalTimeline?.length
+      ? [...orderDoc.approvalTimeline]
+      : [{ status: 'pending', note: 'Booking created', changedBy: userId, changedAt: new Date() }],
+    passportFilePath: orderDoc?.passportFilePath,
+    passportFileName: orderDoc?.passportFileName,
+    passportMimeType: orderDoc?.passportMimeType,
+    passportUploadedAt: orderDoc?.passportUploadedAt,
     statusTimeline: [{ status: data.status || 'draft', note: 'Booking created', changedBy: userId }],
   });
 
@@ -205,7 +228,12 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     req,
   });
 
-  await fireBookingNotification('manual_order_created', booking);
+  await fireBookingNotification('admin_manual_booking_alert', booking, null, {
+    vars: { approvalStatus: APPROVAL_STATUS_LABELS[booking.approvalStatus || 'pending'] },
+  });
+  if (!orderDoc) {
+    fireApprovalSms(booking, 'booking');
+  }
 
   await syncBookingFinancials(booking._id);
 
@@ -403,8 +431,9 @@ export async function addBookingNote(id, note, userId, req) {
 
 export async function getBookingTimeline(id) {
   const booking = await Booking.findById(id)
-    .select('bookingNumber statusTimeline activityNotes')
+    .select('bookingNumber statusTimeline approvalTimeline activityNotes')
     .populate('statusTimeline.changedBy', 'name')
+    .populate('approvalTimeline.changedBy', 'name')
     .populate('activityNotes.createdBy', 'name')
     .lean();
 
@@ -413,6 +442,7 @@ export async function getBookingTimeline(id) {
   return {
     bookingNumber: booking.bookingNumber,
     timeline: booking.statusTimeline,
+    approvalTimeline: booking.approvalTimeline || [],
     activityNotes: booking.activityNotes,
   };
 }
@@ -451,6 +481,55 @@ export async function deleteBooking(id, userId, req) {
   return { id, deleted: true, message: 'Booking deleted' };
 }
 
+export async function updateBookingApproval(id, data, userId, req) {
+  const booking = await Booking.findById(id).populate('customer', 'name phone email');
+  if (!booking) throw ApiError.notFound('Booking not found');
+
+  const changed = applyApprovalUpdate(booking, data, userId);
+  if (!changed) return getBookingById(id);
+
+  await booking.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Booking ${booking.bookingNumber} approval → ${booking.approvalStatus}`,
+    userId,
+    req,
+  });
+
+  fireApprovalSms(booking, 'booking', { customer: booking.customer });
+  return getBookingById(id);
+}
+
+export async function uploadBookingPassport(id, file, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+  if (!file) throw ApiError.badRequest('No passport file uploaded');
+
+  applyPassportFile(booking, {
+    path: `passports/${file.filename}`,
+    fileName: file.originalname,
+    mimeType: file.mimetype,
+  });
+
+  await booking.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Passport uploaded for booking ${booking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return getBookingById(id);
+}
+
 export default {
   listBookings,
   getBookingById,
@@ -458,6 +537,8 @@ export default {
   createBookingFromOrder,
   updateBooking,
   updateBookingStatus,
+  updateBookingApproval,
+  uploadBookingPassport,
   addBookingNote,
   getBookingTimeline,
   deleteBooking,

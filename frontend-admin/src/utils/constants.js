@@ -46,6 +46,15 @@ export const CLASS_LABELS = {
   first: 'First Class',
 };
 
+export const APPROVAL_STATUSES = ['pending', 'checking', 'processing', 'approved'];
+
+export const APPROVAL_STATUS_LABELS = {
+  pending: 'Pending',
+  checking: 'Checking',
+  processing: 'Processing',
+  approved: 'Approved',
+};
+
 export const SUPPLIER_TYPES = ['agent', 'supplier', 'airline_office', 'other'];
 
 export const STATUS_COLORS = {
@@ -62,6 +71,9 @@ export const STATUS_COLORS = {
   ticket_issued: 'bg-purple-100 text-purple-700',
   completed: 'bg-green-100 text-green-700',
   pending: 'bg-amber-100 text-amber-800',
+  checking: 'bg-sky-100 text-sky-800',
+  processing: 'bg-indigo-100 text-indigo-700',
+  approved: 'bg-green-100 text-green-800',
   sent: 'bg-blue-100 text-blue-700',
   failed: 'bg-red-100 text-red-700',
   dismissed: 'bg-slate-200 text-slate-600',

@@ -29,9 +29,20 @@ export const createBookingRequest = asyncHandler(async (req, res) => {
   });
 });
 
+export const uploadPassport = asyncHandler(async (req, res) => {
+  const data = await publicService.uploadPassportByOrderNumber(req.body.orderNumber, req.file);
+
+  res.json({
+    success: true,
+    data,
+    message: data.message,
+  });
+});
+
 export default {
   getCompanySettings,
   getCmsPage,
   getNotices,
   createBookingRequest,
+  uploadPassport,
 };

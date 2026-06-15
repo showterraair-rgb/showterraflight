@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES } from '../config/constants.js';
+import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
 
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -8,6 +8,7 @@ export const listQuerySchema = z.object({
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   status: z.enum(BOOKING_STATUSES).optional(),
+  approvalStatus: z.enum(APPROVAL_STATUSES).optional(),
   customerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   supplierId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),

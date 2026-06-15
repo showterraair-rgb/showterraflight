@@ -7,7 +7,7 @@
  * Optional env overrides (backend/.env):
  *   DEMO_USER_EMAIL=demo@showterraair.com
  *   DEMO_USER_PASSWORD=Demo@123456
- *   DEMO_USER_ROLE=admin|executive|accountant
+ *   DEMO_USER_ROLE=demo|admin|executive|accountant
  */
 import mongoose from 'mongoose';
 import { env } from '../config/env.js';
@@ -19,7 +19,7 @@ const DEMO_DEFAULTS = {
   email: 'demo@showterraair.com',
   password: 'Demo@123456',
   phone: '01700000000',
-  role: ROLES.ADMIN,
+  role: ROLES.DEMO,
 };
 
 async function run() {
@@ -28,7 +28,7 @@ async function run() {
   const role = process.env.DEMO_USER_ROLE || DEMO_DEFAULTS.role;
 
   if (!Object.values(ROLES).includes(role)) {
-    console.error(`Invalid DEMO_USER_ROLE: ${role}. Use admin, accountant, or executive.`);
+    console.error(`Invalid DEMO_USER_ROLE: ${role}. Use admin, accountant, executive, or demo.`);
     process.exit(1);
   }
 

@@ -9,7 +9,7 @@ import { usePermission } from '../hooks/usePermission';
 import { formatDate } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { downloadBlob } from '../utils/download';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
+import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 
 export default function BookingsPage() {
   const { can } = usePermission();
@@ -63,6 +63,9 @@ export default function BookingsPage() {
     { key: 'salePrice', label: 'Sale', render: (r) => formatCurrency(r.salePrice) },
     { key: 'profit', label: 'Profit', render: (r) => <span className={r.profit >= 0 ? 'text-green-700' : 'text-red-600'}>{formatCurrency(r.profit)}</span> },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={BOOKING_STATUS_LABELS[r.status]} /> },
+    { key: 'approvalStatus', label: 'Approval', render: (r) => (
+      <StatusBadge status={r.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[r.approvalStatus || 'pending']} />
+    ) },
     {
       key: 'actions',
       label: 'Actions',
@@ -72,7 +75,7 @@ export default function BookingsPage() {
         <RowActions
           items={[
             can('bookings:view') && { type: 'link', label: 'View', to: `/bookings/${r.id}` },
-            (can('bookings:update') || can('bookings:view')) && { type: 'link', label: 'Edit', to: `/bookings/${r.id}/edit`, variant: 'muted' },
+            can('bookings:update') && { type: 'link', label: 'Edit', to: `/bookings/${r.id}/edit`, variant: 'muted' },
             can('bookings:view') && { type: 'button', label: 'PDF', onClick: () => handlePdf(r), variant: 'muted' },
             can('bookings:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
           ]}

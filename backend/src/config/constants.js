@@ -6,6 +6,7 @@ export const ROLES = {
   ADMIN: 'admin',
   ACCOUNTANT: 'accountant',
   EXECUTIVE: 'executive',
+  DEMO: 'demo',
 };
 
 export const ORDER_SOURCES = ['website', 'phone', 'whatsapp', 'walk_in'];
@@ -32,6 +33,23 @@ export const BOOKING_STATUSES = [
 
 export const PAYMENT_STATUSES = ['unpaid', 'partial', 'paid'];
 
+export const APPROVAL_STATUSES = ['pending', 'checking', 'processing', 'approved'];
+
+export const APPROVAL_STATUS_LABELS = {
+  pending: 'Pending',
+  checking: 'Checking',
+  processing: 'Processing',
+  approved: 'Approved',
+};
+
+/** SMS event fired when approval status changes to this value */
+export const APPROVAL_STATUS_SMS_EVENTS = {
+  pending: 'approval_pending',
+  checking: 'approval_checking',
+  processing: 'approval_processing',
+  approved: 'approval_approved',
+};
+
 export const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
 
 export const TRAVEL_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
@@ -51,11 +69,18 @@ export const NOTIFICATION_EVENT_TYPES = [
   'website_order_created',
   'manual_order_created',
   'admin_new_booking_alert',
+  'admin_manual_order_alert',
+  'admin_manual_booking_alert',
+  'approval_pending',
+  'approval_checking',
+  'approval_processing',
+  'approval_approved',
   'booking_approved',
   'ticket_issued',
   'payment_received',
   'payment_due_reminder',
   'booking_canceled',
+  'daily_ledger_summary',
 ];
 
 export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'failed'];
@@ -81,6 +106,55 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     smsBody: 'New website order {{orderNumber}} from {{customerName}} ({{customerPhone}}). Route: {{route}}',
     emailSubject: 'New website order — {{orderNumber}}',
     emailBody: 'A new website booking request was submitted.\n\nOrder: {{orderNumber}}\nCustomer: {{customerName}}\nPhone: {{customerPhone}}\nRoute: {{route}}\n\nPlease review in admin panel.',
+  },
+  {
+    templateKey: 'admin_manual_order_alert',
+    name: 'Admin alert — manual order',
+    smsBody: 'New manual order {{orderNumber}} — {{customerName}} ({{customerPhone}}). Route: {{route}}. Approval: {{approvalStatus}}',
+    emailSubject: 'Manual order — {{orderNumber}}',
+    emailBody: 'A manual order was created in admin.\n\nOrder: {{orderNumber}}\nCustomer: {{customerName}}\nPhone: {{customerPhone}}\nRoute: {{route}}',
+  },
+  {
+    templateKey: 'admin_manual_booking_alert',
+    name: 'Admin alert — manual booking',
+    smsBody: 'New manual booking {{bookingNumber}} — {{customerName}} ({{customerPhone}}). Route: {{route}}. Approval: {{approvalStatus}}',
+    emailSubject: 'Manual booking — {{bookingNumber}}',
+    emailBody: 'A manual booking was created.\n\nBooking: {{bookingNumber}}\nCustomer: {{customerName}}\nRoute: {{route}}',
+  },
+  {
+    templateKey: 'approval_pending',
+    name: 'Approval — pending',
+    smsBody: 'Hello {{customerName}}, your request {{referenceNumber}} is received. Status: Pending review. Upload passport if not done. — Show Terra Flight',
+    emailSubject: 'Request {{referenceNumber}} — Pending',
+    emailBody: 'Hello {{customerName}},\n\nYour travel request {{referenceNumber}} is pending review.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'approval_checking',
+    name: 'Approval — checking',
+    smsBody: 'Hello {{customerName}}, request {{referenceNumber}} is now under checking. — Show Terra Flight',
+    emailSubject: 'Request {{referenceNumber}} — Checking',
+    emailBody: 'Hello {{customerName}},\n\nYour request {{referenceNumber}} is being checked.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'approval_processing',
+    name: 'Approval — processing',
+    smsBody: 'Hello {{customerName}}, request {{referenceNumber}} is processing. We will update you soon. — Show Terra Flight',
+    emailSubject: 'Request {{referenceNumber}} — Processing',
+    emailBody: 'Hello {{customerName}},\n\nYour request {{referenceNumber}} is processing.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'approval_approved',
+    name: 'Approval — approved',
+    smsBody: 'Good news {{customerName}}! Request {{referenceNumber}} is APPROVED. We will issue ticket shortly. — Show Terra Flight',
+    emailSubject: 'Request {{referenceNumber}} — Approved',
+    emailBody: 'Hello {{customerName}},\n\nYour request {{referenceNumber}} has been approved.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'daily_ledger_summary',
+    name: 'Daily ledger summary (admin)',
+    smsBody: 'STF Daily {{reportDate}}: Accounts ৳{{totalBalance}} | Orders {{todayOrders}} Bookings {{todayBookings}} | Cust due ৳{{customerDue}} Supp due ৳{{supplierPayable}}',
+    emailSubject: 'Daily ledger — {{reportDate}}',
+    emailBody: 'Daily summary for {{reportDate}}:\n\nTotal account balance: ৳{{totalBalance}}\nOrders today: {{todayOrders}}\nBookings today: {{todayBookings}}\nCustomer due: ৳{{customerDue}}\nSupplier payable: ৳{{supplierPayable}}',
   },
   {
     templateKey: 'booking_approved',
@@ -120,14 +194,21 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
 ];
 
 export const DEFAULT_AUTOMATION_RULES = [
-  { eventType: 'website_order_created', notifyCustomer: false, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: false },
+  { eventType: 'website_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'admin_new_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'admin_manual_order_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'admin_manual_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'approval_pending', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'approval_checking', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'approval_processing', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'approval_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'booking_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'ticket_issued', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
   { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
+  { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, isEnabled: true },
 ];
 
 export const TRANSACTION_TYPES = [

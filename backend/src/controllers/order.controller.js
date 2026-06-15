@@ -41,4 +41,14 @@ export const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: data.message });
 });
 
-export default { list, getById, create, update, updateStatus, addFollowUp, linkCustomer, remove };
+export const updateApproval = asyncHandler(async (req, res) => {
+  const data = await orderService.updateOrderApproval(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Approval status updated' });
+});
+
+export const uploadPassport = asyncHandler(async (req, res) => {
+  const data = await orderService.uploadOrderPassport(req.params.id, req.file, req.user.id, req);
+  res.json({ success: true, data, message: 'Passport uploaded' });
+});
+
+export default { list, getById, create, update, updateStatus, addFollowUp, linkCustomer, remove, updateApproval, uploadPassport };

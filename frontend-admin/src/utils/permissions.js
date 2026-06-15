@@ -144,6 +144,10 @@ export function hasPermission(userPermissions, role, required) {
   });
 }
 
+export function isReadOnlyUser(user) {
+  return user?.role === 'demo';
+}
+
 export function getVisibleNavItems(user) {
   if (!user) return [];
   return NAV_ITEMS.filter((item) =>

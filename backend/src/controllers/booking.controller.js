@@ -59,6 +59,16 @@ export const downloadInvoicePdf = asyncHandler(async (req, res) => {
   res.send(buffer);
 });
 
+export const updateApproval = asyncHandler(async (req, res) => {
+  const data = await bookingService.updateBookingApproval(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Approval status updated' });
+});
+
+export const uploadPassport = asyncHandler(async (req, res) => {
+  const data = await bookingService.uploadBookingPassport(req.params.id, req.file, req.user.id, req);
+  res.json({ success: true, data, message: 'Passport uploaded' });
+});
+
 export default {
   list,
   getById,
@@ -66,6 +76,8 @@ export default {
   createFromOrder,
   update,
   updateStatus,
+  updateApproval,
+  uploadPassport,
   addNote,
   getTimeline,
   remove,

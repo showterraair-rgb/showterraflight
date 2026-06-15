@@ -8,7 +8,9 @@ import { usePermission } from '../hooks/usePermission';
 import { formatDate, formatDateTime } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { downloadBlob } from '../utils/download';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS } from '../utils/constants';
+import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
+import ApprovalControls from '../components/bookings/ApprovalPanel';
+import PassportUpload from '../components/bookings/PassportUpload';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
@@ -92,8 +94,9 @@ export default function BookingDetailPage() {
         <div>
           <Link to="/bookings" className="text-sm text-brand-600 hover:underline">← Back to Bookings</Link>
           <h2 className="mt-2 text-xl font-bold text-slate-900">{booking.bookingNumber}</h2>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <StatusBadge status={booking.status} label={BOOKING_STATUS_LABELS[booking.status]} />
+            <StatusBadge status={booking.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[booking.approvalStatus || 'pending']} />
             {booking.orderNumber && (
               <span className="text-sm text-slate-500">Order: {booking.orderNumber}</span>
             )}
@@ -127,6 +130,30 @@ export default function BookingDetailPage() {
           <p className="text-xs font-medium uppercase text-slate-500">Supplier Payable</p>
           <p className="text-2xl font-bold text-amber-700">{formatCurrency(booking.computed?.supplierPayable ?? booking.supplierPayable)}</p>
         </div>
+      </div>
+
+      <div className="card space-y-4">
+        <h3 className="font-semibold text-slate-900">Approval workflow</h3>
+        <ApprovalControls
+          approvalStatus={booking.approvalStatus}
+          disabled={!can('bookings:update')}
+          onUpdate={async (payload) => {
+            await bookingsApi.updateApproval(id, payload);
+            load();
+          }}
+        />
+      </div>
+
+      <div className="card space-y-3">
+        <h3 className="font-semibold text-slate-900">Passport copy</h3>
+        <PassportUpload
+          record={booking}
+          disabled={!can('bookings:update')}
+          onUpload={async (file) => {
+            await bookingsApi.uploadPassport(id, file);
+            load();
+          }}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -232,6 +259,19 @@ export default function BookingDetailPage() {
               <p className="mt-1 text-xs text-slate-400">{n.createdBy?.name || 'Staff'} — {formatDateTime(n.createdAt)}</p>
             </li>
           )) : <p className="text-sm text-slate-500">No notes yet.</p>}
+        </ul>
+      </div>
+
+      <div className="card">
+        <h3 className="mb-3 font-semibold text-slate-900">Approval Timeline</h3>
+        <ul className="space-y-2">
+          {timeline?.approvalTimeline?.length ? timeline.approvalTimeline.map((t, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-3 text-sm">
+              <StatusBadge status={t.status} label={APPROVAL_STATUS_LABELS[t.status] || t.status} />
+              <span className="text-slate-500">{formatDateTime(t.changedAt)}</span>
+              {t.note && <span className="text-slate-600">— {t.note}</span>}
+            </li>
+          )) : <p className="text-sm text-slate-500">No approval steps yet.</p>}
         </ul>
       </div>
 

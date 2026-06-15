@@ -29,6 +29,7 @@ const ROLE_LABELS = {
   [ROLES.ADMIN]: 'Administrator',
   [ROLES.ACCOUNTANT]: 'Accountant',
   [ROLES.EXECUTIVE]: 'Executive',
+  [ROLES.DEMO]: 'Demo (Read-only)',
 };
 
 async function seedRoles() {
@@ -174,12 +175,19 @@ async function seedCmsPages() {
 }
 
 async function seedAdminUser() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@showterraair.com';
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@showterraair.com').toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456';
 
   const existing = await User.findOne({ email: adminEmail });
   if (existing) {
-    console.log('✓ Admin user already exists — skipped');
+    existing.name = 'System Admin';
+    existing.role = ROLES.ADMIN;
+    existing.isActive = true;
+    if (process.env.SEED_ADMIN_PASSWORD) {
+      existing.password = adminPassword;
+    }
+    await existing.save();
+    console.log(`✓ Main admin active: ${adminEmail}`);
     return;
   }
 
@@ -201,7 +209,7 @@ async function seedDemoUser() {
 
   const email = (process.env.DEMO_USER_EMAIL || 'demo@showterraair.com').toLowerCase();
   const password = process.env.DEMO_USER_PASSWORD || 'Demo@123456';
-  const role = process.env.DEMO_USER_ROLE || ROLES.ADMIN;
+  const role = process.env.DEMO_USER_ROLE || ROLES.DEMO;
 
   const existing = await User.findOne({ email });
   if (existing) {

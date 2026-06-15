@@ -11,6 +11,14 @@ export const publicApi = {
   getCmsPage: (pageKey) => api.get(`/public/cms/pages/${pageKey}`),
   getNotices: (params) => api.get('/public/cms/notices', { params }),
   submitBookingRequest: (data) => api.post('/public/booking-requests', data),
+  uploadPassport: (orderNumber, file) => {
+    const form = new FormData();
+    form.append('orderNumber', orderNumber);
+    form.append('passport', file);
+    return api.post('/public/booking-requests/passport', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export default api;

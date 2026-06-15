@@ -4,6 +4,7 @@ const ROLE_LABELS = {
   admin: 'Administrator',
   accountant: 'Accountant',
   executive: 'Executive',
+  demo: 'Demo (Read-only)',
 };
 
 export default function Header({ title, onMenuClick }) {

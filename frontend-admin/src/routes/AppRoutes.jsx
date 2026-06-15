@@ -45,7 +45,7 @@ export default function AppRoutes() {
 
             <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
-            <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:view', 'bookings:update']}><BookingFormPage /></ProtectedRoute>} />
+            <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id" element={<ProtectedRoute permissions={['bookings:view']}><BookingDetailPage /></ProtectedRoute>} />
 
             <Route path="accounts" element={<ProtectedRoute permissions={['accounts:view']}><AccountsPage /></ProtectedRoute>} />

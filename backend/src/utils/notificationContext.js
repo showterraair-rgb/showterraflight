@@ -25,6 +25,11 @@ export function buildOrderNotificationContext(order, extra = {}) {
 }
 
 export function buildBookingNotificationContext(booking, customer, extra = {}) {
+  const route = booking.route
+    || (booking.fromDestination && booking.toDestination
+      ? `${booking.fromDestination} → ${booking.toDestination}`
+      : '');
+
   return {
     bookingId: booking._id?.toString?.() || booking.id,
     orderId: booking.order?._id?.toString?.() || booking.order?.toString?.() || null,
@@ -35,10 +40,11 @@ export function buildBookingNotificationContext(booking, customer, extra = {}) {
       customerName: customer?.name || booking.customerName || '',
       bookingNumber: booking.bookingNumber || '',
       salePrice: booking.salePrice ?? 0,
-      route: booking.route || '',
+      route,
       departureDate: formatDateValue(booking.departureDate),
       pnr: booking.pnr || '',
       dueAmount: booking.customerDue ?? extra.dueAmount ?? 0,
+      referenceNumber: booking.bookingNumber || extra.vars?.referenceNumber || '',
       ...extra.vars,
     },
   };
