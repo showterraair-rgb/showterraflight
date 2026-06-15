@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { BOOKING_STATUSES, PAYMENT_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES } from '../config/constants.js';
 
 const statusTimelineSchema = new mongoose.Schema(
   {
@@ -26,6 +26,18 @@ const bookingSchema = new mongoose.Schema(
     order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
+    journeyType: {
+      type: String,
+      enum: JOURNEY_TYPES,
+      default: 'one_way',
+    },
+    fromDestination: { type: String, trim: true, default: '' },
+    toDestination: { type: String, trim: true, default: '' },
+    travelClass: {
+      type: String,
+      enum: TRAVEL_CLASSES,
+      default: 'economy',
+    },
     airline: { type: String, required: true, trim: true },
     route: { type: String, required: true, trim: true },
     sector: { type: String, trim: true },

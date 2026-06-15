@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BOOKING_STATUSES, PAYMENT_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES } from '../config/constants.js';
 
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -19,6 +19,10 @@ export const createBookingSchema = z.object({
   orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   customerId: z.string().regex(/^[a-f\d]{24}$/i),
   supplierId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  journeyType: z.enum(JOURNEY_TYPES).default('one_way'),
+  fromDestination: z.string().min(2).max(100).trim(),
+  toDestination: z.string().min(2).max(100).trim(),
+  travelClass: z.enum(TRAVEL_CLASSES).default('economy'),
   airline: z.string().min(2).max(100).trim(),
   route: z.string().min(2).max(200).trim(),
   sector: z.string().max(100).optional(),
@@ -34,6 +38,9 @@ export const createBookingSchema = z.object({
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
+}).refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
+  message: 'Return date required for round trip',
+  path: ['returnDate'],
 });
 
 export const updateBookingSchema = createBookingSchema.partial().omit({ orderId: true });

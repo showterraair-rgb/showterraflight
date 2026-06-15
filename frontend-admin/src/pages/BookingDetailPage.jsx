@@ -8,7 +8,7 @@ import { usePermission } from '../hooks/usePermission';
 import { formatDate, formatDateTime } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { downloadBlob } from '../utils/download';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
+import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS } from '../utils/constants';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
@@ -135,9 +135,18 @@ export default function BookingDetailPage() {
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-slate-500">Customer</dt><dd>{booking.customerName} ({booking.customerPhone})</dd>
             <dt className="text-slate-500">Supplier</dt><dd>{booking.supplierName || '—'}</dd>
+            <dt className="text-slate-500">Journey</dt><dd>{JOURNEY_LABELS[booking.journeyType] || booking.journeyType || '—'}</dd>
+            <dt className="text-slate-500">Class</dt><dd>{CLASS_LABELS[booking.travelClass] || booking.travelClass || '—'}</dd>
+            <dt className="text-slate-500">From</dt><dd>{booking.fromDestination || '—'}</dd>
+            <dt className="text-slate-500">To</dt><dd>{booking.toDestination || '—'}</dd>
             <dt className="text-slate-500">Airline</dt><dd>{booking.airline}</dd>
             <dt className="text-slate-500">Route</dt><dd>{booking.route}</dd>
             <dt className="text-slate-500">Departure</dt><dd>{formatDate(booking.departureDate)}</dd>
+            {booking.returnDate && (
+              <>
+                <dt className="text-slate-500">Return</dt><dd>{formatDate(booking.returnDate)}</dd>
+              </>
+            )}
             <dt className="text-slate-500">PNR</dt><dd>{booking.pnr || '—'}</dd>
             <dt className="text-slate-500">Ticket #</dt><dd>{booking.ticketNumber || '—'}</dd>
             <dt className="text-slate-500">Passengers</dt><dd>{booking.passengerCount}</dd>

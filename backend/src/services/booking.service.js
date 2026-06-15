@@ -34,6 +34,10 @@ function formatBooking(doc) {
     customerPhone: doc.customer?.phone,
     supplier: doc.supplier?._id?.toString() || doc.supplier?.toString() || null,
     supplierName: doc.supplier?.name,
+    journeyType: doc.journeyType || 'one_way',
+    fromDestination: doc.fromDestination || '',
+    toDestination: doc.toDestination || '',
+    travelClass: doc.travelClass || 'economy',
     airline: doc.airline,
     route: doc.route,
     sector: doc.sector || '',
@@ -156,6 +160,10 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     order: orderDoc?._id || data.orderId,
     customer: data.customerId,
     supplier: data.supplierId,
+    journeyType: data.journeyType || 'one_way',
+    fromDestination: data.fromDestination || '',
+    toDestination: data.toDestination || '',
+    travelClass: data.travelClass || 'economy',
     airline: data.airline,
     route: data.route,
     sector: data.sector,
@@ -231,6 +239,10 @@ export async function createBookingFromOrder(orderId, data, userId, req) {
     orderId,
     customerId: customerId.toString(),
     supplierId: data.supplierId,
+    journeyType: data.journeyType || order.journeyType,
+    fromDestination: data.fromDestination || order.fromDestination,
+    toDestination: data.toDestination || order.toDestination,
+    travelClass: data.travelClass || order.travelClass,
     airline: data.airline || `${order.fromDestination}-${order.toDestination}`,
     route: data.route || `${order.fromDestination} → ${order.toDestination}`,
     sector: data.sector,
@@ -261,6 +273,10 @@ export async function updateBooking(id, data, userId, req) {
 
   if (data.supplierId !== undefined) booking.supplier = data.supplierId || undefined;
   if (data.customerId) booking.customer = data.customerId;
+  if (data.journeyType) booking.journeyType = data.journeyType;
+  if (data.fromDestination !== undefined) booking.fromDestination = data.fromDestination;
+  if (data.toDestination !== undefined) booking.toDestination = data.toDestination;
+  if (data.travelClass) booking.travelClass = data.travelClass;
   if (data.airline) booking.airline = data.airline;
   if (data.route) booking.route = data.route;
   if (data.sector !== undefined) booking.sector = data.sector;
