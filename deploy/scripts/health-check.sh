@@ -11,10 +11,21 @@ URL="${BASE%/}/api/v1/health"
 
 echo "==> Health check: $URL"
 
-RESP=$(curl -sf "$URL") || {
+RESP=""
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if RESP=$(curl -sf "$URL" 2>/dev/null); then
+    break
+  fi
+  if [[ $i -lt 10 ]]; then
+    echo "  attempt $i/10 — API not ready yet, retrying..."
+    sleep 2
+  fi
+done
+
+if [[ -z "$RESP" ]]; then
   echo "FAIL: Could not reach $URL" >&2
   exit 1
-}
+fi
 
 echo "$RESP" | grep -q '"success":true' || {
   echo "FAIL: Unexpected response: $RESP" >&2
