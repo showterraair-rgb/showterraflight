@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -35,6 +36,9 @@ const schema = z.object({
   requestNotes: z.string().optional(),
   internalNotes: z.string().optional(),
   nextFollowUpDate: z.string().optional(),
+}).refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
+  message: 'Return date required for round trip',
+  path: ['returnDate'],
 });
 
 export default function OrdersPage() {
@@ -160,10 +164,16 @@ export default function OrdersPage() {
             can('orders:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
             can('orders:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
             can('orders:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
-            can('bookings:create') && !['closed', 'cancelled'].includes(r.status) && {
+            can('bookings:create') && !['closed', 'cancelled'].includes(r.status) && !r.linkedBooking && {
               type: 'link',
               label: 'Booking',
               to: `/bookings/new?orderId=${r.id}`,
+              variant: 'muted',
+            },
+            can('bookings:view') && r.linkedBooking && {
+              type: 'link',
+              label: r.linkedBooking.bookingNumber,
+              to: `/bookings/${r.linkedBooking.id}`,
               variant: 'muted',
             },
           ]}
@@ -261,6 +271,14 @@ export default function OrdersPage() {
 
           {editing && detail && (
             <div className="mt-6 space-y-4 border-t border-slate-200 pt-4">
+              {detail.linkedBooking && (
+                <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">
+                  Linked booking:{' '}
+                  <Link to={`/bookings/${detail.linkedBooking.id}`} className="font-medium underline">
+                    {detail.linkedBooking.bookingNumber}
+                  </Link>
+                </div>
+              )}
               <div>
                 <h4 className="mb-2 text-sm font-semibold text-slate-900">Approval workflow</h4>
                 <ApprovalControls

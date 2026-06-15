@@ -7,6 +7,13 @@ import {
   APPROVAL_STATUSES,
 } from '../config/constants.js';
 
+function roundTripRefine(schema) {
+  return schema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
+    message: 'Return date required for round trip',
+    path: ['returnDate'],
+  });
+}
+
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -21,7 +28,7 @@ export const listQuerySchema = z.object({
   isFromWebsite: z.enum(['true', 'false']).optional(),
 });
 
-export const createOrderSchema = z.object({
+const createOrderBaseSchema = z.object({
   customerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   customerName: z.string().min(2).max(100).trim(),
   customerPhone: z.string().min(10).max(20).trim(),
@@ -42,7 +49,9 @@ export const createOrderSchema = z.object({
   assignedTo: z.string().regex(/^[a-f\d]{24}$/i).optional(),
 });
 
-export const updateOrderSchema = createOrderSchema.partial().omit({ source: true });
+export const createOrderSchema = roundTripRefine(createOrderBaseSchema);
+
+export const updateOrderSchema = roundTripRefine(createOrderBaseSchema.partial().omit({ source: true }));
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),

@@ -14,7 +14,7 @@ import { buildOrderNotificationContext } from '../utils/notificationContext.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 
-function formatOrder(doc) {
+function formatOrder(doc, linkedBooking = null) {
   return {
     id: doc._id.toString(),
     orderNumber: doc.orderNumber,
@@ -59,6 +59,9 @@ function formatOrder(doc) {
       createdBy: n.createdBy?.toString(),
       createdAt: n.createdAt,
     })),
+    linkedBooking: linkedBooking
+      ? { id: linkedBooking._id.toString(), bookingNumber: linkedBooking.bookingNumber, status: linkedBooking.status }
+      : null,
   };
 }
 
@@ -98,8 +101,14 @@ export async function listOrders(query) {
     Order.countDocuments(filter),
   ]);
 
+  const orderIds = items.map((o) => o._id);
+  const bookings = orderIds.length
+    ? await Booking.find({ order: { $in: orderIds } }).select('order bookingNumber status').lean()
+    : [];
+  const bookingByOrder = new Map(bookings.map((b) => [b.order.toString(), b]));
+
   return {
-    items: items.map(formatOrder),
+    items: items.map((o) => formatOrder(o, bookingByOrder.get(o._id.toString()) || null)),
     pagination: buildPaginationResponse({ page, limit, total }),
   };
 }
@@ -111,12 +120,9 @@ export async function getOrderById(id) {
   const booking = await Booking.findOne({ order: id }).select('bookingNumber status _id').lean();
 
   return {
-    ...formatOrder(order),
+    ...formatOrder(order, booking),
     customerDetails: order.customer
       ? { id: order.customer._id.toString(), name: order.customer.name, phone: order.customer.phone, email: order.customer.email }
-      : null,
-    linkedBooking: booking
-      ? { id: booking._id.toString(), bookingNumber: booking.bookingNumber, status: booking.status }
       : null,
   };
 }

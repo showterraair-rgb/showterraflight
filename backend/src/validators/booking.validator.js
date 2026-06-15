@@ -1,5 +1,18 @@
 import { z } from 'zod';
-import { BOOKING_STATUSES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+
+const objectId = z.string().regex(/^[a-f\d]{24}$/i);
+const optionalObjectId = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined ? undefined : v),
+  objectId.optional()
+);
+
+function roundTripRefine(schema) {
+  return schema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
+    message: 'Return date required for round trip',
+    path: ['returnDate'],
+  });
+}
 
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -9,17 +22,17 @@ export const listQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
   status: z.enum(BOOKING_STATUSES).optional(),
   approvalStatus: z.enum(APPROVAL_STATUSES).optional(),
-  customerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  supplierId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  customerId: objectId.optional(),
+  supplierId: objectId.optional(),
+  orderId: objectId.optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
 });
 
 export const createBookingBaseSchema = z.object({
-  orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
-  customerId: z.string().regex(/^[a-f\d]{24}$/i),
-  supplierId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  orderId: objectId.optional(),
+  customerId: objectId,
+  supplierId: objectId.optional(),
   journeyType: z.enum(JOURNEY_TYPES).default('one_way'),
   fromDestination: z.string().min(2).max(100).trim(),
   toDestination: z.string().min(2).max(100).trim(),
@@ -39,15 +52,27 @@ export const createBookingBaseSchema = z.object({
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
-
 });
 
-export const createBookingSchema = createBookingBaseSchema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
- message: 'Return date required for round trip',
- path: ['returnDate'],
-});
+export const createBookingSchema = roundTripRefine(createBookingBaseSchema);
 
-export const updateBookingSchema = createBookingBaseSchema.partial().omit({ orderId: true });
+/** From-order: customerId optional — backend auto-creates from order contact */
+export const createBookingFromOrderSchema = roundTripRefine(
+  createBookingBaseSchema.partial().extend({
+    customerId: optionalObjectId,
+    fromDestination: z.string().min(2).max(100).trim().optional(),
+    toDestination: z.string().min(2).max(100).trim().optional(),
+    airline: z.string().min(2).max(100).trim().optional(),
+    route: z.string().min(2).max(200).trim().optional(),
+    departureDate: z.string().min(1).optional(),
+  })
+);
+
+export const updateBookingSchema = roundTripRefine(
+  createBookingBaseSchema.partial().omit({ orderId: true }).extend({
+    customerId: optionalObjectId,
+  })
+);
 
 export const updateBookingStatusSchema = z.object({
   status: z.enum(BOOKING_STATUSES),
@@ -69,6 +94,7 @@ export const idParamSchema = z.object({
 export default {
   listQuerySchema,
   createBookingSchema,
+  createBookingFromOrderSchema,
   updateBookingSchema,
   updateBookingStatusSchema,
   addBookingNoteSchema,

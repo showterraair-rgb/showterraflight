@@ -53,8 +53,8 @@ export default function ReportsPage() {
   useEffect(() => {
     Promise.all([
       accountsApi.list(),
-      customersApi.list({ limit: 200 }),
-      suppliersApi.list({ limit: 200 }),
+      customersApi.list({ limit: 100 }),
+      suppliersApi.list({ limit: 100 }),
     ]).then(([acc, cust, sup]) => {
       setAccounts(acc.data.data);
       setCustomers(cust.data.data);
