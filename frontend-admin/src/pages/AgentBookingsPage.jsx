@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { agentBookingsApi, agentsApi } from '../services/agents.api';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
+import DualCurrencyAmount, { getBookingAmounts } from '../components/common/DualCurrencyAmount';
 
 const STATUS_LABELS = { pending: 'Pending', processing: 'Processing', confirmed: 'Confirmed', cancelled: 'Cancelled', reissued: 'Reissued', refunded: 'Refunded' };
 
@@ -41,7 +42,14 @@ export default function AgentBookingsPage({ agentScoped = false }) {
     { key: 'airline', label: 'Airline' },
     { key: 'pnr', label: 'PNR', render: (r) => r.pnr || '—' },
     { key: 'passengerCount', label: 'Pax' },
-    { key: 'totalFare', label: 'Total', render: (r) => `${r.currency} ${(r.totalFare || 0).toLocaleString()}` },
+    {
+      key: 'totalFare',
+      label: 'Total (BRL / BDT)',
+      render: (r) => {
+        const amounts = getBookingAmounts(r);
+        return <DualCurrencyAmount totalBRL={amounts.totalBRL} totalBDT={amounts.totalBDT} size="sm" />;
+      },
+    },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={STATUS_LABELS[r.status]} /> },
     { key: 'createdAt', label: 'Date', render: (r) => new Date(r.createdAt).toLocaleDateString() },
   ];

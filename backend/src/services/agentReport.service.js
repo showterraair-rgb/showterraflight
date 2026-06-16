@@ -1,8 +1,43 @@
 import mongoose from 'mongoose';
 import AgentBooking from '../models/AgentBooking.js';
-import ApiError from '../utils/ApiError.js';
+import { getCurrencyRatesMap } from './currency.service.js';
+
+function brlSumExpr(currentBdtRate) {
+  return {
+    $ifNull: [
+      '$totalFareBRL',
+      {
+        $cond: [
+          { $in: [{ $ifNull: ['$originalCurrency', '$currency'] }, ['BRL']] },
+          { $ifNull: ['$originalTotalFare', '$totalFare'] },
+          {
+            $divide: [
+              { $ifNull: ['$totalFareBDT', '$totalFare'] },
+              { $ifNull: ['$bdtRateAtBooking', '$exchangeRateAtBooking', currentBdtRate] },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function bdtSumExpr(currentBdtRate) {
+  const brl = brlSumExpr(currentBdtRate);
+  return {
+    $ifNull: [
+      '$totalFareBDT',
+      { $multiply: [brl, { $ifNull: ['$bdtRateAtBooking', '$exchangeRateAtBooking', currentBdtRate] }] },
+    ],
+  };
+}
 
 export async function getAgentReportSummary(agentId, query) {
+  const rates = await getCurrencyRatesMap();
+  const currentBdtRate = rates.BRL;
+  const brlField = brlSumExpr(currentBdtRate);
+  const bdtField = bdtSumExpr(currentBdtRate);
+
   const match = { agent: new mongoose.Types.ObjectId(agentId) };
 
   if (query.dateFrom || query.dateTo) {
@@ -22,7 +57,8 @@ export async function getAgentReportSummary(agentId, query) {
         $group: {
           _id: null,
           totalBookings: { $sum: 1 },
-          totalRevenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
+          totalRevenueBRL: { $sum: brlField },
+          totalRevenueBDT: { $sum: bdtField },
           confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } },
           pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
           cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
@@ -31,7 +67,14 @@ export async function getAgentReportSummary(agentId, query) {
     ]),
     AgentBooking.aggregate([
       { $match: match },
-      { $group: { _id: '$airline', count: { $sum: 1 }, revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } } } },
+      {
+        $group: {
+          _id: '$airline',
+          count: { $sum: 1 },
+          revenueBRL: { $sum: brlField },
+          revenueBDT: { $sum: bdtField },
+        },
+      },
       { $sort: { count: -1 } },
     ]),
     AgentBooking.aggregate([
@@ -40,7 +83,8 @@ export async function getAgentReportSummary(agentId, query) {
         $group: {
           _id: { from: '$fromCity', to: '$toCity' },
           count: { $sum: 1 },
-          revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
+          revenueBRL: { $sum: brlField },
+          revenueBDT: { $sum: bdtField },
         },
       },
       { $sort: { count: -1 } },
@@ -48,20 +92,42 @@ export async function getAgentReportSummary(agentId, query) {
     ]),
   ]);
 
-  const summary = totals[0] || { totalBookings: 0, totalRevenue: 0, confirmed: 0, pending: 0, cancelled: 0 };
+  const summary = totals[0] || {
+    totalBookings: 0,
+    totalRevenueBRL: 0,
+    totalRevenueBDT: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
+  };
 
   return {
     ...summary,
-    byAirline: byAirline.map((a) => ({ airline: a._id, count: a.count, revenue: a.revenue })),
+    totalRevenue: summary.totalRevenueBDT,
+    currentBdtRate,
+    byAirline: byAirline.map((a) => ({
+      airline: a._id,
+      count: a.count,
+      revenue: a.revenueBDT,
+      revenueBRL: a.revenueBRL,
+      revenueBDT: a.revenueBDT,
+    })),
     byRoute: byRoute.map((r) => ({
       route: `${r._id.from} → ${r._id.to}`,
       count: r.count,
-      revenue: r.revenue,
+      revenue: r.revenueBDT,
+      revenueBRL: r.revenueBRL,
+      revenueBDT: r.revenueBDT,
     })),
   };
 }
 
 export async function getAgentMonthlyReport(agentId, query) {
+  const rates = await getCurrencyRatesMap();
+  const currentBdtRate = rates.BRL;
+  const brlField = brlSumExpr(currentBdtRate);
+  const bdtField = bdtSumExpr(currentBdtRate);
+
   const match = { agent: new mongoose.Types.ObjectId(agentId) };
   const year = parseInt(query.year || new Date().getFullYear(), 10);
 
@@ -76,7 +142,8 @@ export async function getAgentMonthlyReport(agentId, query) {
       $group: {
         _id: { $month: '$createdAt' },
         bookings: { $sum: 1 },
-        revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
+        revenueBRL: { $sum: brlField },
+        revenueBDT: { $sum: bdtField },
       },
     },
     { $sort: { _id: 1 } },
@@ -88,11 +155,13 @@ export async function getAgentMonthlyReport(agentId, query) {
       month: i + 1,
       label: new Date(year, i, 1).toLocaleString('en', { month: 'short' }),
       bookings: row?.bookings || 0,
-      revenue: row?.revenue || 0,
+      revenue: row?.revenueBDT || 0,
+      revenueBRL: row?.revenueBRL || 0,
+      revenueBDT: row?.revenueBDT || 0,
     };
   });
 
-  return { year, months };
+  return { year, months, currentBdtRate };
 }
 
 export async function getAgentAirlineReport(agentId, query) {

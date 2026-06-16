@@ -3,9 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { agentBookingsApi } from '../services/agents.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/common/StatusBadge';
+import DualCurrencyAmount, { getBookingAmounts } from '../components/common/DualCurrencyAmount';
 import { usePermission } from '../hooks/usePermission';
 
 const STATUSES = ['pending', 'processing', 'confirmed', 'cancelled', 'reissued', 'refunded'];
+
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export default function AgentBookingDetailPage() {
   const { id } = useParams();
@@ -45,6 +50,12 @@ export default function AgentBookingDetailPage() {
   if (loading) return <LoadingSpinner className="py-20" />;
   if (!booking) return <p>Not found</p>;
 
+  const amounts = getBookingAmounts(booking);
+  const count = booking.passengerCount || booking.passengers?.length || 1;
+  const rate = amounts.bdtRate;
+  const baseTotalBRL = amounts.baseFareBRL * count;
+  const taxTotalBRL = amounts.taxBRL * count;
+
   return (
     <div className="space-y-6">
       <Link to="/agent-bookings" className="text-sm text-brand-600">← Agent bookings</Link>
@@ -54,11 +65,50 @@ export default function AgentBookingDetailPage() {
         <StatusBadge status={booking.status} label={booking.status} />
         <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
           <p>Airline: {booking.airline} {booking.flightNumber}</p>
-          <p>Total: {booking.currency} {booking.totalFare?.toLocaleString()}</p>
+          <div>
+            <span className="text-slate-500">Total: </span>
+            <DualCurrencyAmount totalBRL={amounts.totalBRL} totalBDT={amounts.totalBDT} size="md" className="inline-flex" />
+          </div>
           <p>PNR: {booking.pnr || '—'}</p>
           <p>Passengers: {booking.passengerCount}</p>
         </div>
         {booking.ticketUrl && <a href={booking.ticketUrl} target="_blank" rel="noreferrer" className="btn-primary mt-4 inline-block">Download ticket</a>}
+      </div>
+
+      <div className="card overflow-x-auto">
+        <h3 className="mb-3 font-semibold">Price Breakdown</h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-slate-500">
+              <th className="pb-2 pr-4">Item</th>
+              <th className="pb-2 pr-4">BRL (R$)</th>
+              <th className="pb-2">BDT (৳)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Base Fare</td>
+              <td className="py-2 pr-4">R$ {fmt(baseTotalBRL)}</td>
+              <td className="py-2">৳ {fmt(baseTotalBRL * rate)}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Tax</td>
+              <td className="py-2 pr-4">R$ {fmt(taxTotalBRL)}</td>
+              <td className="py-2">৳ {fmt(taxTotalBRL * rate)}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Agent Markup</td>
+              <td className="py-2 pr-4">R$ {fmt(amounts.markupBRL)}</td>
+              <td className="py-2">৳ {fmt(amounts.markupBRL * rate)}</td>
+            </tr>
+            <tr className="font-semibold">
+              <td className="py-2 pr-4">TOTAL</td>
+              <td className="py-2 pr-4">R$ {fmt(amounts.totalBRL)}</td>
+              <td className="py-2">৳ {fmt(amounts.totalBDT)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mt-3 text-xs text-slate-500">Rate at booking: 1 BRL = ৳ {fmt(rate)}</p>
       </div>
 
       {can('agent-bookings:manage') && (

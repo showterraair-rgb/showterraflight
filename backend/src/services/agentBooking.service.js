@@ -11,16 +11,12 @@ import {
 import { generateAgentBookingRef } from './numberGenerator.service.js';
 import { sendEmailMessage } from './notificationOrchestrator.service.js';
 import { getCurrencyRatesMap } from './currency.service.js';
-import { buildPriceSnapshot, normalizeBookingCurrencyFields, formatCurrency } from '../utils/currencyUtils.js';
-
-function calcTotalFare({ baseFare, tax, agentMarkup, passengerCount }) {
-  const count = Math.max(1, passengerCount || 1);
-  return (Number(baseFare || 0) + Number(tax || 0)) * count + Number(agentMarkup || 0);
-}
+import { buildBRLPricing, normalizeBookingToPricing, formatCurrency } from '../utils/currencyUtils.js';
 
 function formatBooking(doc) {
   const agent = doc.agent;
-  const currencyFields = normalizeBookingCurrencyFields(doc);
+  const normalized = normalizeBookingToPricing(doc);
+  const { pricing } = normalized;
   return {
     id: doc._id.toString(),
     bookingRef: doc.bookingRef,
@@ -40,21 +36,27 @@ function formatBooking(doc) {
     pnr: doc.pnr || '',
     passengers: doc.passengers || [],
     passengerCount: doc.passengers?.length || 0,
-    baseFare: currencyFields.originalBaseFare,
-    tax: currencyFields.originalTax,
-    agentMarkup: currencyFields.originalMarkup,
-    totalFare: currencyFields.originalTotalFare,
-    currency: currencyFields.originalCurrency,
-    originalCurrency: currencyFields.originalCurrency,
-    originalBaseFare: currencyFields.originalBaseFare,
-    originalTax: currencyFields.originalTax,
-    originalMarkup: currencyFields.originalMarkup,
-    originalTotalFare: currencyFields.originalTotalFare,
-    baseFareBDT: currencyFields.baseFareBDT,
-    taxBDT: currencyFields.taxBDT,
-    markupBDT: currencyFields.markupBDT,
-    totalFareBDT: currencyFields.totalFareBDT,
-    exchangeRateAtBooking: currencyFields.exchangeRateAtBooking,
+    baseFare: pricing.baseFareBRL,
+    tax: pricing.taxBRL,
+    agentMarkup: pricing.markupBRL,
+    totalFare: pricing.totalFareBRL,
+    currency: 'BRL',
+    originalCurrency: 'BRL',
+    originalBaseFare: pricing.baseFareBRL,
+    originalTax: pricing.taxBRL,
+    originalMarkup: pricing.markupBRL,
+    originalTotalFare: pricing.totalFareBRL,
+    baseFareBRL: pricing.baseFareBRL,
+    taxBRL: pricing.taxBRL,
+    markupBRL: pricing.markupBRL,
+    totalFareBRL: pricing.totalFareBRL,
+    baseFareBDT: pricing.baseFareBDT,
+    taxBDT: pricing.taxBDT,
+    markupBDT: pricing.markupBDT,
+    totalFareBDT: pricing.totalFareBDT,
+    bdtRateAtBooking: pricing.bdtRateAtBooking,
+    exchangeRateAtBooking: pricing.bdtRateAtBooking,
+    pricing,
     bookingType: doc.bookingType,
     specialRequests: doc.specialRequests || '',
     baggageAllowance: doc.baggageAllowance || '',
@@ -103,7 +105,7 @@ async function notifyAdminNewBooking(booking, agent) {
     await sendEmailMessage({
       to: adminEmail,
       subject: `New agent booking ${booking.bookingRef}`,
-      message: `Agent ${agent.companyName} (${agent.agentId}) submitted booking ${booking.bookingRef}.\nRoute: ${booking.fromCity} → ${booking.toCity}\nAirline: ${booking.airline}\nTotal: ${formatCurrency(booking.originalTotalFare ?? booking.totalFare, booking.originalCurrency ?? booking.currency)} (${formatCurrency(booking.totalFareBDT ?? booking.totalFare, 'BDT')})`,
+      message: `Agent ${agent.companyName} (${agent.agentId}) submitted booking ${booking.bookingRef}.\nRoute: ${booking.fromCity} → ${booking.toCity}\nAirline: ${booking.airline}\nTotal: ${formatCurrency(booking.totalFareBRL ?? booking.originalTotalFare ?? booking.totalFare, 'BRL')} (${formatCurrency(booking.totalFareBDT ?? booking.totalFare, 'BDT')})`,
     });
   } catch (err) {
     console.error('[agent-booking] admin notify failed', err.message);
@@ -135,16 +137,15 @@ export async function createAgentBooking(agentId, data, file = null) {
   if (!agent || !agent.isActive) throw ApiError.forbidden('Agent account inactive');
 
   const passengerCount = data.passengers?.length || 1;
-  const originalCurrency = data.originalCurrency || data.currency || 'BDT';
   const rates = await getCurrencyRatesMap();
-  const originalTotal = calcTotalFare({ ...data, passengerCount });
-  const priceSnapshot = buildPriceSnapshot({
-    baseFare: data.baseFare ?? 0,
-    tax: data.tax ?? 0,
-    markup: data.agentMarkup ?? 0,
-    total: originalTotal,
-    currency: originalCurrency,
-  }, rates);
+  const bdtRate = data.bdtRate ?? data.bdtRateAtBooking ?? rates.BRL;
+  const priceSnapshot = buildBRLPricing({
+    baseFareBRL: data.baseFareBRL ?? data.baseFare ?? 0,
+    taxBRL: data.taxBRL ?? data.tax ?? 0,
+    markupBRL: data.markupBRL ?? data.agentMarkup ?? 0,
+    passengerCount,
+    bdtRate,
+  });
   const bookingRef = await generateAgentBookingRef();
 
   const booking = await AgentBooking.create({
@@ -161,21 +162,26 @@ export async function createAgentBooking(agentId, data, file = null) {
     travelClass: data.travelClass || 'economy',
     pnr: data.pnr,
     passengers: data.passengers,
-    baseFare: priceSnapshot.originalBaseFare,
-    tax: priceSnapshot.originalTax,
-    agentMarkup: priceSnapshot.originalMarkup,
-    totalFare: priceSnapshot.originalTotalFare,
-    currency: priceSnapshot.originalCurrency,
-    originalCurrency: priceSnapshot.originalCurrency,
-    originalBaseFare: priceSnapshot.originalBaseFare,
-    originalTax: priceSnapshot.originalTax,
-    originalMarkup: priceSnapshot.originalMarkup,
-    originalTotalFare: priceSnapshot.originalTotalFare,
+    baseFare: priceSnapshot.baseFareBRL,
+    tax: priceSnapshot.taxBRL,
+    agentMarkup: priceSnapshot.markupBRL,
+    totalFare: priceSnapshot.totalFareBRL,
+    currency: 'BRL',
+    originalCurrency: 'BRL',
+    originalBaseFare: priceSnapshot.baseFareBRL,
+    originalTax: priceSnapshot.taxBRL,
+    originalMarkup: priceSnapshot.markupBRL,
+    originalTotalFare: priceSnapshot.totalFareBRL,
+    baseFareBRL: priceSnapshot.baseFareBRL,
+    taxBRL: priceSnapshot.taxBRL,
+    markupBRL: priceSnapshot.markupBRL,
+    totalFareBRL: priceSnapshot.totalFareBRL,
     baseFareBDT: priceSnapshot.baseFareBDT,
     taxBDT: priceSnapshot.taxBDT,
     markupBDT: priceSnapshot.markupBDT,
     totalFareBDT: priceSnapshot.totalFareBDT,
-    exchangeRateAtBooking: priceSnapshot.exchangeRateAtBooking,
+    bdtRateAtBooking: priceSnapshot.bdtRateAtBooking,
+    exchangeRateAtBooking: priceSnapshot.bdtRateAtBooking,
     bookingType: data.bookingType || 'standard',
     specialRequests: data.specialRequests,
     baggageAllowance: data.baggageAllowance,
@@ -316,6 +322,32 @@ export async function addAgentBookingNote(id, note, userId) {
 }
 
 export async function getAgentDashboardStats(agentId) {
+  const rates = await getCurrencyRatesMap();
+  const currentBdtRate = rates.BRL;
+  const brlField = {
+    $ifNull: [
+      '$totalFareBRL',
+      {
+        $cond: [
+          { $in: [{ $ifNull: ['$originalCurrency', '$currency'] }, ['BRL']] },
+          { $ifNull: ['$originalTotalFare', '$totalFare'] },
+          {
+            $divide: [
+              { $ifNull: ['$totalFareBDT', '$totalFare'] },
+              { $ifNull: ['$bdtRateAtBooking', '$exchangeRateAtBooking', currentBdtRate] },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const bdtField = {
+    $ifNull: [
+      '$totalFareBDT',
+      { $multiply: [brlField, { $ifNull: ['$bdtRateAtBooking', '$exchangeRateAtBooking', currentBdtRate] }] },
+    ],
+  };
+
   const [total, pending, confirmed, cancelled, recent, spentAgg] = await Promise.all([
     AgentBooking.countDocuments({ agent: agentId }),
     AgentBooking.countDocuments({ agent: agentId, status: 'pending' }),
@@ -327,11 +359,8 @@ export async function getAgentDashboardStats(agentId) {
       {
         $group: {
           _id: null,
-          total: {
-            $sum: {
-              $ifNull: ['$totalFareBDT', '$totalFare'],
-            },
-          },
+          totalSpentBRL: { $sum: brlField },
+          totalSpentBDT: { $sum: bdtField },
         },
       },
     ]),
@@ -342,7 +371,10 @@ export async function getAgentDashboardStats(agentId) {
     pending,
     confirmed,
     cancelled,
-    totalSpent: spentAgg[0]?.total || 0,
+    totalSpent: spentAgg[0]?.totalSpentBDT || 0,
+    totalSpentBRL: spentAgg[0]?.totalSpentBRL || 0,
+    totalSpentBDT: spentAgg[0]?.totalSpentBDT || 0,
+    currentBdtRate,
     recent: recent.map((b) => formatBooking({ ...b, agent: null })),
   };
 }
@@ -357,5 +389,4 @@ export default {
   uploadAgentBookingTicket,
   addAgentBookingNote,
   getAgentDashboardStats,
-  calcTotalFare,
 };

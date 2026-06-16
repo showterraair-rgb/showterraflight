@@ -4,7 +4,8 @@ import { agentApi } from '../services/agent.api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
-import { BOOKING_STATUS_LABELS, formatCurrency, formatDate } from '../utils/constants';
+import DualCurrencyAmount, { getBookingAmounts } from '../components/DualCurrencyAmount';
+import { BOOKING_STATUS_LABELS, formatDate } from '../utils/constants';
 
 export default function BookingsPage() {
   const [items, setItems] = useState([]);
@@ -44,20 +45,23 @@ export default function BookingsPage() {
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b text-left text-slate-500"><th className="pb-2">Ref</th><th className="pb-2">Route</th><th className="pb-2">Airline</th><th className="pb-2">PNR</th><th className="pb-2">Pax</th><th className="pb-2">Total</th><th className="pb-2">Status</th><th className="pb-2">Date</th></tr></thead>
+            <thead><tr className="border-b text-left text-slate-500"><th className="pb-2">Ref</th><th className="pb-2">Route</th><th className="pb-2">Airline</th><th className="pb-2">PNR</th><th className="pb-2">Pax</th><th className="pb-2">Total (BRL / BDT)</th><th className="pb-2">Status</th><th className="pb-2">Date</th></tr></thead>
             <tbody>
-              {items.map((b) => (
-                <tr key={b.id} className="border-b border-slate-100">
-                  <td className="py-2"><Link to={`/bookings/${b.id}`} className="font-mono text-brand-600">{b.bookingRef}</Link></td>
-                  <td className="py-2">{b.route}</td>
-                  <td className="py-2">{b.airline}</td>
-                  <td className="py-2">{b.pnr || '—'}</td>
-                  <td className="py-2">{b.passengerCount}</td>
-                  <td className="py-2">{formatCurrency(b.totalFare, b.currency)}</td>
-                  <td className="py-2"><StatusBadge status={b.status} label={BOOKING_STATUS_LABELS[b.status]} /></td>
-                  <td className="py-2">{formatDate(b.createdAt)}</td>
-                </tr>
-              ))}
+              {items.map((b) => {
+                const amounts = getBookingAmounts(b);
+                return (
+                  <tr key={b.id} className="border-b border-slate-100">
+                    <td className="py-2"><Link to={`/bookings/${b.id}`} className="font-mono text-brand-600">{b.bookingRef}</Link></td>
+                    <td className="py-2">{b.route}</td>
+                    <td className="py-2">{b.airline}</td>
+                    <td className="py-2">{b.pnr || '—'}</td>
+                    <td className="py-2">{b.passengerCount}</td>
+                    <td className="py-2"><DualCurrencyAmount totalBRL={amounts.totalBRL} totalBDT={amounts.totalBDT} size="sm" /></td>
+                    <td className="py-2"><StatusBadge status={b.status} label={BOOKING_STATUS_LABELS[b.status]} /></td>
+                    <td className="py-2">{formatDate(b.createdAt)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {pagination && pagination.totalPages > 1 && (

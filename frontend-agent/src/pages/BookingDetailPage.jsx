@@ -3,8 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { agentApi } from '../services/agent.api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import StatusBadge from '../components/StatusBadge';
+import DualCurrencyAmount, { getBookingAmounts } from '../components/DualCurrencyAmount';
 import { useToast } from '../context/ToastContext';
-import { BOOKING_STATUS_LABELS, formatCurrency, formatDate } from '../utils/constants';
+import { BOOKING_STATUS_LABELS, formatDate } from '../utils/constants';
+
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export default function BookingDetailPage() {
   const { id } = useParams();
@@ -31,6 +36,17 @@ export default function BookingDetailPage() {
   if (loading) return <LoadingSkeleton rows={8} />;
   if (!booking) return <p>Booking not found</p>;
 
+  const amounts = getBookingAmounts(booking);
+  const p = booking.pricing || amounts;
+  const count = booking.passengerCount || booking.passengers?.length || 1;
+  const rate = amounts.bdtRate;
+  const baseTotalBRL = (p.baseFareBRL ?? amounts.baseFareBRL) * count;
+  const taxTotalBRL = (p.taxBRL ?? amounts.taxBRL) * count;
+  const baseTotalBDT = baseTotalBRL * rate;
+  const taxTotalBDT = taxTotalBRL * rate;
+  const markupBRL = p.markupBRL ?? amounts.markupBRL;
+  const markupBDT = markupBRL * rate;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link to="/bookings" className="text-sm text-brand-600">← Back to bookings</Link>
@@ -53,7 +69,46 @@ export default function BookingDetailPage() {
         <p><span className="text-slate-500">Departure:</span> {formatDate(booking.departureDate)} {booking.departureTime}</p>
         <p><span className="text-slate-500">PNR:</span> {booking.pnr || '—'}</p>
         <p><span className="text-slate-500">Class:</span> {booking.travelClass}</p>
-        <p><span className="text-slate-500">Total:</span> {formatCurrency(booking.totalFare, booking.currency)}</p>
+        <div>
+          <span className="text-slate-500">Total:</span>
+          <DualCurrencyAmount totalBRL={amounts.totalBRL} totalBDT={amounts.totalBDT} size="md" className="mt-1" />
+        </div>
+      </div>
+
+      <div className="card overflow-x-auto">
+        <h2 className="mb-3 font-semibold">Price Breakdown</h2>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-slate-500">
+              <th className="pb-2 pr-4">Item</th>
+              <th className="pb-2 pr-4">BRL (R$)</th>
+              <th className="pb-2">BDT (৳)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Base Fare</td>
+              <td className="py-2 pr-4">R$ {fmt(baseTotalBRL)}</td>
+              <td className="py-2">৳ {fmt(baseTotalBDT)}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Tax</td>
+              <td className="py-2 pr-4">R$ {fmt(taxTotalBRL)}</td>
+              <td className="py-2">৳ {fmt(taxTotalBDT)}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <td className="py-2 pr-4">Agent Markup</td>
+              <td className="py-2 pr-4">R$ {fmt(markupBRL)}</td>
+              <td className="py-2">৳ {fmt(markupBDT)}</td>
+            </tr>
+            <tr className="font-semibold">
+              <td className="py-2 pr-4">TOTAL</td>
+              <td className="py-2 pr-4">R$ {fmt(amounts.totalBRL)}</td>
+              <td className="py-2">৳ {fmt(amounts.totalBDT)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mt-3 text-xs text-slate-500">Rate at booking: 1 BRL = ৳ {fmt(rate)}</p>
       </div>
 
       <div className="card">
@@ -61,11 +116,11 @@ export default function BookingDetailPage() {
         <table className="w-full text-sm">
           <thead><tr className="border-b text-left text-slate-500"><th>Name</th><th>Passport</th><th>Nationality</th></tr></thead>
           <tbody>
-            {booking.passengers.map((p, i) => (
+            {booking.passengers.map((pax, i) => (
               <tr key={i} className="border-b border-slate-100">
-                <td className="py-2">{p.title} {p.firstName} {p.lastName}</td>
-                <td className="py-2">{p.passportNumber}</td>
-                <td className="py-2">{p.nationality || '—'}</td>
+                <td className="py-2">{pax.title} {pax.firstName} {pax.lastName}</td>
+                <td className="py-2">{pax.passportNumber}</td>
+                <td className="py-2">{pax.nationality || '—'}</td>
               </tr>
             ))}
           </tbody>

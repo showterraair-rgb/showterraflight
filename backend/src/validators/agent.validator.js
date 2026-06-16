@@ -70,17 +70,24 @@ export const createAgentBookingSchema = z.object({
   travelClass: z.enum(AGENT_TRAVEL_CLASSES).default('economy'),
   pnr: z.string().max(50).optional(),
   passengers: z.array(passengerSchema).min(1),
-  baseFare: z.coerce.number().min(0),
-  tax: z.coerce.number().min(0),
+  baseFareBRL: z.coerce.number().min(0).optional(),
+  taxBRL: z.coerce.number().min(0).optional(),
+  markupBRL: z.coerce.number().min(0).optional(),
+  bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
+  baseFare: z.coerce.number().min(0).optional(),
+  tax: z.coerce.number().min(0).optional(),
   agentMarkup: z.coerce.number().min(0).optional(),
-  currency: z.enum(['BDT', 'BRL']).default('BDT'),
-  originalCurrency: z.enum(['BDT', 'BRL']).optional(),
   bookingType: z.enum(AGENT_BOOKING_TYPES).default('standard'),
   specialRequests: z.string().max(2000).optional(),
   baggageAllowance: z.string().max(200).optional(),
   mealPreference: z.enum(AGENT_MEAL_PREFERENCES).optional(),
   seatPreference: z.enum(AGENT_SEAT_PREFERENCES).optional(),
   ticketIssued: z.coerce.boolean().optional(),
+}).superRefine((data, ctx) => {
+  const base = data.baseFareBRL ?? data.baseFare;
+  if (base == null || Number(base) <= 0) {
+    ctx.addIssue({ code: 'custom', path: ['baseFareBRL'], message: 'Base fare must be a positive number' });
+  }
 });
 
 export const listAgentBookingsQuerySchema = z.object({

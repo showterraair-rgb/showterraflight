@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { currencyApi } from '../services/currency.api';
 
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function CurrencySettingsPage() {
   const [brlRate, setBrlRate] = useState('22.50');
   const [updatedAt, setUpdatedAt] = useState('');
@@ -17,11 +21,10 @@ export default function CurrencySettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const previewBDT = (Number(brlRate) || 0) * 100;
+  const rate = Number(brlRate) || 0;
 
   const onSave = async (e) => {
     e.preventDefault();
-    const rate = Number(brlRate);
     if (!rate || rate <= 0) {
       setMsg('Rate must be a positive number');
       return;
@@ -47,37 +50,37 @@ export default function CurrencySettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">Currency & Exchange Rates</h2>
-        <p className="text-sm text-slate-500">BDT is the base currency. Set how many BDT equal 1 BRL.</p>
+        <h2 className="text-xl font-bold text-slate-900">Default BRL Rate</h2>
+        <p className="text-sm text-slate-500">Set the BDT exchange rate used to pre-fill booking forms. BRL is always the primary display currency.</p>
       </div>
 
       <form onSubmit={onSave} className="card space-y-4">
-        <div className="rounded-lg bg-slate-50 p-3 text-sm">
-          <p><strong>Base currency:</strong> BDT (Bangladeshi Taka) ৳</p>
+        <div>
+          <label className="mb-1 block text-sm font-medium">1 BRL = ৳</label>
+          <input
+            type="number"
+            min={0.01}
+            step="0.01"
+            className="input-field"
+            value={brlRate}
+            onChange={(e) => setBrlRate(e.target.value)}
+            required
+          />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">BRL (Brazilian Real) R$</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">1 BRL = ৳</span>
-            <input
-              type="number"
-              min={0.01}
-              step="0.01"
-              className="input-field flex-1"
-              value={brlRate}
-              onChange={(e) => setBrlRate(e.target.value)}
-              required
-            />
-          </div>
-          <p className="mt-2 text-xs text-slate-500">
-            Preview: 100 BRL = ৳ {previewBDT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} at current rate
-          </p>
+        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+          <p>Live preview:</p>
+          <p className="mt-1">100 BRL = ৳ {fmt(100 * rate)}</p>
+          <p>1,000 BRL = ৳ {fmt(1000 * rate)}</p>
         </div>
 
         {updatedAt && (
           <p className="text-xs text-slate-500">Last updated: {new Date(updatedAt).toLocaleString()}</p>
         )}
+
+        <p className="text-xs text-amber-700">
+          Note: Changing this rate only affects new bookings. Existing bookings retain their original rate.
+        </p>
 
         {msg && <p className={`text-sm ${msg.includes('fail') || msg.includes('must') ? 'text-red-600' : 'text-green-700'}`}>{msg}</p>}
 

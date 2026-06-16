@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { agentApi } from '../services/agent.api';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../hooks/useCurrency';
-import CurrencySelector from '../components/CurrencySelector';
+import DualCurrencyAmount from '../components/DualCurrencyAmount';
 import { AIRLINES, PASSENGER_TITLES } from '../utils/constants';
 
 const emptyPassenger = {
@@ -16,13 +16,19 @@ const emptyPassenger = {
   nationality: 'Bangladeshi',
 };
 
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function NewBookingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { rates, format, convert, brlRate } = useCurrency();
+  const { brlRate } = useCurrency();
   const [submitting, setSubmitting] = useState(false);
   const [airlineCustom, setAirlineCustom] = useState('');
   const [ticketFile, setTicketFile] = useState(null);
+  const [rateTouched, setRateTouched] = useState(false);
+  const [rateError, setRateError] = useState('');
   const [form, setForm] = useState({
     flightNumber: '',
     airline: AIRLINES[0],
@@ -35,10 +41,10 @@ export default function NewBookingPage() {
     travelClass: 'economy',
     pnr: '',
     passengers: [{ ...emptyPassenger }],
-    baseFare: 0,
-    tax: 0,
-    agentMarkup: 0,
-    currency: 'BDT',
+    baseFareBRL: '',
+    taxBRL: '',
+    markupBRL: '',
+    bdtRate: '',
     bookingType: 'standard',
     specialRequests: '',
     baggageAllowance: '',
@@ -47,15 +53,17 @@ export default function NewBookingPage() {
     ticketIssued: false,
   });
 
-  const totalFare = useMemo(() => {
-    const count = Math.max(1, form.passengers.length);
-    return (Number(form.baseFare) + Number(form.tax)) * count + Number(form.agentMarkup || 0);
-  }, [form.baseFare, form.tax, form.agentMarkup, form.passengers.length]);
+  const effectiveRate = Number(form.bdtRate || brlRate) || 0;
+  const passengerCount = Math.max(1, form.passengers.length);
 
-  const totalFareBDT = useMemo(
-    () => convert(totalFare, form.currency, 'BDT'),
-    [totalFare, form.currency, rates, convert]
-  );
+  const totalFareBRL = useMemo(() => {
+    const base = Number(form.baseFareBRL) || 0;
+    const tax = Number(form.taxBRL) || 0;
+    const markup = Number(form.markupBRL) || 0;
+    return (base + tax) * passengerCount + markup;
+  }, [form.baseFareBRL, form.taxBRL, form.markupBRL, passengerCount]);
+
+  const totalFareBDT = useMemo(() => totalFareBRL * effectiveRate, [totalFareBRL, effectiveRate]);
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -76,22 +84,31 @@ export default function NewBookingPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (!effectiveRate || effectiveRate <= 0) {
+      setRateError('BDT rate must be greater than 0');
+      return;
+    }
+    if (!Number(form.baseFareBRL) || Number(form.baseFareBRL) <= 0) {
+      toast('Base fare must be a positive number', 'error');
+      return;
+    }
     setSubmitting(true);
     try {
       const airline = form.airline === 'Other' ? airlineCustom : form.airline;
       const payload = {
         ...form,
         airline,
-        totalFare,
-        originalCurrency: form.currency,
-        exchangeRateAtBooking: form.currency === 'BRL' ? brlRate : 1,
+        baseFareBRL: Number(form.baseFareBRL),
+        taxBRL: Number(form.taxBRL) || 0,
+        markupBRL: Number(form.markupBRL) || 0,
+        bdtRate: effectiveRate,
       };
 
       if (ticketFile) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {
           if (k === 'passengers') fd.append('passengers', JSON.stringify(v));
-          else fd.append(k, v);
+          else if (v !== '' && v != null) fd.append(k, v);
         });
         fd.append('ticketFile', ticketFile);
         await agentApi.createBookingWithFile(fd);
@@ -107,6 +124,8 @@ export default function NewBookingPage() {
       setSubmitting(false);
     }
   };
+
+  const displayRate = form.bdtRate !== '' && rateTouched ? form.bdtRate : (form.bdtRate || brlRate);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -168,22 +187,60 @@ export default function NewBookingPage() {
         </section>
 
         <section className="card space-y-4">
-          <h2 className="font-semibold text-brand-700">Pricing</h2>
+          <h2 className="font-semibold text-brand-700">Pricing (BRL)</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div><label className="mb-1 block text-sm font-medium">Base fare (per pax)</label><input type="number" min={0} className="input-field" value={form.baseFare} onChange={(e) => setField('baseFare', e.target.value)} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Tax (per pax)</label><input type="number" min={0} className="input-field" value={form.tax} onChange={(e) => setField('tax', e.target.value)} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Agent markup</label><input type="number" min={0} className="input-field" value={form.agentMarkup} onChange={(e) => setField('agentMarkup', e.target.value)} /></div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Currency</label>
-              <CurrencySelector value={form.currency} onChange={(v) => setField('currency', v)} brlRate={brlRate} />
+              <label className="mb-1 block text-sm font-medium">Base Fare (per pax) *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
+                <input type="number" min={0.01} step="0.01" className="input-field pl-10" required value={form.baseFareBRL} onChange={(e) => setField('baseFareBRL', e.target.value)} />
+              </div>
             </div>
-            <div className="sm:col-span-2 rounded-lg bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Total fare ({form.currency})</p>
-              <p className="text-2xl font-bold">{format(totalFare, form.currency)}</p>
-              {form.currency === 'BRL' && (
-                <p className="mt-1 text-sm text-slate-500">= {format(totalFareBDT, 'BDT')}</p>
-              )}
+            <div>
+              <label className="mb-1 block text-sm font-medium">Tax (per pax)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
+                <input type="number" min={0} step="0.01" className="input-field pl-10" value={form.taxBRL} onChange={(e) => setField('taxBRL', e.target.value)} />
+              </div>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Agent Markup</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
+                <input type="number" min={0} step="0.01" className="input-field pl-10" value={form.markupBRL} onChange={(e) => setField('markupBRL', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-4">
+            <label className="mb-1 block text-sm font-medium">BDT Exchange Rate *</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-slate-600">1 BRL = ৳</span>
+              <input
+                type="number"
+                min={0.01}
+                step="0.01"
+                className="input-field w-32"
+                value={displayRate}
+                onChange={(e) => {
+                  setRateTouched(true);
+                  setField('bdtRate', e.target.value);
+                  setRateError(Number(e.target.value) > 0 ? '' : 'BDT rate must be greater than 0');
+                }}
+                required
+              />
+              <span className="text-sm text-slate-500">৳ per BRL</span>
+            </div>
+            {rateError && <p className="mt-1 text-xs text-red-600">{rateError}</p>}
+            <p className="mt-2 text-xs text-slate-500">
+              100 BRL = ৳ {fmt(100 * effectiveRate)} at this rate
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-slate-50 p-4">
+            <p className="text-sm font-medium text-slate-700">Total Amount</p>
+            <DualCurrencyAmount totalBRL={totalFareBRL} totalBDT={totalFareBDT} size="lg" className="mt-2" />
+            <p className="mt-2 text-xs text-slate-500">Rate used: 1 BRL = ৳ {fmt(effectiveRate)}</p>
           </div>
         </section>
 

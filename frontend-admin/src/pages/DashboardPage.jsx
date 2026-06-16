@@ -5,14 +5,13 @@ import { dashboardApi } from '../services/auth.api';
 import StatCard from '../components/common/StatCard';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { formatCurrency } from '../utils/currency';
+import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
 import { usePermission } from '../hooks/usePermission';
 
 export default function DashboardPage() {
   const { can } = usePermission();
-  const { convert, format, brlRate } = useCurrency();
-  const [displayCurrency, setDisplayCurrency] = useState('BDT');
+  const { brlFromBdt, brlRate, ratesUpdatedAt } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [activity, setActivity] = useState(null);
@@ -41,7 +40,11 @@ export default function DashboardPage() {
   if (loading) return <LoadingSpinner className="py-20" />;
 
   const s = summary?.summary || {};
-  const money = (amountBDT) => format(convert(amountBDT, 'BDT', displayCurrency), displayCurrency);
+  const rateDate = ratesUpdatedAt ? dayjs(ratesUpdatedAt).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD');
+
+  const dualMoney = (amountBDT) => (
+    <DualCurrencyAmount totalBRL={brlFromBdt(amountBDT)} totalBDT={amountBDT ?? 0} size="lg" />
+  );
 
   return (
     <div className="space-y-6">
@@ -49,23 +52,9 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900">Business Overview</h2>
           <p className="text-sm text-slate-500">Today — {dayjs().format('dddd, MMMM D, YYYY')}</p>
-        </div>
-        <div className="flex rounded-lg border border-slate-200 p-0.5 text-sm">
-          {['BDT', 'BRL'].map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`rounded-md px-3 py-1 ${displayCurrency === c ? 'bg-brand-600 text-white' : 'text-slate-600'}`}
-              onClick={() => setDisplayCurrency(c)}
-            >
-              {c} {c === 'BDT' ? '৳' : 'R$'}
-            </button>
-          ))}
+          <p className="mt-1 text-xs text-slate-500">Exchange rate: 1 BRL = ৳ {Number(brlRate).toFixed(2)} (updated: {rateDate})</p>
         </div>
       </div>
-      {displayCurrency === 'BRL' && (
-        <p className="text-xs text-slate-500">1 BRL = ৳ {Number(brlRate).toFixed(2)} (current rate)</p>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Today's Orders" value={s.todayOrders ?? 0} accent="blue" />
@@ -76,16 +65,16 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Pending Reminders" value={s.pendingReminders ?? 0} accent="slate" />
-        <StatCard label="Customer Due" value={money(s.customerDue)} accent="red" />
-        <StatCard label="Supplier Payable" value={money(s.supplierPayable)} accent="amber" />
-        <StatCard label="Gross Profit" value={money(s.grossProfit)} accent="green" />
+        <StatCard label="Customer Due" value={dualMoney(s.customerDue)} accent="red" />
+        <StatCard label="Supplier Payable" value={dualMoney(s.supplierPayable)} accent="amber" />
+        <StatCard label="Gross Profit" value={dualMoney(s.grossProfit)} accent="green" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Net Position" value={money(s.netPosition)} accent="blue" subtext="Total account balance" />
-        <StatCard label="Total Sales" value={money(s.totalSales)} accent="blue" />
-        <StatCard label="Total Purchase" value={money(s.totalPurchase)} accent="slate" />
-        <StatCard label="Expense Total" value={money(s.expenseTotal)} accent="red" />
+        <StatCard label="Net Position" value={dualMoney(s.netPosition)} accent="blue" subtext="Total account balance" />
+        <StatCard label="Total Sales" value={dualMoney(s.totalSales)} accent="blue" />
+        <StatCard label="Total Purchase" value={dualMoney(s.totalPurchase)} accent="slate" />
+        <StatCard label="Expense Total" value={dualMoney(s.expenseTotal)} accent="red" />
       </div>
 
       {can('accounts:view') && summary?.accountBalances?.length > 0 && (
@@ -95,7 +84,7 @@ export default function DashboardPage() {
             {summary.accountBalances.map((acc) => (
               <div key={acc.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
                 <p className="text-xs font-medium uppercase text-slate-500">{acc.name}</p>
-                <p className="mt-1 text-lg font-bold text-slate-900">{formatCurrency(acc.balance)}</p>
+                <DualCurrencyAmount totalBRL={brlFromBdt(acc.balance)} totalBDT={acc.balance ?? 0} size="md" className="mt-1" />
               </div>
             ))}
           </div>
@@ -144,7 +133,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-slate-900">{b.bookingNumber}</p>
                     <p className="text-xs text-slate-500">{b.airline} — {b.route}</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-700">{formatCurrency(b.salePrice)}</p>
+                  <DualCurrencyAmount totalBRL={brlFromBdt(b.salePrice)} totalBDT={b.salePrice ?? 0} size="sm" />
                 </li>
               ))}
             </ul>
