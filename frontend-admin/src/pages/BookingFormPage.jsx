@@ -1,37 +1,33 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { bookingsApi, ordersApi, customersApi, suppliersApi } from '../services/crm.api';
+import { bookingsApi, customersApi, suppliersApi } from '../services/crm.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
 
-function buildSchema(fromOrder) {
-  return z.object({
-    customerId: fromOrder
-      ? z.string().optional()
-      : z.string().min(1, 'Customer required'),
-    supplierId: z.string().optional(),
-    airline: z.string().min(2),
-    route: z.string().min(2, 'Route is required'),
-    sector: z.string().optional(),
-    departureDate: z.string().min(1),
-    passengerCount: z.coerce.number().min(1),
-    pnr: z.string().optional(),
-    ticketNumber: z.string().optional(),
-    purchasePriceBRL: z.coerce.number().min(0),
-    salePriceBRL: z.coerce.number().min(0),
-    directCostsBRL: z.coerce.number().min(0),
-    bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
-    notes: z.string().optional(),
-    status: z.enum(['draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled']),
-    ticketCopyPath: z.string().optional(),
-    ticketCopyFileName: z.string().optional(),
-  });
-}
+const schema = z.object({
+  customerId: z.string().min(1, 'Customer required'),
+  supplierId: z.string().optional(),
+  airline: z.string().min(2),
+  route: z.string().min(2, 'Route is required'),
+  sector: z.string().optional(),
+  departureDate: z.string().min(1),
+  passengerCount: z.coerce.number().min(1),
+  pnr: z.string().optional(),
+  ticketNumber: z.string().optional(),
+  purchasePriceBRL: z.coerce.number().min(0),
+  salePriceBRL: z.coerce.number().min(0),
+  directCostsBRL: z.coerce.number().min(0),
+  bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
+  notes: z.string().optional(),
+  status: z.enum(['draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled']),
+  ticketCopyPath: z.string().optional(),
+  ticketCopyFileName: z.string().optional(),
+});
 
 function parseRoute(route) {
   const trimmed = String(route || '').trim();
@@ -66,21 +62,16 @@ export default function BookingFormPage() {
   const navigate = useNavigate();
   const { id: editId } = useParams();
   const isEdit = Boolean(editId);
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get('orderId');
   const { brlRate } = useCurrency();
 
-  const [loadingData, setLoadingData] = useState(isEdit || !!orderId);
+  const [loadingData, setLoadingData] = useState(isEdit);
   const [customers, setCustomers] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [paymentSummary, setPaymentSummary] = useState(null);
-  const [orderMeta, setOrderMeta] = useState(null);
-  const [linkedBooking, setLinkedBooking] = useState(null);
+  const [travelMeta, setTravelMeta] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [rateError, setRateError] = useState('');
-
-  const schema = useMemo(() => buildSchema(Boolean(orderId) && !isEdit), [orderId, isEdit]);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -149,7 +140,7 @@ export default function BookingFormPage() {
             ticketCopyPath: b.ticketCopyPath || '',
             ticketCopyFileName: b.ticketCopyFileName || '',
           });
-          setOrderMeta({
+          setTravelMeta({
             journeyType: b.journeyType || 'one_way',
             travelClass: b.travelClass || 'economy',
             returnDate: b.returnDate?.slice(0, 10) || '',
@@ -170,47 +161,8 @@ export default function BookingFormPage() {
         })
         .catch((err) => setLoadError(err.response?.data?.message || 'Failed to load booking'))
         .finally(() => setLoadingData(false));
-      return;
     }
-
-    if (!orderId) return;
-
-    setLoadingData(true);
-    ordersApi.get(orderId)
-      .then(({ data }) => {
-        const o = data.data;
-        if (o.linkedBooking) {
-          setLinkedBooking(o.linkedBooking);
-          return;
-        }
-        setOrderMeta({
-          journeyType: o.journeyType || 'one_way',
-          travelClass: o.travelClass || 'economy',
-          returnDate: o.returnDate?.slice(0, 10) || '',
-          customerName: o.customerName,
-          customerPhone: o.customerPhone,
-        });
-        if (o.customerDetails) {
-          setCustomers((prev) => mergeCustomer(prev, o.customerDetails));
-        }
-        const quotedBRL = brlRate > 0 ? (o.quotedSalePrice || 0) / brlRate : (o.quotedSalePrice || 0);
-        form.reset({
-          customerId: o.customerDetails?.id || o.customer || '',
-          airline: `${o.fromDestination}-${o.toDestination}`,
-          route: `${o.fromDestination} → ${o.toDestination}`,
-          departureDate: o.journeyDate?.slice(0, 10),
-          passengerCount: o.passengerCount,
-          salePriceBRL: quotedBRL,
-          purchasePriceBRL: 0,
-          directCostsBRL: 0,
-          bdtRate: brlRate,
-          notes: o.internalNotes || '',
-          status: 'confirmed',
-        });
-      })
-      .catch((err) => setLoadError(err.response?.data?.message || 'Failed to load order'))
-      .finally(() => setLoadingData(false));
-  }, [orderId, editId, isEdit, form, brlRate]);
+  }, [editId, isEdit, form, brlRate]);
 
   const watchPrices = form.watch(['purchasePriceBRL', 'salePriceBRL', 'directCostsBRL', 'bdtRate']);
   const purchaseBRL = Number(watchPrices[0]) || 0;
@@ -227,7 +179,6 @@ export default function BookingFormPage() {
   const projectedPayableBRL = effectiveRate > 0 ? projectedPayableBDT / effectiveRate : projectedPayableBDT;
 
   const onSubmit = async (values) => {
-    if (linkedBooking) return;
     if (!effectiveRate || effectiveRate <= 0) {
       setRateError('BDT rate must be greater than 0');
       return;
@@ -239,18 +190,15 @@ export default function BookingFormPage() {
         ...values,
         supplierId: values.supplierId || undefined,
         customerId: values.customerId || undefined,
-        journeyType: orderMeta?.journeyType || 'one_way',
-        travelClass: orderMeta?.travelClass || 'economy',
-        returnDate: orderMeta?.returnDate || undefined,
+        journeyType: travelMeta?.journeyType || 'one_way',
+        travelClass: travelMeta?.travelClass || 'economy',
+        returnDate: travelMeta?.returnDate || undefined,
         fromDestination,
         toDestination,
       };
       if (isEdit) {
         await bookingsApi.update(editId, payload);
         navigate(`/bookings/${editId}`);
-      } else if (orderId) {
-        const { data } = await bookingsApi.createFromOrder(orderId, payload);
-        navigate(`/bookings/${data.data.id}`);
       } else {
         const { data } = await bookingsApi.create(payload);
         navigate(`/bookings/${data.data.id}`);
@@ -262,35 +210,18 @@ export default function BookingFormPage() {
 
   if (loadingData) return <LoadingSpinner className="py-20" />;
 
-  const backLink = isEdit ? `/bookings/${editId}` : orderId ? '/orders' : '/bookings';
-  const title = isEdit ? 'Edit Booking' : orderId ? 'Create Booking from Order' : 'New Booking';
-
-  if (linkedBooking) {
-    return (
-      <div className="mx-auto max-w-lg space-y-4">
-        <Link to="/orders" className="text-sm text-brand-600 hover:underline">← Back to Orders</Link>
-        <div className="card space-y-3">
-          <h2 className="text-lg font-bold text-slate-900">Booking already exists</h2>
-          <p className="text-sm text-slate-600">
-            This order already has booking <strong>{linkedBooking.bookingNumber}</strong>.
-          </p>
-          <Link to={`/bookings/${linkedBooking.id}`} className="btn-primary inline-block">
-            View booking
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const backLink = isEdit ? `/bookings/${editId}` : '/bookings';
+  const title = isEdit ? 'Edit Booking' : 'New Booking';
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link to={backLink} className="text-sm text-brand-600 hover:underline">← Back</Link>
         <h2 className="mt-2 text-xl font-bold text-slate-900">{title}</h2>
-        {orderId && orderMeta && (
+        {!isEdit && (
           <p className="mt-1 text-sm text-slate-500">
-            Order customer: {orderMeta.customerName} ({orderMeta.customerPhone})
-            {!form.watch('customerId') && ' — customer will be created automatically on save'}
+            No customer yet?{' '}
+            <Link to="/customers" className="font-medium text-brand-600 hover:underline">Add a customer first</Link>
           </p>
         )}
       </div>
@@ -301,11 +232,9 @@ export default function BookingFormPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">
-              Customer {orderId ? '' : '*'}
-            </label>
+            <label className="mb-1 block text-sm font-medium">Customer *</label>
             <select className="input-field" {...form.register('customerId')}>
-              <option value="">{orderId ? 'Auto from order contact' : 'Select customer'}</option>
+              <option value="">Select customer</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
               ))}
@@ -446,7 +375,7 @@ export default function BookingFormPage() {
 
         <div className="flex justify-end gap-2">
           <Link to={backLink} className="btn-secondary">Cancel</Link>
-          <button type="submit" className="btn-primary" disabled={Boolean(loadError && orderId)}>
+          <button type="submit" className="btn-primary" disabled={Boolean(loadError)}>
             {isEdit ? 'Save Changes' : 'Create Booking'}
           </button>
         </div>

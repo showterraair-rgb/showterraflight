@@ -6,7 +6,6 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import CustomersPage from '../pages/CustomersPage';
 import SuppliersPage from '../pages/SuppliersPage';
-import OrdersPage from '../pages/OrdersPage';
 import BookingsPage from '../pages/BookingsPage';
 import BookingFormPage from '../pages/BookingFormPage';
 import BookingDetailPage from '../pages/BookingDetailPage';
@@ -47,7 +46,7 @@ export default function AppRoutes() {
 
             <Route path="customers" element={<ProtectedRoute permissions={['customers:view']}><CustomersPage /></ProtectedRoute>} />
             <Route path="suppliers" element={<ProtectedRoute permissions={['suppliers:view']}><SuppliersPage /></ProtectedRoute>} />
-            <Route path="orders" element={<ProtectedRoute permissions={['orders:view']}><OrdersPage /></ProtectedRoute>} />
+            <Route path="orders" element={<Navigate to="/bookings" replace />} />
 
             <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />

@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import Order from '../models/Order.js';
 import Booking from '../models/Booking.js';
 import Account from '../models/Account.js';
 import Expense from '../models/Expense.js';
@@ -19,18 +18,16 @@ export async function getDashboardSummary(user) {
   const todayEnd = endOfToday();
 
   const [
-    todayOrders,
-    websiteInquiries,
-    pendingPurchases,
+    todayBookings,
+    pendingBookings,
     issuedTickets,
     bookingAggregates,
     expenseTotal,
     accounts,
     pendingReminders,
   ] = await Promise.all([
-    Order.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
-    Order.countDocuments({ isFromWebsite: true, status: { $in: ['inquiry', 'quoted', 'pending_purchase'] } }),
-    Order.countDocuments({ status: 'pending_purchase' }),
+    Booking.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+    Booking.countDocuments({ status: { $in: ['draft', 'confirmed'] } }),
     Booking.countDocuments({ status: { $in: ['ticket_issued', 'delivered', 'completed'] } }),
     Booking.aggregate([
       {
@@ -63,9 +60,8 @@ export async function getDashboardSummary(user) {
   const totalAccountBalance = accounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
 
   const summary = {
-    todayOrders,
-    websiteInquiries,
-    pendingPurchases,
+    todayBookings,
+    pendingBookings,
     issuedTickets,
     customerDue: agg.customerDue,
     supplierPayable: agg.supplierPayable,
@@ -93,32 +89,18 @@ export async function getDashboardSummary(user) {
 }
 
 export async function getRecentActivity() {
-  const [recentOrders, recentBookings] = await Promise.all([
-    Order.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('orderNumber customerName status source isFromWebsite createdAt')
-      .lean(),
-    Booking.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('bookingNumber airline route status salePrice createdAt')
-      .lean(),
-  ]);
+  const recentBookings = await Booking.find()
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .select('bookingNumber airline route status salePrice createdAt customer')
+    .populate('customer', 'name')
+    .lean();
 
   return {
-    orders: recentOrders.map((o) => ({
-      id: o._id.toString(),
-      orderNumber: o.orderNumber,
-      customerName: o.customerName,
-      status: o.status,
-      source: o.source,
-      isFromWebsite: o.isFromWebsite,
-      createdAt: o.createdAt,
-    })),
     bookings: recentBookings.map((b) => ({
       id: b._id.toString(),
       bookingNumber: b.bookingNumber,
+      customerName: b.customer?.name || '',
       airline: b.airline,
       route: b.route,
       status: b.status,
@@ -129,30 +111,13 @@ export async function getRecentActivity() {
 }
 
 export async function getDashboardAlerts() {
-  const [followUps, dueReminders] = await Promise.all([
-    Order.find({
-      nextFollowUpDate: { $lte: dayjs().add(3, 'day').toDate() },
-      status: { $nin: ['closed', 'cancelled'] },
-    })
-      .sort({ nextFollowUpDate: 1 })
-      .limit(5)
-      .select('orderNumber customerName nextFollowUpDate status')
-      .lean(),
-    Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
-      .sort({ dueDate: 1 })
-      .limit(5)
-      .select('title type dueDate priority')
-      .lean(),
-  ]);
+  const dueReminders = await Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
+    .sort({ dueDate: 1 })
+    .limit(5)
+    .select('title type dueDate priority')
+    .lean();
 
   return {
-    followUps: followUps.map((o) => ({
-      id: o._id.toString(),
-      orderNumber: o.orderNumber,
-      customerName: o.customerName,
-      nextFollowUpDate: o.nextFollowUpDate,
-      status: o.status,
-    })),
     reminders: dueReminders.map((r) => ({
       id: r._id.toString(),
       title: r.title,

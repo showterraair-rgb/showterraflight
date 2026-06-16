@@ -7,7 +7,6 @@ import Header from './Header';
 
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
-  '/orders': 'Orders',
   '/bookings': 'Bookings',
   '/bookings/new': 'New Booking',
   '/customers': 'Customers',

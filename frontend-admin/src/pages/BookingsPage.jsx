@@ -113,24 +113,12 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        <p className="font-medium">Website booking requests do not appear here</p>
-        <p className="mt-1 text-amber-900">
-          Customers who submit the form on your website create an <strong>Order</strong> (reference starts with <strong>ORD-</strong>).
-          Check{' '}
-          {can('orders:view') ? (
-            <Link to="/orders" className="font-semibold text-brand-700 underline">Orders → Website requests</Link>
-          ) : (
-            <strong>Orders</strong>
-          )}
-          , then click <strong>Booking</strong> on a row when you confirm the ticket.
-        </p>
-      </div>
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Bookings</h2>
-          <p className="text-sm text-slate-500">Confirmed tickets with PNR, pricing, and payments (BKG- numbers)</p>
+          <p className="text-sm text-slate-500">
+            Create tickets directly: add a customer, then New Booking, then record payments.
+          </p>
         </div>
         {can('bookings:create') && (
           <Link to="/bookings/new" className="btn-primary">New Booking</Link>

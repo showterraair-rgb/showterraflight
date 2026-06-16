@@ -10,11 +10,10 @@ export const NAV_ITEMS = [
     permissions: ['dashboard:view'],
   },
   {
-    label: 'Orders',
-    path: '/orders',
-    icon: 'orders',
-    permissions: ['orders:view'],
-    description: 'Website requests (ORD-)',
+    label: 'Customers',
+    path: '/customers',
+    icon: 'customers',
+    permissions: ['customers:view'],
   },
   {
     label: 'Bookings',
@@ -22,12 +21,6 @@ export const NAV_ITEMS = [
     icon: 'bookings',
     permissions: ['bookings:view'],
     description: 'Confirmed tickets (BKG-)',
-  },
-  {
-    label: 'Customers',
-    path: '/customers',
-    icon: 'customers',
-    permissions: ['customers:view'],
   },
   {
     label: 'Suppliers',
