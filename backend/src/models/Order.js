@@ -59,6 +59,7 @@ const orderSchema = new mongoose.Schema(
       default: 'economy',
     },
     quotedSalePrice: { type: Number, min: 0 },
+    preferredCurrency: { type: String, enum: ['BDT', 'BRL'], default: 'BDT' },
     requestNotes: { type: String, default: '' },
     internalNotes: { type: String, default: '' },
     followUpNotes: [followUpNoteSchema],

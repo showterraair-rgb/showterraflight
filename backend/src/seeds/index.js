@@ -10,6 +10,7 @@ import {
   DEFAULT_NOTIFICATION_TEMPLATES,
   DEFAULT_AUTOMATION_RULES,
 } from '../config/constants.js';
+import { DEFAULT_CURRENCIES } from '../config/currencies.js';
 import { ROLE_PERMISSIONS } from '../config/permissions.js';
 import Role from '../models/Role.js';
 import User from '../models/User.js';
@@ -88,6 +89,8 @@ async function seedSettings() {
       orderNumberPrefix: 'ORD',
       bookingNumberPrefix: 'BKG',
       invoicePrefix: 'INV',
+      currencies: DEFAULT_CURRENCIES,
+      currenciesUpdatedAt: new Date(),
     },
     { upsert: true, new: true }
   );

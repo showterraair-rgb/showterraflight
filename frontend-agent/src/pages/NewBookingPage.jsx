@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { agentApi } from '../services/agent.api';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../hooks/useCurrency';
+import CurrencySelector from '../components/CurrencySelector';
 import { AIRLINES, PASSENGER_TITLES } from '../utils/constants';
 
 const emptyPassenger = {
@@ -17,6 +19,7 @@ const emptyPassenger = {
 export default function NewBookingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { rates, format, convert, brlRate } = useCurrency();
   const [submitting, setSubmitting] = useState(false);
   const [airlineCustom, setAirlineCustom] = useState('');
   const [ticketFile, setTicketFile] = useState(null);
@@ -49,6 +52,11 @@ export default function NewBookingPage() {
     return (Number(form.baseFare) + Number(form.tax)) * count + Number(form.agentMarkup || 0);
   }, [form.baseFare, form.tax, form.agentMarkup, form.passengers.length]);
 
+  const totalFareBDT = useMemo(
+    () => convert(totalFare, form.currency, 'BDT'),
+    [totalFare, form.currency, rates, convert]
+  );
+
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const updatePassenger = (idx, key, value) => {
@@ -71,7 +79,13 @@ export default function NewBookingPage() {
     setSubmitting(true);
     try {
       const airline = form.airline === 'Other' ? airlineCustom : form.airline;
-      const payload = { ...form, airline, totalFare };
+      const payload = {
+        ...form,
+        airline,
+        totalFare,
+        originalCurrency: form.currency,
+        exchangeRateAtBooking: form.currency === 'BRL' ? brlRate : 1,
+      };
 
       if (ticketFile) {
         const fd = new FormData();
@@ -159,8 +173,17 @@ export default function NewBookingPage() {
             <div><label className="mb-1 block text-sm font-medium">Base fare (per pax)</label><input type="number" min={0} className="input-field" value={form.baseFare} onChange={(e) => setField('baseFare', e.target.value)} /></div>
             <div><label className="mb-1 block text-sm font-medium">Tax (per pax)</label><input type="number" min={0} className="input-field" value={form.tax} onChange={(e) => setField('tax', e.target.value)} /></div>
             <div><label className="mb-1 block text-sm font-medium">Agent markup</label><input type="number" min={0} className="input-field" value={form.agentMarkup} onChange={(e) => setField('agentMarkup', e.target.value)} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Currency</label><select className="input-field" value={form.currency} onChange={(e) => setField('currency', e.target.value)}><option value="BDT">BDT</option><option value="USD">USD</option></select></div>
-            <div className="sm:col-span-2 rounded-lg bg-slate-50 p-4"><p className="text-sm text-slate-500">Total fare</p><p className="text-2xl font-bold">{form.currency} {totalFare.toLocaleString()}</p></div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Currency</label>
+              <CurrencySelector value={form.currency} onChange={(v) => setField('currency', v)} brlRate={brlRate} />
+            </div>
+            <div className="sm:col-span-2 rounded-lg bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">Total fare ({form.currency})</p>
+              <p className="text-2xl font-bold">{format(totalFare, form.currency)}</p>
+              {form.currency === 'BRL' && (
+                <p className="mt-1 text-sm text-slate-500">= {format(totalFareBDT, 'BDT')}</p>
+              )}
+            </div>
           </div>
         </section>
 

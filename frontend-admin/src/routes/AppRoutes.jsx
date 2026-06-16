@@ -32,6 +32,7 @@ import AgentDetailPage from '../pages/AgentDetailPage';
 import AgentBookingsPage from '../pages/AgentBookingsPage';
 import AgentBookingDetailPage from '../pages/AgentBookingDetailPage';
 import AgentAccountingPage from '../pages/AgentAccountingPage';
+import CurrencySettingsPage from '../pages/CurrencySettingsPage';
 
 export default function AppRoutes() {
   return (
@@ -77,6 +78,7 @@ export default function AppRoutes() {
             <Route path="agent-bookings" element={<ProtectedRoute permissions={['agent-bookings:view']}><AgentBookingsPage /></ProtectedRoute>} />
             <Route path="agent-bookings/:id" element={<ProtectedRoute permissions={['agent-bookings:view']}><AgentBookingDetailPage /></ProtectedRoute>} />
             <Route path="agent-accounting" element={<ProtectedRoute permissions={['agent-accounting:view']}><AgentAccountingPage /></ProtectedRoute>} />
+            <Route path="settings/currency" element={<ProtectedRoute permissions={['settings:manage', 'cms:manage']}><CurrencySettingsPage /></ProtectedRoute>} />
             <Route path="agent-accounting/:agentId" element={<ProtectedRoute permissions={['agent-accounting:view']}><AgentAccountingPage /></ProtectedRoute>} />
           </Route>
 

@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { agentApi } from '../services/agent.api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import { useCurrency } from '../hooks/useCurrency';
+import DualCurrencyAmount from '../components/DualCurrencyAmount';
 import { formatCurrency } from '../utils/constants';
 
 const COLORS = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
 export default function ReportsPage() {
+  const { convert, format, rates, brlRate } = useCurrency();
+  const [displayCurrency, setDisplayCurrency] = useState('BDT');
   const [summary, setSummary] = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +30,20 @@ export default function ReportsPage() {
 
   const exportCsv = () => {
     if (!summary?.byAirline?.length) return;
-    const rows = [['Airline', 'Bookings', 'Revenue'], ...summary.byAirline.map((a) => [a.airline, a.count, a.revenue])];
-    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
+    const header = [
+      `Report Currency: ${displayCurrency}`,
+      `Exchange Rate Used: 1 BRL = ${brlRate} BDT`,
+      `Generated: ${new Date().toISOString().slice(0, 10)}`,
+      '',
+      'Airline,Bookings,Revenue (BDT),Revenue (Display)',
+    ];
+    const rows = summary.byAirline.map((a) => [
+      a.airline,
+      a.count,
+      a.revenue,
+      convert(a.revenue, 'BDT', displayCurrency).toFixed(2),
+    ]);
+    const blob = new Blob([[...header, ...rows.map((r) => r.join(','))].join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -41,7 +57,14 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Reports</h1>
-        <button type="button" onClick={exportCsv} className="btn-secondary">Export CSV</button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-slate-200 p-0.5 text-sm">
+            {['BDT', 'BRL'].map((c) => (
+              <button key={c} type="button" className={`rounded-md px-3 py-1 ${displayCurrency === c ? 'bg-brand-600 text-white' : 'text-slate-600'}`} onClick={() => setDisplayCurrency(c)}>{c}</button>
+            ))}
+          </div>
+          <button type="button" onClick={exportCsv} className="btn-secondary">Export CSV</button>
+        </div>
       </div>
       <div className="flex gap-3">
         <input type="date" className="input-field w-auto" value={range.dateFrom} onChange={(e) => setRange({ ...range, dateFrom: e.target.value })} />
@@ -49,7 +72,10 @@ export default function ReportsPage() {
       </div>
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="card"><p className="text-xs text-slate-500">Total bookings</p><p className="text-2xl font-bold">{summary?.totalBookings || 0}</p></div>
-        <div className="card"><p className="text-xs text-slate-500">Revenue</p><p className="text-2xl font-bold">{formatCurrency(summary?.totalRevenue)}</p></div>
+        <div className="card">
+          <p className="text-xs text-slate-500">Revenue</p>
+          <DualCurrencyAmount amountBDT={summary?.totalRevenue} showIn={displayCurrency} rates={rates} primaryClassName="text-2xl font-bold" />
+        </div>
         <div className="card"><p className="text-xs text-slate-500">Confirmed</p><p className="text-2xl font-bold">{summary?.confirmed || 0}</p></div>
         <div className="card"><p className="text-xs text-slate-500">Pending</p><p className="text-2xl font-bold">{summary?.pending || 0}</p></div>
       </div>

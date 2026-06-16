@@ -27,7 +27,8 @@ async function getCompanyInfo() {
 }
 
 function formatMoney(amount, currency = 'BDT') {
-  const sym = currency === 'BDT' ? '৳' : currency;
+  const symbols = { BDT: '৳', BRL: 'R$' };
+  const sym = symbols[currency] || currency;
   return `${sym}${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 

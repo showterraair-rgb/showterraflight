@@ -25,6 +25,7 @@ import notificationRoutes from './notification.routes.js';
 import agentAuthRoutes from './agent/auth.routes.js';
 import agentRoutes from './agent/index.js';
 import adminAgentRoutes from './adminAgent.routes.js';
+import settingsRoutes from './settings.routes.js';
 import authenticate from '../middlewares/authenticate.js';
 
 const router = Router();
@@ -67,6 +68,7 @@ router.use('/backups', backupRoutes);
 router.use('/audit', auditRoutes);
 router.use('/security', securityRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/admin/settings', settingsRoutes);
 router.use('/admin', adminAgentRoutes);
 
 export default router;

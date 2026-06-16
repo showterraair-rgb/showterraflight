@@ -1,10 +1,16 @@
 import * as publicService from '../services/public.service.js';
+import * as currencyService from '../services/currency.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 export const getCompanySettings = asyncHandler(async (_req, res) => {
   const data = await publicService.getCompanySettings();
 
   res.json({ success: true, data });
+});
+
+export const getPublicCurrencies = asyncHandler(async (_req, res) => {
+  const data = await currencyService.getPublicCurrencies();
+  res.json({ success: true, ...data });
 });
 
 export const getCmsPage = asyncHandler(async (req, res) => {
@@ -41,6 +47,7 @@ export const uploadPassport = asyncHandler(async (req, res) => {
 
 export default {
   getCompanySettings,
+  getPublicCurrencies,
   getCmsPage,
   getNotices,
   createBookingRequest,

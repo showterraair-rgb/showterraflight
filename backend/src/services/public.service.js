@@ -99,6 +99,7 @@ export async function createBookingRequest(data) {
     returnDate: data.returnDate ? new Date(data.returnDate) : undefined,
     passengerCount: data.passengerCount,
     travelClass: data.travelClass,
+    preferredCurrency: data.preferredCurrency || 'BDT',
     requestNotes: data.requestNotes || '',
     isFromWebsite: true,
     websiteBookingId: orderNumber,

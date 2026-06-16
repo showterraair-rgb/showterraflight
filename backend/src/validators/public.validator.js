@@ -13,6 +13,7 @@ export const bookingRequestSchema = z
     returnDate: z.string().optional().or(z.literal('')),
     passengerCount: z.coerce.number().int().min(1).max(20).default(1),
     travelClass: z.enum(TRAVEL_CLASSES).default('economy'),
+    preferredCurrency: z.enum(['BDT', 'BRL']).optional().default('BDT'),
     requestNotes: z.string().max(2000).optional().default(''),
   })
   .refine(

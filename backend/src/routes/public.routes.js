@@ -17,6 +17,7 @@ const bookingLimiter = rateLimit({
 });
 
 router.get('/settings/company', publicController.getCompanySettings);
+router.get('/currencies', publicController.getPublicCurrencies);
 router.get('/cms/pages/:pageKey', publicController.getCmsPage);
 router.get('/cms/notices', publicController.getNotices);
 router.post(

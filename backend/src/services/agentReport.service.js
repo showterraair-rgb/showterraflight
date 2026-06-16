@@ -22,7 +22,7 @@ export async function getAgentReportSummary(agentId, query) {
         $group: {
           _id: null,
           totalBookings: { $sum: 1 },
-          totalRevenue: { $sum: '$totalFare' },
+          totalRevenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
           confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } },
           pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
           cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
@@ -31,7 +31,7 @@ export async function getAgentReportSummary(agentId, query) {
     ]),
     AgentBooking.aggregate([
       { $match: match },
-      { $group: { _id: '$airline', count: { $sum: 1 }, revenue: { $sum: '$totalFare' } } },
+      { $group: { _id: '$airline', count: { $sum: 1 }, revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } } } },
       { $sort: { count: -1 } },
     ]),
     AgentBooking.aggregate([
@@ -40,7 +40,7 @@ export async function getAgentReportSummary(agentId, query) {
         $group: {
           _id: { from: '$fromCity', to: '$toCity' },
           count: { $sum: 1 },
-          revenue: { $sum: '$totalFare' },
+          revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
         },
       },
       { $sort: { count: -1 } },
@@ -76,7 +76,7 @@ export async function getAgentMonthlyReport(agentId, query) {
       $group: {
         _id: { $month: '$createdAt' },
         bookings: { $sum: 1 },
-        revenue: { $sum: '$totalFare' },
+        revenue: { $sum: { $ifNull: ['$totalFareBDT', '$totalFare'] } },
       },
     },
     { $sort: { _id: 1 } },

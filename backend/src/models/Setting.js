@@ -1,5 +1,17 @@
 import mongoose from 'mongoose';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
+import { DEFAULT_CURRENCIES } from '../config/currencies.js';
+
+const currencyItemSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    symbol: { type: String, required: true },
+    code: { type: String, required: true },
+    isBase: { type: Boolean, default: false },
+    rateToBase: { type: Number, required: true, min: 0 },
+  },
+  { _id: false }
+);
 
 const socialLinksSchema = new mongoose.Schema(
   {
@@ -43,6 +55,11 @@ const settingSchema = new mongoose.Schema(
       nagadNumber: { type: String, default: '' },
       paymentNote: { type: String, default: '' },
     },
+    currencies: {
+      BDT: { type: currencyItemSchema, default: () => ({ ...DEFAULT_CURRENCIES.BDT }) },
+      BRL: { type: currencyItemSchema, default: () => ({ ...DEFAULT_CURRENCIES.BRL }) },
+    },
+    currenciesUpdatedAt: { type: Date },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

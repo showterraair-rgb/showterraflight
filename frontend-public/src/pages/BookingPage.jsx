@@ -7,6 +7,7 @@ import PublicLayout from '../layouts/PublicLayout';
 import PageHero from '../components/PageHero';
 import DestinationPicker from '../components/common/DestinationPicker';
 import { useCompany } from '../context/CompanyContext';
+import { useCurrency } from '../hooks/useCurrency';
 import { getWhatsAppDigits } from '../utils/companyHelpers';
 import { publicApi } from '../services/api';
 
@@ -25,6 +26,7 @@ const bookingSchema = z
     returnDate: z.string().optional(),
     passengerCount: z.coerce.number().int().min(1).max(20),
     travelClass: z.enum(TRAVEL_CLASSES),
+    preferredCurrency: z.enum(['BDT', 'BRL']).default('BDT'),
     requestNotes: z.string().max(2000).optional(),
   })
   .refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
@@ -48,6 +50,7 @@ function formatBookingWhatsAppMessage(data) {
     `*Phone:* ${data.customerPhone}`,
   ];
   if (data.customerEmail) lines.push(`*Email:* ${data.customerEmail}`);
+  lines.push(`*Preferred currency:* ${data.preferredCurrency || 'BDT'}`);
   lines.push(
     `*Journey:* ${JOURNEY_LABELS[data.journeyType]}`,
     `*Class:* ${CLASS_LABELS[data.travelClass]}`,
@@ -67,6 +70,7 @@ function formatBookingWhatsAppMessage(data) {
 
 export default function BookingPage() {
   const { company } = useCompany();
+  const { brlRate } = useCurrency();
   const [searchParams] = useSearchParams();
   const [page, setPage] = useState(null);
   const [sent, setSent] = useState(false);
@@ -84,6 +88,7 @@ export default function BookingPage() {
       journeyType: 'one_way',
       travelClass: 'economy',
       passengerCount: 1,
+      preferredCurrency: 'BDT',
       customerEmail: '',
       requestNotes: '',
       fromDestination: 'DAC',
@@ -94,6 +99,7 @@ export default function BookingPage() {
   });
 
   const journeyType = watch('journeyType');
+  const preferredCurrency = watch('preferredCurrency');
   const fromDestination = watch('fromDestination');
   const toDestination = watch('toDestination');
   const wa = getWhatsAppDigits(company);
@@ -210,6 +216,17 @@ export default function BookingPage() {
                   {errors.returnDate && <p className="mt-1 text-xs text-red-600">{errors.returnDate.message}</p>}
                 </div>
               )}
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Preferred Currency</label>
+                <select className="input-field" {...register('preferredCurrency')}>
+                  <option value="BDT">BDT (Bangladeshi Taka ৳)</option>
+                  <option value="BRL">BRL (Brazilian Real R$)</option>
+                </select>
+                {preferredCurrency === 'BRL' && (
+                  <p className="mt-1 text-xs text-slate-500">1 BRL = ৳ {Number(brlRate).toFixed(2)} (current rate)</p>
+                )}
+              </div>
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Passengers *</label>

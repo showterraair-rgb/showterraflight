@@ -32,7 +32,9 @@ export const AIRLINES = [
 export const PASSENGER_TITLES = ['Mr', 'Mrs', 'Ms', 'Child', 'Infant'];
 
 export function formatCurrency(n, currency = 'BDT') {
-  return `${currency} ${Number(n || 0).toLocaleString()}`;
+  const symbols = { BDT: '৳', BRL: 'R$' };
+  const symbol = symbols[currency] || currency;
+  return `${symbol} ${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function formatDate(v) {

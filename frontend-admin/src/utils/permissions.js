@@ -116,6 +116,12 @@ export const NAV_ITEMS = [
     permissions: ['audit:view'],
   },
   {
+    label: 'Currency Settings',
+    path: '/settings/currency',
+    icon: 'accounts',
+    permissions: ['settings:manage', 'cms:manage'],
+  },
+  {
     label: 'Payment Accounts',
     path: '/settings/payment-accounts',
     icon: 'accounts',
