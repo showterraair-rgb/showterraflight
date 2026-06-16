@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { bookingsApi, ordersApi, customersApi, suppliersApi } from '../services/crm.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
+import { useCurrency } from '../hooks/useCurrency';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
 
 function buildSchema(fromOrder) {
@@ -20,9 +22,10 @@ function buildSchema(fromOrder) {
     passengerCount: z.coerce.number().min(1),
     pnr: z.string().optional(),
     ticketNumber: z.string().optional(),
-    purchasePrice: z.coerce.number().min(0),
-    salePrice: z.coerce.number().min(0),
-    directCosts: z.coerce.number().min(0),
+    purchasePriceBRL: z.coerce.number().min(0),
+    salePriceBRL: z.coerce.number().min(0),
+    directCostsBRL: z.coerce.number().min(0),
+    bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
     notes: z.string().optional(),
     status: z.enum(['draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled']),
     ticketCopyPath: z.string().optional(),
@@ -39,12 +42,33 @@ function parseRoute(route) {
   return { fromDestination: trimmed, toDestination: trimmed };
 }
 
+function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function brlFromStored(booking, field, rate) {
+  const p = booking.pricing;
+  if (p) {
+    if (field === 'purchase') return p.purchasePriceBRL ?? 0;
+    if (field === 'sale') return p.salePriceBRL ?? 0;
+    return p.directCostsBRL ?? 0;
+  }
+  if (booking.originalCurrency === 'BRL') {
+    if (field === 'purchase') return booking.originalPurchasePrice ?? booking.purchasePrice ?? 0;
+    if (field === 'sale') return booking.originalSalePrice ?? booking.salePrice ?? 0;
+    return booking.originalDirectCosts ?? booking.directCosts ?? 0;
+  }
+  const bdt = field === 'purchase' ? booking.purchasePrice : field === 'sale' ? booking.salePrice : booking.directCosts;
+  return rate > 0 ? Number(bdt || 0) / rate : Number(bdt || 0);
+}
+
 export default function BookingFormPage() {
   const navigate = useNavigate();
   const { id: editId } = useParams();
   const isEdit = Boolean(editId);
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const { brlRate } = useCurrency();
 
   const [loadingData, setLoadingData] = useState(isEdit || !!orderId);
   const [customers, setCustomers] = useState([]);
@@ -54,6 +78,7 @@ export default function BookingFormPage() {
   const [linkedBooking, setLinkedBooking] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
+  const [rateError, setRateError] = useState('');
 
   const schema = useMemo(() => buildSchema(Boolean(orderId) && !isEdit), [orderId, isEdit]);
 
@@ -61,12 +86,19 @@ export default function BookingFormPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       passengerCount: 1,
-      purchasePrice: 0,
-      salePrice: 0,
-      directCosts: 0,
+      purchasePriceBRL: 0,
+      salePriceBRL: 0,
+      directCostsBRL: 0,
+      bdtRate: brlRate,
       status: 'confirmed',
     },
   });
+
+  useEffect(() => {
+    if (brlRate && !form.getValues('bdtRate')) {
+      form.setValue('bdtRate', brlRate);
+    }
+  }, [brlRate, form]);
 
   const mergeCustomer = (list, extra) => {
     if (!extra?.id) return list;
@@ -97,6 +129,7 @@ export default function BookingFormPage() {
       bookingsApi.get(editId)
         .then(({ data }) => {
           const b = data.data;
+          const rate = b.bdtRateAtBooking ?? b.exchangeRateAtBooking ?? b.pricing?.bdtRateAtBooking ?? brlRate;
           form.reset({
             customerId: b.customer || '',
             supplierId: b.supplier || '',
@@ -107,9 +140,10 @@ export default function BookingFormPage() {
             passengerCount: b.passengerCount,
             pnr: b.pnr || '',
             ticketNumber: b.ticketNumber || '',
-            purchasePrice: b.purchasePrice || 0,
-            salePrice: b.salePrice || 0,
-            directCosts: b.directCosts || 0,
+            purchasePriceBRL: brlFromStored(b, 'purchase', rate),
+            salePriceBRL: brlFromStored(b, 'sale', rate),
+            directCostsBRL: brlFromStored(b, 'direct', rate),
+            bdtRate: rate,
             notes: b.notes || '',
             status: b.status,
             ticketCopyPath: b.ticketCopyPath || '',
@@ -159,30 +193,45 @@ export default function BookingFormPage() {
         if (o.customerDetails) {
           setCustomers((prev) => mergeCustomer(prev, o.customerDetails));
         }
+        const quotedBRL = brlRate > 0 ? (o.quotedSalePrice || 0) / brlRate : (o.quotedSalePrice || 0);
         form.reset({
           customerId: o.customerDetails?.id || o.customer || '',
           airline: `${o.fromDestination}-${o.toDestination}`,
           route: `${o.fromDestination} → ${o.toDestination}`,
           departureDate: o.journeyDate?.slice(0, 10),
           passengerCount: o.passengerCount,
-          salePrice: o.quotedSalePrice || 0,
-          purchasePrice: 0,
-          directCosts: 0,
+          salePriceBRL: quotedBRL,
+          purchasePriceBRL: 0,
+          directCostsBRL: 0,
+          bdtRate: brlRate,
           notes: o.internalNotes || '',
           status: 'confirmed',
         });
       })
       .catch((err) => setLoadError(err.response?.data?.message || 'Failed to load order'))
       .finally(() => setLoadingData(false));
-  }, [orderId, editId, isEdit, form]);
+  }, [orderId, editId, isEdit, form, brlRate]);
 
-  const watchPrices = form.watch(['purchasePrice', 'salePrice', 'directCosts']);
-  const profit = (watchPrices[1] || 0) - (watchPrices[0] || 0) - (watchPrices[2] || 0);
-  const projectedDue = Math.max(0, (watchPrices[1] || 0) - (paymentSummary?.amountPaid || 0));
-  const projectedPayable = Math.max(0, (watchPrices[0] || 0) + (watchPrices[2] || 0) - (paymentSummary?.supplierPaid || 0));
+  const watchPrices = form.watch(['purchasePriceBRL', 'salePriceBRL', 'directCostsBRL', 'bdtRate']);
+  const purchaseBRL = Number(watchPrices[0]) || 0;
+  const saleBRL = Number(watchPrices[1]) || 0;
+  const costsBRL = Number(watchPrices[2]) || 0;
+  const effectiveRate = Number(watchPrices[3] || brlRate) || 0;
+
+  const profitBRL = saleBRL - purchaseBRL - costsBRL;
+  const profitBDT = profitBRL * effectiveRate;
+  const saleBDT = saleBRL * effectiveRate;
+  const projectedDueBDT = Math.max(0, saleBDT - (paymentSummary?.amountPaid || 0));
+  const projectedDueBRL = effectiveRate > 0 ? projectedDueBDT / effectiveRate : projectedDueBDT;
+  const projectedPayableBDT = Math.max(0, (purchaseBRL + costsBRL) * effectiveRate - (paymentSummary?.supplierPaid || 0));
+  const projectedPayableBRL = effectiveRate > 0 ? projectedPayableBDT / effectiveRate : projectedPayableBDT;
 
   const onSubmit = async (values) => {
     if (linkedBooking) return;
+    if (!effectiveRate || effectiveRate <= 0) {
+      setRateError('BDT rate must be greater than 0');
+      return;
+    }
     setError('');
     try {
       const { fromDestination, toDestination } = parseRoute(values.route);
@@ -264,12 +313,6 @@ export default function BookingFormPage() {
             {form.formState.errors.customerId && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.customerId.message}</p>
             )}
-            {!customers.length && !orderId && !loadError && (
-              <p className="mt-1 text-xs text-slate-500">
-                No customers yet.{' '}
-                <Link to="/customers" className="text-brand-600 hover:underline">Add a customer first</Link>
-              </p>
-            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Supplier / Agent</label>
@@ -290,9 +333,6 @@ export default function BookingFormPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">Route *</label>
             <input className="input-field uppercase" placeholder="e.g. DAC → DXB" {...form.register('route')} />
-            {form.formState.errors.route && (
-              <p className="mt-1 text-xs text-red-600">{form.formState.errors.route.message}</p>
-            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Sector</label>
@@ -323,28 +363,75 @@ export default function BookingFormPage() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Pricing</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Pricing (BRL)</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Customer and supplier payments are recorded separately under Payments.
+            Enter amounts in BRL. Customer and supplier payments are recorded separately under Payments.
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            <div><label className="mb-1 block text-xs font-medium">Purchase Price</label><input type="number" className="input-field" {...form.register('purchasePrice')} /></div>
-            <div><label className="mb-1 block text-xs font-medium">Sale Price</label><input type="number" className="input-field" {...form.register('salePrice')} /></div>
-            <div><label className="mb-1 block text-xs font-medium">Direct Costs</label><input type="number" className="input-field" {...form.register('directCosts')} /></div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Purchase Price</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
+                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('purchasePriceBRL')} />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Sale Price</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
+                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('salePriceBRL')} />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Direct Costs</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
+                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('directCostsBRL')} />
+              </div>
+            </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div><p className="text-xs text-slate-500">Est. Profit</p><p className="text-lg font-bold text-green-700">৳{profit.toLocaleString()}</p></div>
+
+          <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+            <label className="mb-1 block text-xs font-medium">BDT Exchange Rate *</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-slate-600">1 BRL = ৳</span>
+              <input
+                type="number"
+                min={0.01}
+                step="0.01"
+                className="input-field w-28"
+                {...form.register('bdtRate', {
+                  onChange: (e) => setRateError(Number(e.target.value) > 0 ? '' : 'BDT rate must be greater than 0'),
+                })}
+              />
+            </div>
+            {rateError && <p className="mt-1 text-xs text-red-600">{rateError}</p>}
+            <p className="mt-2 text-xs text-slate-500">100 BRL = ৳ {fmt(100 * effectiveRate)} at this rate</p>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-slate-500">Est. Profit</p>
+              <DualCurrencyAmount totalBRL={profitBRL} totalBDT={profitBDT} size="lg" className="mt-1 text-green-700" />
+            </div>
             {isEdit && paymentSummary ? (
               <>
-                <div><p className="text-xs text-slate-500">Customer Due</p><p className="text-lg font-bold text-red-600">৳{projectedDue.toLocaleString()}</p></div>
-                <div><p className="text-xs text-slate-500">Supplier Payable</p><p className="text-lg font-bold text-amber-700">৳{projectedPayable.toLocaleString()}</p></div>
+                <div>
+                  <p className="text-xs text-slate-500">Customer Due</p>
+                  <DualCurrencyAmount totalBRL={projectedDueBRL} totalBDT={projectedDueBDT} size="md" className="mt-1" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Supplier Payable</p>
+                  <DualCurrencyAmount totalBRL={projectedPayableBRL} totalBDT={projectedPayableBDT} size="md" className="mt-1" />
+                </div>
               </>
             ) : (
-              <div className="col-span-2 flex items-center justify-center text-xs text-slate-500">
+              <div className="sm:col-span-2 flex items-center text-xs text-slate-500">
                 Record payments after creating the booking
               </div>
             )}
           </div>
+          <p className="mt-3 text-xs text-slate-500">Rate used: 1 BRL = ৳ {fmt(effectiveRate)}</p>
         </div>
 
         <div>

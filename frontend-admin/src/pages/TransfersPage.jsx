@@ -6,7 +6,7 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import { usePermission } from '../hooks/usePermission';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
@@ -79,7 +79,7 @@ export default function TransfersPage() {
     { key: 'number', label: 'Transfer #', render: (r) => <span className="font-mono text-xs">{r.transferNumber}</span> },
     { key: 'from', label: 'From', render: (r) => r.fromAccount?.name || ACCOUNT_TYPE_LABELS[r.fromAccount?.type] },
     { key: 'to', label: 'To', render: (r) => r.toAccount?.name || ACCOUNT_TYPE_LABELS[r.toAccount?.type] },
-    { key: 'amount', label: 'Amount', render: (r) => formatCurrency(r.amount) },
+    { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" /> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.transferDate) },
     { key: 'ref', label: 'Reference', render: (r) => r.referenceNumber || '—' },
     {

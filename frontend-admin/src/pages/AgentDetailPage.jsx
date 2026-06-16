@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { agentsApi, agentAccountingApi } from '../services/agents.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import StatusBadge from '../components/common/StatusBadge';
+import MoneyAmount from '../components/common/MoneyAmount';
 
 export default function AgentDetailPage() {
   const { id } = useParams();
@@ -31,8 +31,8 @@ export default function AgentDetailPage() {
           <div><dt className="text-slate-500">Contact</dt><dd>{agent.contactPerson}</dd></div>
           <div><dt className="text-slate-500">Email</dt><dd>{agent.email}</dd></div>
           <div><dt className="text-slate-500">Phone</dt><dd>{agent.phone}</dd></div>
-          <div><dt className="text-slate-500">Balance</dt><dd>৳{(agent.currentBalance || 0).toLocaleString()}</dd></div>
-          <div><dt className="text-slate-500">Credit limit</dt><dd>৳{(agent.creditLimit || 0).toLocaleString()}</dd></div>
+          <div><dt className="text-slate-500">Balance</dt><dd><MoneyAmount amount={agent.currentBalance} size="sm" /></dd></div>
+          <div><dt className="text-slate-500">Credit limit</dt><dd><MoneyAmount amount={agent.creditLimit} size="sm" /></dd></div>
           <div><dt className="text-slate-500">Bookings</dt><dd>{agent.bookingsCount || 0}</dd></div>
         </dl>
         {agent.notes && <p className="mt-4 text-sm text-slate-600"><strong>Notes:</strong> {agent.notes}</p>}

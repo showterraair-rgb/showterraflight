@@ -4,7 +4,7 @@ import { accountsApi } from '../services/finance.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate, formatDateTime } from '../utils/date';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
@@ -51,9 +51,13 @@ export default function AccountStatementPage() {
     { key: 'type', label: 'Type', render: (r) => TYPE_LABELS[r.type] || r.type },
     { key: 'amount', label: 'Amount', render: (r) => {
       const isCredit = ['customer_payment', 'transfer_in', 'opening_balance'].includes(r.type) || (r.type === 'adjustment' && r.amount > 0);
-      return <span className={isCredit ? 'text-green-700' : 'text-red-600'}>{isCredit ? '+' : '-'}{formatCurrency(r.amount)}</span>;
+      return (
+        <span className={isCredit ? 'text-green-700' : 'text-red-600'}>
+          {isCredit ? '+' : '-'}<MoneyAmount amount={Math.abs(r.amount)} size="sm" className="inline-flex" />
+        </span>
+      );
     }},
-    { key: 'balance', label: 'Balance After', render: (r) => formatCurrency(r.balanceAfter) },
+    { key: 'balance', label: 'Balance After', render: (r) => <MoneyAmount amount={r.balanceAfter} size="sm" /> },
     { key: 'ref', label: 'Reference', render: (r) => r.referenceNumber || '—' },
     { key: 'notes', label: 'Notes', render: (r) => <span className="max-w-[200px] truncate block">{r.notes || '—'}</span> },
   ];
@@ -67,7 +71,7 @@ export default function AccountStatementPage() {
         <h2 className="mt-2 text-xl font-bold text-slate-900">
           {ACCOUNT_TYPE_LABELS[account?.type] || account?.name} — Statement
         </h2>
-        <p className="text-sm text-slate-500">Current balance: <strong>{formatCurrency(account?.currentBalance)}</strong></p>
+        <p className="text-sm text-slate-500">Current balance: <MoneyAmount amount={account?.currentBalance} size="md" className="inline-flex font-semibold" /></p>
       </div>
 
       <div className="card p-0">

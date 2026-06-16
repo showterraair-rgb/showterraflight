@@ -3,7 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { agentsApi, agentAccountingApi } from '../services/agents.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DataTable from '../components/common/DataTable';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { usePermission } from '../hooks/usePermission';
+
+function AmountCell({ amount }) {
+  if (!amount) return <span className="text-slate-400">—</span>;
+  return <MoneyAmount amount={amount} size="sm" />;
+}
 
 export default function AgentAccountingPage() {
   const { agentId } = useParams();
@@ -54,7 +60,7 @@ export default function AgentAccountingPage() {
     const columns = [
       { key: 'agentId', label: 'Agent ID', render: (r) => <Link to={`/agent-accounting/${r.id}`} className="font-mono text-xs text-brand-600">{r.agentId}</Link> },
       { key: 'companyName', label: 'Company' },
-      { key: 'currentBalance', label: 'Balance', render: (r) => `৳${(r.currentBalance || 0).toLocaleString()}` },
+      { key: 'currentBalance', label: 'Balance (BRL / BDT)', render: (r) => <MoneyAmount amount={r.currentBalance} size="sm" /> },
     ];
     return (
       <div className="space-y-4">
@@ -70,7 +76,7 @@ export default function AgentAccountingPage() {
       <Link to={agentId ? `/agents/${agentId}` : '/agents'} className="text-sm text-brand-600">← Back</Link>
       <div className="card">
         <h2 className="text-xl font-bold">{agent?.companyName}</h2>
-        <p className="text-sm">Balance: <strong>৳{(agent?.currentBalance || 0).toLocaleString()}</strong></p>
+        <p className="text-sm">Balance: <MoneyAmount amount={agent?.currentBalance} size="md" className="inline-flex font-semibold" /></p>
       </div>
       {can('agent-accounting:manage') && (
         <form onSubmit={addTxn} className="card grid gap-3 sm:grid-cols-4">
@@ -78,7 +84,7 @@ export default function AgentAccountingPage() {
             <option value="credit">Credit</option>
             <option value="debit">Debit</option>
           </select>
-          <input type="number" min={0} className="input-field" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+          <input type="number" min={0} className="input-field" placeholder="Amount (BDT)" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
           <input className="input-field sm:col-span-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
           <button type="submit" className="btn-primary sm:col-span-4">Add transaction</button>
         </form>
@@ -88,12 +94,12 @@ export default function AgentAccountingPage() {
           <thead><tr className="border-b text-left text-slate-500"><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
           <tbody>
             {items.map((t) => (
-              <tr key={t.id} className="border-b border-slate-100">
+              <tr key={t.id} className="border-b border-slate-100 align-top">
                 <td className="py-2">{new Date(t.date).toLocaleDateString()}</td>
                 <td className="py-2">{t.description}</td>
-                <td className="py-2">{t.debit || '—'}</td>
-                <td className="py-2">{t.credit || '—'}</td>
-                <td className="py-2">৳{t.balanceAfter?.toLocaleString()}</td>
+                <td className="py-2 text-red-600"><AmountCell amount={t.debit} /></td>
+                <td className="py-2 text-green-700"><AmountCell amount={t.credit} /></td>
+                <td className="py-2"><AmountCell amount={t.balanceAfter} /></td>
               </tr>
             ))}
           </tbody>

@@ -6,7 +6,7 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import { usePermission } from '../hooks/usePermission';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
 import { PAYMENT_METHODS } from '../utils/finance';
 
@@ -99,7 +99,7 @@ export default function CustomerPaymentsPage() {
     { key: 'customer', label: 'Customer', render: (r) => r.customerName },
     { key: 'booking', label: 'Booking', render: (r) => r.bookingNumber || '—' },
     { key: 'account', label: 'Received In', render: (r) => r.accountName },
-    { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium text-green-700">{formatCurrency(r.amount)}</span> },
+    { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" className="font-medium text-green-700" /> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.paymentDate) },
     { key: 'status', label: 'Status', render: (r) => <span className="capitalize">{r.status}</span> },
     {

@@ -7,7 +7,7 @@ import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { usePermission } from '../hooks/usePermission';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
 const ACCOUNT_TYPES = ['cash', 'bank', 'bkash', 'nagad'];
@@ -112,7 +112,7 @@ export default function PaymentAccountsPage() {
     { key: 'type', label: 'Type', render: (r) => ACCOUNT_TYPE_LABELS[r.type] || r.type },
     { key: 'accountName', label: 'Account name', render: (r) => r.accountName || '—' },
     { key: 'accountNumber', label: 'Number', render: (r) => r.accountNumber || r.mobileNumber || '—' },
-    { key: 'currentBalance', label: 'Balance', render: (r) => formatCurrency(r.currentBalance) },
+    { key: 'currentBalance', label: 'Balance', render: (r) => <MoneyAmount amount={r.currentBalance} size="sm" /> },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.isActive ? 'active' : 'inactive'} label={r.isActive ? 'Active' : 'Inactive'} /> },
     {
       key: 'actions',

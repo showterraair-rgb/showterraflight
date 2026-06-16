@@ -17,6 +17,8 @@ import { buildBookingNotificationContext } from '../utils/notificationContext.js
 import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from './financialSync.service.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
+import { getCurrencyRatesMap } from './currency.service.js';
+import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing } from '../utils/currencyUtils.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -26,6 +28,7 @@ function derivePaymentStatus(amount, total) {
 
 function formatBooking(doc) {
   const purchaseTotal = (doc.purchasePrice || 0) + (doc.directCosts || 0);
+  const pricing = normalizeLegacyBookingPricing(doc);
   return {
     id: doc._id.toString(),
     bookingNumber: doc.bookingNumber,
@@ -52,6 +55,10 @@ function formatBooking(doc) {
     salePrice: doc.salePrice,
     directCosts: doc.directCosts,
     profit: doc.profit,
+    originalCurrency: doc.originalCurrency || 'BDT',
+    exchangeRateAtBooking: doc.exchangeRateAtBooking ?? doc.bdtRateAtBooking,
+    bdtRateAtBooking: doc.bdtRateAtBooking ?? doc.exchangeRateAtBooking,
+    pricing,
     amountPaid: doc.amountPaid,
     customerDue: doc.customerDue,
     supplierPayable: doc.supplierPayable,
@@ -86,8 +93,27 @@ function formatBooking(doc) {
       customerDue: doc.customerDue,
       supplierPayable: doc.supplierPayable,
       purchaseTotal,
+      profitBRL: pricing.profitBRL,
+      profitBDT: pricing.profitBDT,
+      customerDueBRL: pricing.customerDueBRL,
+      customerDueBDT: pricing.customerDueBDT,
+      supplierPayableBRL: pricing.supplierPayableBRL,
+      supplierPayableBDT: pricing.supplierPayableBDT,
     },
   };
+}
+
+async function resolveBookingCurrencyFields(data) {
+  if (data.purchasePriceBRL != null || data.salePriceBRL != null || data.bdtRate != null) {
+    const rates = await getCurrencyRatesMap();
+    return buildBookingCurrencySnapshot({
+      purchasePriceBRL: data.purchasePriceBRL ?? data.originalPurchasePrice ?? 0,
+      salePriceBRL: data.salePriceBRL ?? data.originalSalePrice ?? 0,
+      directCostsBRL: data.directCostsBRL ?? data.originalDirectCosts ?? 0,
+      bdtRate: data.bdtRate ?? data.bdtRateAtBooking ?? rates.BRL,
+    });
+  }
+  return {};
 }
 
 function buildBookingFilter(query) {
@@ -169,6 +195,7 @@ export async function getBookingById(id) {
 
 async function createBookingRecord(data, userId, req, orderDoc = null) {
   const bookingNumber = await generateBookingNumber();
+  const currencyFields = await resolveBookingCurrencyFields(data);
 
   const booking = new Booking({
     bookingNumber,
@@ -187,9 +214,10 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     passengerCount: data.passengerCount,
     pnr: data.pnr,
     ticketNumber: data.ticketNumber,
-    purchasePrice: data.purchasePrice ?? 0,
-    salePrice: data.salePrice ?? 0,
-    directCosts: data.directCosts ?? 0,
+    purchasePrice: currencyFields.purchasePrice ?? data.purchasePrice ?? 0,
+    salePrice: currencyFields.salePrice ?? data.salePrice ?? 0,
+    directCosts: currencyFields.directCosts ?? data.directCosts ?? 0,
+    ...currencyFields,
     amountPaid: 0,
     supplierPaid: 0,
     notes: data.notes || '',
@@ -312,9 +340,14 @@ export async function updateBooking(id, data, userId, req) {
   if (data.returnDate !== undefined) booking.returnDate = data.returnDate ? new Date(data.returnDate) : undefined;
   if (data.pnr !== undefined) booking.pnr = data.pnr;
   if (data.ticketNumber !== undefined) booking.ticketNumber = data.ticketNumber;
-  if (data.purchasePrice !== undefined) booking.purchasePrice = data.purchasePrice;
-  if (data.salePrice !== undefined) booking.salePrice = data.salePrice;
-  if (data.directCosts !== undefined) booking.directCosts = data.directCosts;
+  const currencyFields = await resolveBookingCurrencyFields(data);
+  if (currencyFields.purchasePrice != null) {
+    Object.assign(booking, currencyFields);
+  } else {
+    if (data.purchasePrice !== undefined) booking.purchasePrice = data.purchasePrice;
+    if (data.salePrice !== undefined) booking.salePrice = data.salePrice;
+    if (data.directCosts !== undefined) booking.directCosts = data.directCosts;
+  }
   if (data.notes !== undefined) booking.notes = data.notes;
   if (data.ticketCopyPath !== undefined) booking.ticketCopyPath = data.ticketCopyPath;
   if (data.ticketCopyFileName !== undefined) booking.ticketCopyFileName = data.ticketCopyFileName;

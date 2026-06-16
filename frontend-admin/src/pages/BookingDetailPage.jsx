@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/common/StatusBadge';
 import { usePermission } from '../hooks/usePermission';
 import { formatDate, formatDateTime } from '../utils/date';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 import ApprovalControls from '../components/bookings/ApprovalPanel';
@@ -88,6 +88,9 @@ export default function BookingDetailPage() {
   if (loading) return <LoadingSpinner className="py-20" />;
   if (!booking) return <p>Booking not found</p>;
 
+  const p = booking.pricing || {};
+  const rate = p.bdtRateAtBooking ?? booking.bdtRateAtBooking ?? booking.exchangeRateAtBooking;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -120,15 +123,30 @@ export default function BookingDetailPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card border-l-4 border-l-green-500">
           <p className="text-xs font-medium uppercase text-slate-500">Profit</p>
-          <p className="text-2xl font-bold text-green-700">{formatCurrency(booking.computed?.profit ?? booking.profit)}</p>
+          <MoneyAmount
+            totalBRL={p.profitBRL ?? booking.computed?.profitBRL}
+            totalBDT={p.profitBDT ?? booking.computed?.profit ?? booking.profit}
+            size="lg"
+            className="mt-2 text-green-700"
+          />
         </div>
         <div className="card border-l-4 border-l-red-500">
           <p className="text-xs font-medium uppercase text-slate-500">Customer Due</p>
-          <p className="text-2xl font-bold text-red-600">{formatCurrency(booking.computed?.customerDue ?? booking.customerDue)}</p>
+          <MoneyAmount
+            totalBRL={p.customerDueBRL ?? booking.computed?.customerDueBRL}
+            totalBDT={p.customerDueBDT ?? booking.computed?.customerDue ?? booking.customerDue}
+            size="lg"
+            className="mt-2"
+          />
         </div>
         <div className="card border-l-4 border-l-amber-500">
           <p className="text-xs font-medium uppercase text-slate-500">Supplier Payable</p>
-          <p className="text-2xl font-bold text-amber-700">{formatCurrency(booking.computed?.supplierPayable ?? booking.supplierPayable)}</p>
+          <MoneyAmount
+            totalBRL={p.supplierPayableBRL ?? booking.computed?.supplierPayableBRL}
+            totalBDT={p.supplierPayableBDT ?? booking.computed?.supplierPayable ?? booking.supplierPayable}
+            size="lg"
+            className="mt-2"
+          />
         </div>
       </div>
 
@@ -183,14 +201,22 @@ export default function BookingDetailPage() {
         <div className="card space-y-3">
           <h3 className="font-semibold text-slate-900">Financial Summary</h3>
           <dl className="grid grid-cols-2 gap-2 text-sm">
-            <dt className="text-slate-500">Purchase Price</dt><dd>{formatCurrency(booking.purchasePrice)}</dd>
-            <dt className="text-slate-500">Sale Price</dt><dd>{formatCurrency(booking.salePrice)}</dd>
-            <dt className="text-slate-500">Direct Costs</dt><dd>{formatCurrency(booking.directCosts)}</dd>
-            <dt className="text-slate-500">Amount Paid</dt><dd>{formatCurrency(booking.amountPaid)}</dd>
-            <dt className="text-slate-500">Supplier Paid</dt><dd>{formatCurrency(booking.supplierPaid)}</dd>
+            <dt className="text-slate-500">Purchase Price</dt>
+            <dd><MoneyAmount totalBRL={p.purchasePriceBRL} totalBDT={p.purchasePriceBDT ?? booking.purchasePrice} size="sm" /></dd>
+            <dt className="text-slate-500">Sale Price</dt>
+            <dd><MoneyAmount totalBRL={p.salePriceBRL} totalBDT={p.salePriceBDT ?? booking.salePrice} size="sm" /></dd>
+            <dt className="text-slate-500">Direct Costs</dt>
+            <dd><MoneyAmount totalBRL={p.directCostsBRL} totalBDT={p.directCostsBDT ?? booking.directCosts} size="sm" /></dd>
+            <dt className="text-slate-500">Amount Paid</dt>
+            <dd><MoneyAmount amount={booking.amountPaid} size="sm" /></dd>
+            <dt className="text-slate-500">Supplier Paid</dt>
+            <dd><MoneyAmount amount={booking.supplierPaid} size="sm" /></dd>
             <dt className="text-slate-500">Payment Status</dt><dd className="capitalize">{booking.paymentStatus}</dd>
             <dt className="text-slate-500">Supplier Payment</dt><dd className="capitalize">{booking.supplierPaymentStatus}</dd>
           </dl>
+          {rate && (
+            <p className="text-xs text-slate-500">Rate at booking: 1 BRL = ৳ {Number(rate).toFixed(2)}</p>
+          )}
           {booking.ticketCopyPath && (
             <p className="text-xs text-slate-500">Ticket copy: {booking.ticketCopyFileName || booking.ticketCopyPath}</p>
           )}
@@ -206,7 +232,7 @@ export default function BookingDetailPage() {
                 {customerPayments.map((p) => (
                   <li key={p.id} className="flex justify-between rounded-lg bg-green-50 px-3 py-2 text-sm">
                     <span>{p.paymentNumber} — {formatDate(p.paymentDate)}</span>
-                    <span className="font-medium text-green-700">{formatCurrency(p.amount)}</span>
+                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-green-700" />
                   </li>
                 ))}
               </ul>
@@ -221,7 +247,7 @@ export default function BookingDetailPage() {
                 {supplierPayments.map((p) => (
                   <li key={p.id} className="flex justify-between rounded-lg bg-red-50 px-3 py-2 text-sm">
                     <span>{p.paymentNumber} — {formatDate(p.paymentDate)}</span>
-                    <span className="font-medium text-red-600">{formatCurrency(p.amount)}</span>
+                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-red-600" />
                   </li>
                 ))}
               </ul>

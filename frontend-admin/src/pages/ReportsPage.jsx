@@ -4,7 +4,7 @@ import { accountsApi } from '../services/finance.api';
 import { customersApi, suppliersApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
 import { downloadBlob } from '../utils/download';
 import { usePermission } from '../hooks/usePermission';
@@ -28,7 +28,7 @@ function buildColumns(rows) {
     render: (r) => {
       const v = r[key];
       if (typeof v === 'number' && (key.includes('amount') || key.includes('Price') || key.includes('profit') || key.includes('Due') || key.includes('Payable') || key.includes('total') || key.includes('Balance') || key.includes('income') || key.includes('expense') || key.includes('net') || key.includes('sales'))) {
-        return formatCurrency(v);
+        return <MoneyAmount amount={v} size="sm" />;
       }
       if (v instanceof Date || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v))) {
         return formatDate(v);
@@ -101,13 +101,13 @@ export default function ReportsPage() {
   const summaryCards = [];
 
   if (result?.totals) {
-    summaryCards.push({ label: 'Total profit', value: formatCurrency(result.totals.profit) });
-    summaryCards.push({ label: 'Customer due', value: formatCurrency(result.totals.customerDue) });
+    summaryCards.push({ label: 'Total profit', value: <MoneyAmount amount={result.totals.profit} size="lg" /> });
+    summaryCards.push({ label: 'Customer due', value: <MoneyAmount amount={result.totals.customerDue} size="lg" /> });
   }
-  if (result?.totalDue != null) summaryCards.push({ label: 'Total due', value: formatCurrency(result.totalDue) });
-  if (result?.totalPayable != null) summaryCards.push({ label: 'Total payable', value: formatCurrency(result.totalPayable) });
-  if (result?.net != null) summaryCards.push({ label: 'Net', value: formatCurrency(result.net) });
-  if (result?.totalBalance != null) summaryCards.push({ label: 'Total balance', value: formatCurrency(result.totalBalance) });
+  if (result?.totalDue != null) summaryCards.push({ label: 'Total due', value: <MoneyAmount amount={result.totalDue} size="lg" /> });
+  if (result?.totalPayable != null) summaryCards.push({ label: 'Total payable', value: <MoneyAmount amount={result.totalPayable} size="lg" /> });
+  if (result?.net != null) summaryCards.push({ label: 'Net', value: <MoneyAmount amount={result.net} size="lg" /> });
+  if (result?.totalBalance != null) summaryCards.push({ label: 'Total balance', value: <MoneyAmount amount={result.totalBalance} size="lg" /> });
 
   return (
     <div className="space-y-4">
@@ -172,7 +172,7 @@ export default function ReportsPage() {
           {summaryCards.map((c) => (
             <div key={c.label} className="rounded-xl border border-slate-200 bg-white p-4">
               <p className="text-xs text-slate-500">{c.label}</p>
-              <p className="text-lg font-semibold text-slate-900">{c.value}</p>
+              <div className="text-lg font-semibold text-slate-900">{c.value}</div>
             </div>
           ))}
         </div>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { accountsApi } from '../services/finance.api';
 import StatCard from '../components/common/StatCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_COLORS } from '../utils/finance';
 import { usePermission } from '../hooks/usePermission';
 
@@ -34,7 +34,7 @@ export default function AccountsPage() {
 
       <StatCard
         label="Total Available Balance"
-        value={formatCurrency(summary?.totalBalance)}
+        value={<MoneyAmount amount={summary?.totalBalance} size="lg" />}
         accent="blue"
         subtext="Sum of all active accounts"
       />
@@ -46,8 +46,8 @@ export default function AccountsPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 {ACCOUNT_TYPE_LABELS[acc.type] || acc.name}
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{formatCurrency(acc.currentBalance)}</p>
-              <p className="mt-1 text-xs text-slate-400">Opening: {formatCurrency(acc.openingBalance)}</p>
+              <MoneyAmount amount={acc.currentBalance} size="lg" className="mt-2" />
+              <p className="mt-1 text-xs text-slate-400">Opening: <MoneyAmount amount={acc.openingBalance} size="sm" className="inline-flex" /></p>
               <p className="mt-3 text-xs font-medium text-brand-600">View statement →</p>
             </div>
           </Link>

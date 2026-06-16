@@ -7,7 +7,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 import { formatDate } from '../utils/date';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount, { getBookingMoney } from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 
@@ -60,8 +60,35 @@ export default function BookingsPage() {
     { key: 'route', label: 'Route' },
     { key: 'airline', label: 'Airline' },
     { key: 'departureDate', label: 'Departure', render: (r) => formatDate(r.departureDate) },
-    { key: 'salePrice', label: 'Sale', render: (r) => formatCurrency(r.salePrice) },
-    { key: 'profit', label: 'Profit', render: (r) => <span className={r.profit >= 0 ? 'text-green-700' : 'text-red-600'}>{formatCurrency(r.profit)}</span> },
+    {
+      key: 'salePrice',
+      label: 'Sale (BRL / BDT)',
+      render: (r) => {
+        const m = getBookingMoney(r);
+        return (
+          <MoneyAmount
+            totalBRL={m.saleBRL}
+            totalBDT={m.saleBDT}
+            size="sm"
+          />
+        );
+      },
+    },
+    {
+      key: 'profit',
+      label: 'Profit (BRL / BDT)',
+      render: (r) => {
+        const m = getBookingMoney(r);
+        return (
+          <MoneyAmount
+            totalBRL={m.profitBRL}
+            totalBDT={m.profitBDT}
+            size="sm"
+            className={m.profitBDT >= 0 ? 'text-green-700' : 'text-red-600'}
+          />
+        );
+      },
+    },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={BOOKING_STATUS_LABELS[r.status]} /> },
     { key: 'approvalStatus', label: 'Approval', render: (r) => (
       <StatusBadge status={r.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[r.approvalStatus || 'pending']} />

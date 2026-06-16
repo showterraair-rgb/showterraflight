@@ -135,11 +135,92 @@ export function brlToBdt(amountBRL, bdtRate) {
   return Number(amountBRL || 0) * (Number(bdtRate) || DEFAULT_BRL_RATE);
 }
 
+/** Normalize admin Booking doc to BRL-primary pricing (legacy BDT records converted) */
+export function normalizeLegacyBookingPricing(doc, defaultRate = DEFAULT_BRL_RATE) {
+  const rate = Number(doc.bdtRateAtBooking ?? doc.exchangeRateAtBooking ?? defaultRate) || defaultRate;
+  const storedCurrency = doc.originalCurrency || 'BDT';
+
+  let purchaseBRL;
+  let saleBRL;
+  let costsBRL;
+  let purchaseBDT;
+  let saleBDT;
+  let costsBDT;
+
+  if (storedCurrency === 'BRL') {
+    purchaseBRL = doc.originalPurchasePrice ?? doc.purchasePriceBRL ?? doc.purchasePrice ?? 0;
+    saleBRL = doc.originalSalePrice ?? doc.salePriceBRL ?? doc.salePrice ?? 0;
+    costsBRL = doc.originalDirectCosts ?? doc.directCostsBRL ?? doc.directCosts ?? 0;
+    purchaseBDT = doc.purchasePriceBDT ?? purchaseBRL * rate;
+    saleBDT = doc.salePriceBDT ?? saleBRL * rate;
+    costsBDT = doc.directCostsBDT ?? costsBRL * rate;
+  } else {
+    purchaseBDT = doc.purchasePriceBDT ?? doc.purchasePrice ?? 0;
+    saleBDT = doc.salePriceBDT ?? doc.salePrice ?? 0;
+    costsBDT = doc.directCostsBDT ?? doc.directCosts ?? 0;
+    purchaseBRL = rate > 0 ? purchaseBDT / rate : purchaseBDT;
+    saleBRL = rate > 0 ? saleBDT / rate : saleBDT;
+    costsBRL = rate > 0 ? costsBDT / rate : costsBDT;
+  }
+
+  const profitBRL = saleBRL - purchaseBRL - costsBRL;
+  const profitBDT = saleBDT - purchaseBDT - costsBDT;
+  const customerDueBDT = doc.customerDue ?? 0;
+  const supplierPayableBDT = doc.supplierPayable ?? 0;
+
+  const pricing = {
+    purchasePriceBRL: purchaseBRL,
+    salePriceBRL: saleBRL,
+    directCostsBRL: costsBRL,
+    profitBRL,
+    purchasePriceBDT: purchaseBDT,
+    salePriceBDT: saleBDT,
+    directCostsBDT: costsBDT,
+    profitBDT,
+    customerDueBRL: rate > 0 ? customerDueBDT / rate : customerDueBDT,
+    customerDueBDT,
+    supplierPayableBRL: rate > 0 ? supplierPayableBDT / rate : supplierPayableBDT,
+    supplierPayableBDT,
+    bdtRateAtBooking: rate,
+    currency: 'BRL',
+  };
+
+  return pricing;
+}
+
+/** Build BRL form inputs into booking currency snapshot fields */
+export function buildBookingCurrencySnapshot({ purchasePriceBRL, salePriceBRL, directCostsBRL, bdtRate }) {
+  const rate = Number(bdtRate) || DEFAULT_BRL_RATE;
+  const purchaseBRL = Number(purchasePriceBRL) || 0;
+  const saleBRL = Number(salePriceBRL) || 0;
+  const costsBRL = Number(directCostsBRL) || 0;
+  const purchaseBDT = purchaseBRL * rate;
+  const saleBDT = saleBRL * rate;
+  const costsBDT = costsBRL * rate;
+
+  return {
+    originalCurrency: 'BRL',
+    originalPurchasePrice: purchaseBRL,
+    originalSalePrice: saleBRL,
+    originalDirectCosts: costsBRL,
+    purchasePrice: purchaseBDT,
+    salePrice: saleBDT,
+    directCosts: costsBDT,
+    purchasePriceBDT: purchaseBDT,
+    salePriceBDT: saleBDT,
+    directCostsBDT: costsBDT,
+    bdtRateAtBooking: rate,
+    exchangeRateAtBooking: rate,
+  };
+}
+
 export default {
   normalizeRates,
   formatCurrency,
   buildBRLPricing,
   normalizeBookingToPricing,
+  normalizeLegacyBookingPricing,
+  buildBookingCurrencySnapshot,
   bdtToBrl,
   brlToBdt,
 };

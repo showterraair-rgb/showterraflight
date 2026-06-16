@@ -5,7 +5,7 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import { usePermission } from '../hooks/usePermission';
-import { formatCurrency } from '../utils/currency';
+import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
 import { PAYMENT_METHODS } from '../utils/finance';
 
@@ -93,7 +93,7 @@ export default function ExpensesPage() {
     { key: 'title', label: 'Title', render: (r) => r.title },
     { key: 'category', label: 'Category', render: (r) => r.categoryName },
     { key: 'account', label: 'Paid From', render: (r) => r.accountName },
-    { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium text-red-600">{formatCurrency(r.amount)}</span> },
+    { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" className="font-medium text-red-600" /> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.expenseDate) },
     { key: 'recurring', label: 'Recurring', render: (r) => r.isRecurring ? 'Yes' : '—' },
     {
