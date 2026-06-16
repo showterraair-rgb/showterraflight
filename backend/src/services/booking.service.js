@@ -81,6 +81,7 @@ function formatBooking(doc) {
     notes: doc.notes || '',
     ticketCopyPath: doc.ticketCopyPath || '',
     ticketCopyFileName: doc.ticketCopyFileName || '',
+    ticketCopyUrl: doc.ticketCopyPath ? `/uploads/${String(doc.ticketCopyPath).replace(/^uploads\//, '')}` : '',
     statusTimeline: doc.statusTimeline,
     activityNotes: doc.activityNotes,
     createdBy: doc.createdBy?.toString(),
@@ -563,6 +564,33 @@ export async function uploadBookingPassport(id, file, userId, req) {
   return getBookingById(id);
 }
 
+export async function uploadBookingTicketCopy(id, file, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+  if (!file) throw ApiError.badRequest('No ticket file uploaded');
+
+  const hadTicket = Boolean(booking.ticketCopyPath);
+  booking.ticketCopyPath = `tickets/${file.filename}`;
+  booking.ticketCopyFileName = file.originalname;
+  await booking.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Ticket copy uploaded for booking ${booking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  if (!hadTicket) {
+    await fireBookingNotification('ticket_issued', booking);
+  }
+
+  return getBookingById(id);
+}
+
 export default {
   listBookings,
   getBookingById,
@@ -572,6 +600,7 @@ export default {
   updateBookingStatus,
   updateBookingApproval,
   uploadBookingPassport,
+  uploadBookingTicketCopy,
   addBookingNote,
   getBookingTimeline,
   deleteBooking,

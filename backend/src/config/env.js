@@ -37,6 +37,7 @@ export const env = {
     maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '10', 10),
     dir: process.env.UPLOAD_DIR || 'uploads',
   },
+  apiPublicUrl: (process.env.API_PUBLIC_URL || `http://localhost:${parseInt(process.env.PORT || '5000', 10)}`).replace(/\/$/, ''),
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),

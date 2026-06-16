@@ -50,6 +50,13 @@ export const bookingsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  uploadTicket: (id, file) => {
+    const form = new FormData();
+    form.append('ticketFile', file);
+    return api.post(`/bookings/${id}/ticket`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   addNote: (id, data) => api.post(`/bookings/${id}/notes`, data),
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
   delete: (id) => api.delete(`/bookings/${id}`),

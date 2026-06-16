@@ -610,6 +610,18 @@ export function drawSimpleLine(doc, text, y, options = {}) {
   pdfText(doc, text, SIMPLE_MARGIN, y, { width: simpleContentWidth(doc), ...options });
 }
 
+export function drawSimpleLink(doc, label, url, y) {
+  const left = SIMPLE_MARGIN;
+  const width = simpleContentWidth(doc);
+  const text = sanitizePdfText(label);
+  doc.font('Helvetica').fontSize(8.5).fillColor(PDF.colors.link);
+  doc.text(text, left, y, { width, lineBreak: false, link: url, underline: true });
+  const linkW = Math.min(doc.widthOfString(text), width);
+  doc.link(left, y - 1, linkW, 12, url);
+  doc.fillColor('#000000');
+  return y + 14;
+}
+
 export default {
   PDF,
   getPdfCompanyInfo,
@@ -639,6 +651,7 @@ export default {
   drawSimpleMoneyTable,
   drawSimpleFooter,
   drawSimpleLine,
+  drawSimpleLink,
   sanitizePdfText,
   bufferFromSimpleDoc,
   trimPdfToPageCount,

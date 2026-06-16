@@ -217,8 +217,15 @@ export default function BookingDetailPage() {
           {rate && (
             <p className="text-xs text-slate-500">Rate at booking: 1 BRL = ৳ {Number(rate).toFixed(2)}</p>
           )}
-          {booking.ticketCopyPath && (
-            <p className="text-xs text-slate-500">Ticket copy: {booking.ticketCopyFileName || booking.ticketCopyPath}</p>
+          {booking.ticketCopyUrl && (
+            <a
+              href={booking.ticketCopyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex text-sm font-medium text-brand-600 hover:underline"
+            >
+              Download original ticket{booking.ticketCopyFileName ? `: ${booking.ticketCopyFileName}` : ''}
+            </a>
           )}
         </div>
       </div>

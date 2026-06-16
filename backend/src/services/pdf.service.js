@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import dayjs from 'dayjs';
+import env from '../config/env.js';
 import Agent from '../models/Agent.js';
 import { getBookingById } from './booking.service.js';
 import { getAgentBookingById } from './agentBooking.service.js';
@@ -29,7 +30,16 @@ import {
   drawSimpleMoneyTable,
   drawSimpleFooter,
   drawSimpleLine,
+  drawSimpleLink,
 } from '../utils/pdfLayout.js';
+
+function buildPublicUploadUrl(relativePath) {
+  if (!relativePath) return '';
+  const path = relativePath.startsWith('/uploads/')
+    ? relativePath
+    : `/uploads/${String(relativePath).replace(/^uploads\//, '')}`;
+  return `${env.apiPublicUrl}${path}`;
+}
 
 function createDoc(layout = 'portrait') {
   return createPdfDoc({ PDFDocument, docOptions: { layout } });
@@ -98,6 +108,14 @@ export async function generateBookingInvoicePdf(bookingId) {
   ]);
 
   drawSimpleLine(doc, `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`, y);
+
+  if (booking.ticketCopyUrl || booking.ticketCopyPath) {
+    const ticketUrl = buildPublicUploadUrl(booking.ticketCopyUrl || booking.ticketCopyPath);
+    const ticketLabel = booking.ticketCopyFileName || 'Download original ticket';
+    y += 10;
+    drawSimpleLink(doc, `Original ticket: ${ticketLabel}`, ticketUrl, y);
+  }
+
   drawSimpleFooter(doc, company);
   const buffer = await bufferFromSimpleDoc(doc);
   return { buffer, filename: `${invoiceNo}.pdf` };

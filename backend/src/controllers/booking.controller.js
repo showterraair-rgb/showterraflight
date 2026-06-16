@@ -69,6 +69,11 @@ export const uploadPassport = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Passport uploaded' });
 });
 
+export const uploadTicketCopy = asyncHandler(async (req, res) => {
+  const data = await bookingService.uploadBookingTicketCopy(req.params.id, req.file, req.user.id, req);
+  res.json({ success: true, data, message: 'Ticket copy uploaded' });
+});
+
 export default {
   list,
   getById,
@@ -78,6 +83,7 @@ export default {
   updateStatus,
   updateApproval,
   uploadPassport,
+  uploadTicketCopy,
   addNote,
   getTimeline,
   remove,

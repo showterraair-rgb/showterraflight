@@ -53,6 +53,9 @@ export const passportUpload = createUpload('passports', 8, ['image/', 'applicati
 /** Agent ticket files — PDF/images up to 10MB */
 export const agentTicketUpload = createUpload('agent-tickets', 10, ['image/', 'application/pdf']);
 
+/** Admin booking ticket copies — PDF/images up to 10MB */
+export const bookingTicketUpload = createUpload('tickets', 10, ['image/', 'application/pdf']);
+
 export function toPublicUploadPath(absolutePath) {
   const rel = path.relative(path.join(process.cwd(), env.upload.dir), absolutePath).replace(/\\/g, '/');
   return `/uploads/${rel}`;

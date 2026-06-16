@@ -13,7 +13,7 @@ import {
   idParamSchema,
 } from '../validators/booking.validator.js';
 import { updateApprovalSchema } from '../validators/approval.validator.js';
-import { passportUpload } from '../middlewares/upload.js';
+import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
 
 const router = Router();
 
@@ -25,6 +25,7 @@ router.put('/:id', authorize('bookings:update'), validate(idParamSchema, 'params
 router.patch('/:id/status', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingStatusSchema), bookingController.updateStatus);
 router.patch('/:id/approval', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateApprovalSchema), bookingController.updateApproval);
 router.post('/:id/passport', authorize('bookings:update'), validate(idParamSchema, 'params'), passportUpload.single('passport'), bookingController.uploadPassport);
+router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.uploadTicketCopy);
 router.post('/:id/notes', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), bookingController.addNote);
 router.get('/:id/timeline', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getTimeline);
 router.get('/:id/invoice/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadInvoicePdf);

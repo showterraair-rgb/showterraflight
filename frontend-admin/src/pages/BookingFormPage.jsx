@@ -25,8 +25,6 @@ const schema = z.object({
   bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
   notes: z.string().optional(),
   status: z.enum(['draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled']),
-  ticketCopyPath: z.string().optional(),
-  ticketCopyFileName: z.string().optional(),
 });
 
 function parseRoute(route) {
@@ -72,6 +70,8 @@ export default function BookingFormPage() {
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [rateError, setRateError] = useState('');
+  const [ticketFile, setTicketFile] = useState(null);
+  const [existingTicket, setExistingTicket] = useState(null);
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -137,9 +137,8 @@ export default function BookingFormPage() {
             bdtRate: rate,
             notes: b.notes || '',
             status: b.status,
-            ticketCopyPath: b.ticketCopyPath || '',
-            ticketCopyFileName: b.ticketCopyFileName || '',
           });
+          setExistingTicket(b.ticketCopyUrl ? { url: b.ticketCopyUrl, name: b.ticketCopyFileName } : null);
           setTravelMeta({
             journeyType: b.journeyType || 'one_way',
             travelClass: b.travelClass || 'economy',
@@ -198,10 +197,13 @@ export default function BookingFormPage() {
       };
       if (isEdit) {
         await bookingsApi.update(editId, payload);
+        if (ticketFile) await bookingsApi.uploadTicket(editId, ticketFile);
         navigate(`/bookings/${editId}`);
       } else {
         const { data } = await bookingsApi.create(payload);
-        navigate(`/bookings/${data.data.id}`);
+        const bookingId = data.data.id;
+        if (ticketFile) await bookingsApi.uploadTicket(bookingId, ticketFile);
+        navigate(`/bookings/${bookingId}`);
       }
     } catch (err) {
       setError(err.response?.data?.message || (isEdit ? 'Failed to update booking' : 'Failed to create booking'));
@@ -364,8 +366,27 @@ export default function BookingFormPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Ticket Copy Path</label>
-          <input className="input-field" placeholder="/uploads/tickets/..." {...form.register('ticketCopyPath')} />
+          <label className="mb-1 block text-sm font-medium">Original Ticket</label>
+          <p className="mb-2 text-xs text-slate-500">Upload PDF or image of the issued ticket. Included as a download link on the invoice PDF.</p>
+          {existingTicket?.url && (
+            <a
+              href={existingTicket.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-2 inline-block text-sm font-medium text-brand-600 hover:underline"
+            >
+              {existingTicket.name || 'View current ticket'}
+            </a>
+          )}
+          <input
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+            onChange={(e) => setTicketFile(e.target.files?.[0] || null)}
+          />
+          {ticketFile && (
+            <p className="mt-1 text-xs text-slate-500">Selected: {ticketFile.name}</p>
+          )}
         </div>
 
         <div>
