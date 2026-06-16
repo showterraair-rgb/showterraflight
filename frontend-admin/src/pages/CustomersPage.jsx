@@ -28,6 +28,7 @@ export default function CustomersPage() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -41,7 +42,12 @@ export default function CustomersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await customersApi.list({ page, limit: 20, search: search || undefined });
+      const { data } = await customersApi.list({
+        page,
+        limit: 20,
+        search: search || undefined,
+        includeArchived: showArchived ? 'true' : undefined,
+      });
       setItems(data.data);
       setPagination(data.pagination);
     } catch {
@@ -49,7 +55,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, showArchived]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -97,7 +103,10 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Delete customer "${row.name}"? Records with linked orders or payments will be archived instead.`)) return;
+    const msg = row.totalDue > 0 || row.totalPaid > 0
+      ? `Remove customer "${row.name}"? Customers with bookings or payments will be archived; others will be deleted permanently.`
+      : `Delete customer "${row.name}" permanently?`;
+    if (!window.confirm(msg)) return;
     try {
       const { data } = await customersApi.delete(row.id);
       alert(data.message || 'Customer removed');
@@ -108,7 +117,14 @@ export default function CustomersPage() {
   };
 
   const columns = [
-    { key: 'name', label: 'Name', render: (r) => <span className="font-medium text-slate-900">{r.name}</span> },
+    { key: 'name', label: 'Name', render: (r) => (
+      <span className="font-medium text-slate-900">
+        {r.name}
+        {r.isActive === false && (
+          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-500">Archived</span>
+        )}
+      </span>
+    ) },
     { key: 'phone', label: 'Phone' },
     { key: 'email', label: 'Email', render: (r) => r.email || '—' },
     { key: 'totalDue', label: 'Due', render: (r) => `৳${(r.totalDue || 0).toLocaleString()}` },
@@ -142,7 +158,7 @@ export default function CustomersPage() {
       </div>
 
       <div className="card p-0">
-        <div className="border-b border-slate-200 p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
           <input
             type="search"
             placeholder="Search name, phone, email..."
@@ -150,6 +166,14 @@ export default function CustomersPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => { setShowArchived(e.target.checked); setPage(1); }}
+            />
+            Show archived
+          </label>
         </div>
         <DataTable
           columns={columns}

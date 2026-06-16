@@ -7,6 +7,7 @@ export const listQuerySchema = z.object({
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   isActive: z.enum(['true', 'false']).optional(),
+  includeArchived: z.enum(['true']).optional(),
 });
 
 export const createCustomerSchema = z.object({

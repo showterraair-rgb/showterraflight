@@ -36,7 +36,8 @@ export async function listCustomers(query) {
   const filter = { ...buildSearchFilter(query.search, ['name', 'phone', 'email']) };
 
   if (query.isActive === 'true') filter.isActive = true;
-  if (query.isActive === 'false') filter.isActive = false;
+  else if (query.isActive === 'false') filter.isActive = false;
+  else if (query.includeArchived !== 'true') filter.isActive = true;
 
   const [items, total] = await Promise.all([
     Customer.find(filter).sort(sort).skip(skip).limit(limit).lean(),
@@ -129,7 +130,7 @@ export async function deleteCustomer(id, userId, req) {
     CustomerPayment.countDocuments({ customer: id }),
   ]);
 
-  if (orderCount || bookingCount || paymentCount) {
+  if (bookingCount || paymentCount) {
     customer.isActive = false;
     await customer.save();
     await logAudit({
@@ -137,11 +138,19 @@ export async function deleteCustomer(id, userId, req) {
       module: 'customers',
       entityType: 'Customer',
       entityId: customer._id,
-      description: `Archived customer ${customer.name} (linked records exist)`,
+      description: `Archived customer ${customer.name} (linked bookings or payments exist)`,
       userId,
       req,
     });
-    return { id, archived: true, message: 'Customer archived because linked orders, bookings, or payments exist' };
+    return {
+      id,
+      archived: true,
+      message: 'Customer archived and removed from the active list (linked bookings or payments exist)',
+    };
+  }
+
+  if (orderCount) {
+    await Order.updateMany({ customer: id }, { $unset: { customer: '' } });
   }
 
   await Customer.findByIdAndDelete(id);
@@ -150,11 +159,19 @@ export async function deleteCustomer(id, userId, req) {
     module: 'customers',
     entityType: 'Customer',
     entityId: id,
-    description: `Deleted customer ${customer.name}`,
+    description: orderCount
+      ? `Deleted customer ${customer.name} (unlinked from ${orderCount} order(s))`
+      : `Deleted customer ${customer.name}`,
     userId,
     req,
   });
-  return { id, deleted: true, message: 'Customer deleted' };
+  return {
+    id,
+    deleted: true,
+    message: orderCount
+      ? 'Customer deleted. Linked orders kept with contact details on file.'
+      : 'Customer deleted',
+  };
 }
 
 /** Find by phone or create from order snapshot fields */
