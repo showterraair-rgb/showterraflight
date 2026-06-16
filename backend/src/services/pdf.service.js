@@ -11,7 +11,6 @@ import {
   createPdfDoc,
   bufferFromDoc,
   fmtDate,
-  fmtDateTime,
   fmtMoneyBRL,
   fmtMoneyBDT,
   humanizeKey,
@@ -20,12 +19,14 @@ import {
   drawToc,
   beginSection,
   drawKeyValueGrid,
-  drawDualMoneyTable,
   drawDataTable,
   drawSummaryCards,
-  drawParagraph,
-  drawStatusPill,
   finalizeFooters,
+  createSimplePdfDoc,
+  drawSimpleHeader,
+  drawSimpleSection,
+  drawSimpleMoneyTable,
+  drawSimpleFooter,
   PDF,
 } from '../utils/pdfLayout.js';
 
@@ -53,149 +54,55 @@ export async function generateBookingInvoicePdf(bookingId) {
   const rate = p.bdtRateAtBooking || booking.bdtRateAtBooking || 1;
   const invoiceNo = `${company.invoicePrefix}-${booking.bookingNumber}`;
 
-  const doc = createDoc();
-  const left = PDF.margin;
+  const doc = createSimplePdfDoc(PDFDocument);
+  doc.font('Helvetica');
 
-  drawHeaderBand(doc, {
+  let y = drawSimpleHeader(
+    doc,
     company,
-    docTitle: 'BOOKING INVOICE',
-    docSubtitle: invoiceNo,
-    metaLines: [
-      `Date: ${dayjs().format('DD MMM YYYY')}`,
-      `Booking: ${booking.bookingNumber}`,
-      `Status: ${statusLabel(booking.status)}`,
-    ],
-  });
+    'BOOKING INVOICE',
+    `${invoiceNo} · ${booking.bookingNumber} · ${dayjs().format('DD MMM YYYY')} · ${statusLabel(booking.status)}`
+  );
 
-  drawStatusPill(doc, booking.status, left, doc.y);
-  doc.y += 22;
+  y = drawSimpleSection(doc, y, 'Customer', [
+    { label: 'Name', value: booking.customerName },
+    { label: 'Phone', value: booking.customerPhone },
+    { label: 'Payment', value: statusLabel(booking.paymentStatus) },
+  ], 3);
 
-  const tocItems = [
-    { label: 'Document Overview', dest: 'sec-overview' },
-    { label: 'Customer Details', dest: 'sec-customer' },
-    { label: 'Travel Information', dest: 'sec-travel' },
-    { label: 'Financial Breakdown', dest: 'sec-pricing' },
-    { label: 'Payment Status', dest: 'sec-payments' },
-  ];
-  if (booking.notes) tocItems.push({ label: 'Notes', dest: 'sec-notes' });
-  if (booking.statusTimeline?.length) tocItems.push({ label: 'Status History', dest: 'sec-timeline' });
-
-  drawToc(doc, tocItems);
-
-  beginSection(doc, 'Document Overview', 'sec-overview');
-  drawKeyValueGrid(doc, [
-    { label: 'Invoice Number', value: invoiceNo },
-    { label: 'Booking Number', value: booking.bookingNumber },
-    { label: 'Issue Date', value: dayjs().format('DD MMM YYYY') },
-    { label: 'Booking Status', value: statusLabel(booking.status) },
-    { label: 'Approval', value: statusLabel(booking.approvalStatus) },
-    { label: 'Exchange Rate', value: `1 BRL = ${Number(rate).toFixed(2)} BDT` },
-    { label: 'Journey Type', value: statusLabel(booking.journeyType) },
-    { label: 'Travel Class', value: statusLabel(booking.travelClass) },
-  ], 2);
-
-  beginSection(doc, 'Customer Details', 'sec-customer');
-  drawKeyValueGrid(doc, [
-    { label: 'Customer Name', value: booking.customerName },
-    {
-      label: 'Phone',
-      value: booking.customerPhone,
-      link: booking.customerPhone ? `tel:${String(booking.customerPhone).replace(/\s/g, '')}` : null,
-    },
-    { label: 'Customer ID', value: booking.customer || '—' },
-    { label: 'Payment Status', value: statusLabel(booking.paymentStatus) },
-  ], 2);
-
-  beginSection(doc, 'Travel Information', 'sec-travel');
-  drawKeyValueGrid(doc, [
-    { label: 'Airline', value: booking.airline },
+  y = drawSimpleSection(doc, y, 'Travel', [
     { label: 'Route', value: booking.route },
-    { label: 'Sector', value: booking.sector || '—' },
-    { label: 'From / To', value: `${booking.fromDestination || '—'} → ${booking.toDestination || '—'}` },
+    { label: 'Airline', value: booking.airline },
     { label: 'Departure', value: fmtDate(booking.departureDate) },
-    { label: 'Return', value: fmtDate(booking.returnDate) },
-    { label: 'Passengers', value: String(booking.passengerCount) },
+    { label: 'Return', value: booking.returnDate ? fmtDate(booking.returnDate) : '—' },
+    { label: 'Passengers', value: booking.passengerCount },
     { label: 'PNR', value: booking.pnr || '—' },
-    { label: 'Ticket Number', value: booking.ticketNumber || '—' },
-    { label: 'Supplier', value: booking.supplierName || '—' },
+    { label: 'Ticket No', value: booking.ticketNumber || '—' },
+    { label: 'Class', value: statusLabel(booking.travelClass) },
   ], 2);
 
-  beginSection(doc, 'Financial Breakdown', 'sec-pricing');
-  drawDualMoneyTable(doc, {
-    headers: ['Description', 'Amount (BRL)', 'Amount (BDT)'],
-    rows: [
-      {
-        label: 'Sale Price',
-        brl: fmtMoneyBRL(p.salePriceBRL),
-        bdt: fmtMoneyBDT(p.salePriceBDT),
-      },
-      {
-        label: 'Purchase Price',
-        brl: fmtMoneyBRL(p.purchasePriceBRL),
-        bdt: fmtMoneyBDT(p.purchasePriceBDT),
-      },
-      {
-        label: 'Direct Costs',
-        brl: fmtMoneyBRL(p.directCostsBRL),
-        bdt: fmtMoneyBDT(p.directCostsBDT),
-      },
-      {
-        label: 'Profit',
-        brl: fmtMoneyBRL(p.profitBRL ?? booking.computed?.profitBRL),
-        bdt: fmtMoneyBDT(p.profitBDT ?? booking.computed?.profitBDT),
-        bold: true,
-      },
-      {
-        label: 'Amount Paid',
-        brl: fmtMoneyBRL(rate > 0 ? (booking.amountPaid || 0) / rate : booking.amountPaid),
-        bdt: fmtMoneyBDT(booking.amountPaid),
-      },
-      {
-        label: 'Customer Due',
-        brl: fmtMoneyBRL(p.customerDueBRL ?? booking.computed?.customerDueBRL),
-        bdt: fmtMoneyBDT(p.customerDueBDT ?? booking.computed?.customerDueBDT),
-        bold: true,
-      },
-      {
-        label: 'Supplier Payable',
-        brl: fmtMoneyBRL(p.supplierPayableBRL ?? booking.computed?.supplierPayableBRL),
-        bdt: fmtMoneyBDT(p.supplierPayableBDT ?? booking.computed?.supplierPayableBDT),
-      },
-    ],
-  });
+  y = drawSimpleMoneyTable(doc, y, [
+    { label: 'Sale Price', brl: fmtMoneyBRL(p.salePriceBRL), bdt: fmtMoneyBDT(p.salePriceBDT) },
+    {
+      label: 'Amount Paid',
+      brl: fmtMoneyBRL(rate > 0 ? (booking.amountPaid || 0) / rate : booking.amountPaid),
+      bdt: fmtMoneyBDT(booking.amountPaid),
+    },
+    {
+      label: 'Customer Due',
+      brl: fmtMoneyBRL(p.customerDueBRL ?? booking.computed?.customerDueBRL),
+      bdt: fmtMoneyBDT(p.customerDueBDT ?? booking.computed?.customerDueBDT),
+      bold: true,
+    },
+  ]);
 
-  beginSection(doc, 'Payment Status', 'sec-payments');
-  drawKeyValueGrid(doc, [
-    { label: 'Customer Payment', value: statusLabel(booking.paymentStatus) },
-    { label: 'Supplier Payment', value: statusLabel(booking.supplierPaymentStatus) },
-    { label: 'Amount Received', value: fmtMoneyBDT(booking.amountPaid) },
-    { label: 'Supplier Paid', value: fmtMoneyBDT(booking.supplierPaid) },
-    { label: 'Created', value: fmtDateTime(booking.createdAt) },
-    { label: 'Last Updated', value: fmtDateTime(booking.updatedAt) },
-  ], 2);
+  doc.font('Helvetica').fontSize(7.5).fillColor(PDF.colors.muted).text(
+    `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`,
+    40,
+    y
+  );
 
-  if (booking.notes) {
-    beginSection(doc, 'Notes', 'sec-notes');
-    drawParagraph(doc, booking.notes);
-  }
-
-  if (booking.statusTimeline?.length) {
-    beginSection(doc, 'Status History', 'sec-timeline');
-    drawDataTable(doc, {
-      columns: [
-        { key: 'status', label: 'Status' },
-        { key: 'note', label: 'Note' },
-        { key: 'changedAt', label: 'Date' },
-      ],
-      rows: booking.statusTimeline.map((t) => ({
-        status: statusLabel(t.status),
-        note: t.note || '—',
-        changedAt: t.changedAt,
-      })),
-    });
-  }
-
-  finalizeFooters(doc, company);
+  drawSimpleFooter(doc, company);
   const buffer = await bufferFromDoc(doc);
   return { buffer, filename: `${invoiceNo}.pdf` };
 }
@@ -279,153 +186,49 @@ export async function generateAgentBookingPdf(bookingId, agentId = null) {
   const p = booking.pricing || {};
   const rate = p.bdtRateAtBooking || booking.bdtRateAtBooking || 1;
   const count = booking.passengerCount || booking.passengers?.length || 1;
+  const passengerNames = (booking.passengers || [])
+    .map((passenger) => `${passenger.title || ''} ${passenger.firstName} ${passenger.lastName}`.trim())
+    .join(', ') || '—';
 
-  const doc = createDoc();
-  const left = PDF.margin;
+  const doc = createSimplePdfDoc(PDFDocument);
+  doc.font('Helvetica');
 
-  drawHeaderBand(doc, {
+  let y = drawSimpleHeader(
+    doc,
     company,
-    docTitle: 'AGENT BOOKING CONFIRMATION',
-    docSubtitle: booking.bookingRef,
-    metaLines: [
-      `Date: ${dayjs().format('DD MMM YYYY')}`,
-      `Agent: ${booking.agentCode || '—'}`,
-      `Status: ${statusLabel(booking.status)}`,
-    ],
-  });
+    'AGENT BOOKING',
+    `${booking.bookingRef} · ${statusLabel(booking.status)} · ${dayjs().format('DD MMM YYYY')}`
+  );
 
-  drawStatusPill(doc, booking.status, left, doc.y);
-  doc.y += 22;
-
-  const tocItems = [
-    { label: 'Booking Overview', dest: 'sec-overview' },
-    { label: 'Agent Information', dest: 'sec-agent' },
-    { label: 'Flight Details', dest: 'sec-flight' },
-    { label: 'Passengers', dest: 'sec-passengers' },
-    { label: 'Price Breakdown', dest: 'sec-pricing' },
-    { label: 'Preferences & Requests', dest: 'sec-preferences' },
-  ];
-  if (booking.statusTimeline?.length) tocItems.push({ label: 'Status Timeline', dest: 'sec-timeline' });
-  if (booking.adminNotes) tocItems.push({ label: 'Admin Notes', dest: 'sec-notes' });
-
-  drawToc(doc, tocItems);
-
-  beginSection(doc, 'Booking Overview', 'sec-overview');
-  drawKeyValueGrid(doc, [
-    { label: 'Booking Reference', value: booking.bookingRef },
-    { label: 'Booking Type', value: statusLabel(booking.bookingType) },
-    { label: 'Status', value: statusLabel(booking.status) },
-    { label: 'Ticket Issued', value: booking.ticketIssued ? 'Yes' : 'No' },
-    { label: 'Exchange Rate', value: `1 BRL = ${Number(rate).toFixed(2)} BDT (at booking)` },
-    { label: 'Created', value: fmtDateTime(booking.createdAt) },
-    { label: 'Confirmed', value: booking.confirmedAt ? fmtDateTime(booking.confirmedAt) : '—' },
-    { label: 'PNR', value: booking.pnr || '—' },
-  ], 2);
-
-  beginSection(doc, 'Agent Information', 'sec-agent');
-  drawKeyValueGrid(doc, [
-    { label: 'Agent Code', value: booking.agentCode || '—' },
-    { label: 'Company', value: booking.agentCompany || '—' },
-  ], 2);
-
-  beginSection(doc, 'Flight Details', 'sec-flight');
-  drawKeyValueGrid(doc, [
-    { label: 'Airline', value: booking.airline },
-    { label: 'Flight Number', value: booking.flightNumber },
+  y = drawSimpleSection(doc, y, 'Agent & Flight', [
+    { label: 'Agent', value: `${booking.agentCompany || '—'} (${booking.agentCode || '—'})` },
     { label: 'Route', value: booking.route },
-    { label: 'Travel Class', value: statusLabel(booking.travelClass) },
+    { label: 'Airline / Flight', value: `${booking.airline} ${booking.flightNumber}` },
     { label: 'Departure', value: `${fmtDate(booking.departureDate)} ${booking.departureTime || ''}`.trim() },
-    { label: 'Arrival', value: `${fmtDate(booking.arrivalDate)} ${booking.arrivalTime || ''}`.trim() },
-    { label: 'Passengers', value: String(count) },
     { label: 'PNR', value: booking.pnr || '—' },
+    { label: 'Class', value: statusLabel(booking.travelClass) },
   ], 2);
 
-  beginSection(doc, 'Passengers', 'sec-passengers');
-  if (booking.passengers?.length) {
-    drawDataTable(doc, {
-      columns: [
-        { key: 'name', label: 'Name', width: 120 },
-        { key: 'passport', label: 'Passport' },
-        { key: 'dob', label: 'DOB' },
-        { key: 'expiry', label: 'Expiry' },
-        { key: 'nationality', label: 'Nationality' },
-      ],
-      rows: booking.passengers.map((passenger) => ({
-        name: `${passenger.title || ''} ${passenger.firstName} ${passenger.lastName}`.trim(),
-        passport: passenger.passportNumber || '—',
-        dob: fmtDate(passenger.dob),
-        expiry: fmtDate(passenger.passportExpiry),
-        nationality: passenger.nationality || '—',
-      })),
-    });
-  } else {
-    drawParagraph(doc, 'No passenger details recorded.');
-  }
+  y = drawSimpleSection(doc, y, 'Passengers', [
+    { label: `Names (${count})`, value: passengerNames },
+  ], 1);
 
-  beginSection(doc, 'Price Breakdown', 'sec-pricing');
-  const basePerPaxBRL = p.baseFareBRL ?? booking.baseFareBRL ?? 0;
-  const taxPerPaxBRL = p.taxBRL ?? booking.taxBRL ?? 0;
-  const markupBRL = p.markupBRL ?? booking.markupBRL ?? 0;
+  y = drawSimpleMoneyTable(doc, y, [
+    {
+      label: 'Total Fare',
+      brl: fmtMoneyBRL(p.totalFareBRL ?? booking.totalFareBRL),
+      bdt: fmtMoneyBDT(p.totalFareBDT ?? booking.totalFareBDT),
+      bold: true,
+    },
+  ]);
 
-  drawDualMoneyTable(doc, {
-    headers: ['Description', 'Amount (BRL)', 'Amount (BDT)'],
-    rows: [
-      {
-        label: `Base Fare (×${count} pax @ ${fmtMoneyBRL(basePerPaxBRL)}/pax)`,
-        brl: fmtMoneyBRL(basePerPaxBRL * count),
-        bdt: fmtMoneyBDT(basePerPaxBRL * count * rate),
-      },
-      {
-        label: `Tax (×${count} pax @ ${fmtMoneyBRL(taxPerPaxBRL)}/pax)`,
-        brl: fmtMoneyBRL(taxPerPaxBRL * count),
-        bdt: fmtMoneyBDT(taxPerPaxBRL * count * rate),
-      },
-      {
-        label: 'Agent Markup',
-        brl: fmtMoneyBRL(markupBRL),
-        bdt: fmtMoneyBDT(markupBRL * rate),
-      },
-      {
-        label: 'Total Fare',
-        brl: fmtMoneyBRL(p.totalFareBRL ?? booking.totalFareBRL),
-        bdt: fmtMoneyBDT(p.totalFareBDT ?? booking.totalFareBDT),
-        bold: true,
-      },
-    ],
-  });
+  doc.font('Helvetica').fontSize(7.5).fillColor(PDF.colors.muted).text(
+    `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`,
+    40,
+    y
+  );
 
-  beginSection(doc, 'Preferences & Requests', 'sec-preferences');
-  drawKeyValueGrid(doc, [
-    { label: 'Meal Preference', value: booking.mealPreference || 'None' },
-    { label: 'Seat Preference', value: booking.seatPreference || 'No Preference' },
-    { label: 'Baggage Allowance', value: booking.baggageAllowance || '—' },
-  ], 2);
-  if (booking.specialRequests) {
-    drawParagraph(doc, `Special Requests: ${booking.specialRequests}`);
-  }
-
-  if (booking.statusTimeline?.length) {
-    beginSection(doc, 'Status Timeline', 'sec-timeline');
-    drawDataTable(doc, {
-      columns: [
-        { key: 'status', label: 'Status' },
-        { key: 'note', label: 'Note' },
-        { key: 'changedAt', label: 'Date' },
-      ],
-      rows: booking.statusTimeline.map((t) => ({
-        status: statusLabel(t.status),
-        note: t.note || '—',
-        changedAt: fmtDateTime(t.changedAt),
-      })),
-    });
-  }
-
-  if (booking.adminNotes) {
-    beginSection(doc, 'Admin Notes', 'sec-notes');
-    drawParagraph(doc, booking.adminNotes);
-  }
-
-  finalizeFooters(doc, company);
+  drawSimpleFooter(doc, company);
   const buffer = await bufferFromDoc(doc);
   return { buffer, filename: `${booking.bookingRef}-confirmation.pdf` };
 }
