@@ -62,6 +62,14 @@ export const addBookingNote = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Note added' });
 });
 
+export const downloadBookingPdf = asyncHandler(async (req, res) => {
+  const { generateAgentBookingPdf } = await import('../services/pdf.service.js');
+  const { buffer, filename } = await generateAgentBookingPdf(req.params.id);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+});
+
 export const getLedger = asyncHandler(async (req, res) => {
   const data = await adminAgentService.getAgentLedger(req.params.agentId, req.query);
   res.json({ success: true, data: data.items, agent: data.agent, pagination: data.pagination });
@@ -85,6 +93,7 @@ export default {
   updateBookingStatus,
   uploadTicket,
   addBookingNote,
+  downloadBookingPdf,
   getLedger,
   addTransaction,
 };

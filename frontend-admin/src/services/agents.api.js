@@ -20,6 +20,7 @@ export const agentBookingsApi = {
     return api.post(`/admin/agent-bookings/${id}/ticket`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   addNote: (id, note) => api.post(`/admin/agent-bookings/${id}/note`, { note }),
+  downloadPdf: (id) => api.get(`/admin/agent-bookings/${id}/pdf`, { responseType: 'blob' }),
 };
 
 export const agentAccountingApi = {

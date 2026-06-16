@@ -71,6 +71,22 @@ export const cancelBooking = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Booking cancelled' });
 });
 
+export const downloadBookingPdf = asyncHandler(async (req, res) => {
+  const { generateAgentBookingPdf } = await import('../services/pdf.service.js');
+  const { buffer, filename } = await generateAgentBookingPdf(req.params.id, req.agent.id);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+});
+
+export const exportReportPdf = asyncHandler(async (req, res) => {
+  const { generateAgentReportPdf } = await import('../services/pdf.service.js');
+  const { buffer, filename } = await generateAgentReportPdf(req.agent.id, req.query);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+});
+
 export const reportSummary = asyncHandler(async (req, res) => {
   const data = await agentReportService.getAgentReportSummary(req.agent.id, req.query);
   res.json({ success: true, data });
@@ -120,6 +136,8 @@ export default {
   listBookings,
   getBooking,
   cancelBooking,
+  downloadBookingPdf,
+  exportReportPdf,
   reportSummary,
   reportMonthly,
   reportAirlines,

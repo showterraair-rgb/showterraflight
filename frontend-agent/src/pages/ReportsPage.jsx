@@ -5,6 +5,7 @@ import LoadingSkeleton from '../components/LoadingSkeleton';
 import { useCurrency } from '../hooks/useCurrency';
 import DualCurrencyAmount from '../components/DualCurrencyAmount';
 import { formatCurrency } from '../utils/constants';
+import { downloadBlob } from '../utils/download';
 
 const COLORS = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
@@ -66,6 +67,20 @@ export default function ReportsPage() {
     a.click();
   };
 
+  const exportPdf = async () => {
+    try {
+      const params = {
+        dateFrom: range.dateFrom || undefined,
+        dateTo: range.dateTo || undefined,
+        year: new Date().getFullYear(),
+      };
+      const { data } = await agentApi.exportReportPdf(params);
+      downloadBlob(data, `agent-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch {
+      // silent — user sees no file
+    }
+  };
+
   if (loading) return <LoadingSkeleton rows={6} />;
 
   const rateDate = ratesUpdatedAt ? new Date(ratesUpdatedAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
@@ -77,7 +92,10 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold">Reports</h1>
           <p className="text-xs text-slate-500">Exchange rate: 1 BRL = ৳ {Number(currentRate).toFixed(2)} (updated: {rateDate})</p>
         </div>
-        <button type="button" onClick={exportCsv} className="btn-secondary">Export CSV</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={exportCsv} className="btn-secondary">Export CSV</button>
+          <button type="button" onClick={exportPdf} className="btn-secondary">Export PDF</button>
+        </div>
       </div>
       <div className="flex gap-3">
         <input type="date" className="input-field w-auto" value={range.dateFrom} onChange={(e) => setRange({ ...range, dateFrom: e.target.value })} />

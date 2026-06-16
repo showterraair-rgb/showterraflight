@@ -28,6 +28,7 @@ router.get('/agents/:id/bookings', authorize('agent-bookings:view'), validate(id
 
 router.get('/agent-bookings', authorize('agent-bookings:view'), validate(listAgentBookingsQuerySchema, 'query'), adminAgentController.listAllBookings);
 router.get('/agent-bookings/:id', authorize('agent-bookings:view'), validate(idParamSchema, 'params'), adminAgentController.getBooking);
+router.get('/agent-bookings/:id/pdf', authorize('agent-bookings:view'), validate(idParamSchema, 'params'), adminAgentController.downloadBookingPdf);
 router.patch('/agent-bookings/:id/status', authorize('agent-bookings:manage'), validate(idParamSchema, 'params'), validate(updateBookingStatusSchema), adminAgentController.updateBookingStatus);
 router.post('/agent-bookings/:id/ticket', authorize('agent-bookings:manage'), validate(idParamSchema, 'params'), agentTicketUpload.single('ticketFile'), adminAgentController.uploadTicket);
 router.post('/agent-bookings/:id/note', authorize('agent-bookings:manage'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), adminAgentController.addBookingNote);

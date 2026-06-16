@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/common/StatusBadge';
 import DualCurrencyAmount, { getBookingAmounts } from '../components/common/DualCurrencyAmount';
 import { usePermission } from '../hooks/usePermission';
+import { downloadBlob } from '../utils/download';
 
 const STATUSES = ['pending', 'processing', 'confirmed', 'cancelled', 'reissued', 'refunded'];
 
@@ -47,6 +48,15 @@ export default function AgentBookingDetailPage() {
     load();
   };
 
+  const downloadPdf = async () => {
+    try {
+      const { data } = await agentBookingsApi.downloadPdf(id);
+      downloadBlob(data, `${booking?.bookingRef || 'agent-booking'}-confirmation.pdf`);
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'PDF download failed');
+    }
+  };
+
   if (loading) return <LoadingSpinner className="py-20" />;
   if (!booking) return <p>Not found</p>;
 
@@ -73,6 +83,9 @@ export default function AgentBookingDetailPage() {
           <p>Passengers: {booking.passengerCount}</p>
         </div>
         {booking.ticketUrl && <a href={booking.ticketUrl} target="_blank" rel="noreferrer" className="btn-primary mt-4 inline-block">Download ticket</a>}
+        {can('agent-bookings:view') && (
+          <button type="button" onClick={downloadPdf} className="btn-secondary mt-4 ml-0 sm:ml-2 inline-block">Download PDF</button>
+        )}
       </div>
 
       <div className="card overflow-x-auto">

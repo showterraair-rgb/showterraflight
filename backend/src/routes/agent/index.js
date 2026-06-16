@@ -27,8 +27,10 @@ router.patch('/profile/password', validate(changeAgentPasswordSchema), agentCont
 router.post('/bookings', agentTicketUpload.single('ticketFile'), parseAgentBookingBody, validate(createAgentBookingSchema), agentController.createBooking);
 router.get('/bookings', validate(listAgentBookingsQuerySchema, 'query'), agentController.listBookings);
 router.get('/bookings/:id', validate(idParamSchema, 'params'), agentController.getBooking);
+router.get('/bookings/:id/pdf', validate(idParamSchema, 'params'), agentController.downloadBookingPdf);
 router.patch('/bookings/:id/cancel', validate(idParamSchema, 'params'), agentController.cancelBooking);
 
+router.get('/reports/export/pdf', validate(reportQuerySchema, 'query'), agentController.exportReportPdf);
 router.get('/reports/summary', validate(reportQuerySchema, 'query'), agentController.reportSummary);
 router.get('/reports/monthly', validate(reportQuerySchema, 'query'), agentController.reportMonthly);
 router.get('/reports/airlines', validate(reportQuerySchema, 'query'), agentController.reportAirlines);

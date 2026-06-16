@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import DualCurrencyAmount, { getBookingAmounts } from '../components/DualCurrencyAmount';
 import { useToast } from '../context/ToastContext';
 import { BOOKING_STATUS_LABELS, formatDate } from '../utils/constants';
+import { downloadBlob } from '../utils/download';
 
 function fmt(n) {
   return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -30,6 +31,15 @@ export default function BookingDetailPage() {
       navigate('/bookings');
     } catch (err) {
       toast(err.response?.data?.message || 'Cancel failed', 'error');
+    }
+  };
+
+  const downloadPdf = async () => {
+    try {
+      const { data } = await agentApi.downloadBookingPdf(id);
+      downloadBlob(data, `${booking?.bookingRef || 'booking'}-confirmation.pdf`);
+    } catch (err) {
+      toast(err.response?.data?.message || 'PDF download failed', 'error');
     }
   };
 
@@ -58,6 +68,7 @@ export default function BookingDetailPage() {
         {['pending', 'processing'].includes(booking.status) && (
           <button type="button" onClick={cancel} className="btn-secondary text-red-600">Cancel Request</button>
         )}
+        <button type="button" onClick={downloadPdf} className="btn-secondary">Download PDF</button>
         {booking.ticketUrl && (
           <a href={booking.ticketUrl} target="_blank" rel="noreferrer" className="btn-primary">Download Ticket</a>
         )}
