@@ -27,7 +27,7 @@ import {
   drawSimpleSection,
   drawSimpleMoneyTable,
   drawSimpleFooter,
-  PDF,
+  drawSimpleLine,
 } from '../utils/pdfLayout.js';
 
 function createDoc(layout = 'portrait') {
@@ -96,12 +96,7 @@ export async function generateBookingInvoicePdf(bookingId) {
     },
   ]);
 
-  doc.font('Helvetica').fontSize(7.5).fillColor(PDF.colors.muted).text(
-    `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`,
-    40,
-    y
-  );
-
+  drawSimpleLine(doc, `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`, y);
   drawSimpleFooter(doc, company);
   const buffer = await bufferFromDoc(doc);
   return { buffer, filename: `${invoiceNo}.pdf` };
@@ -222,12 +217,7 @@ export async function generateAgentBookingPdf(bookingId, agentId = null) {
     },
   ]);
 
-  doc.font('Helvetica').fontSize(7.5).fillColor(PDF.colors.muted).text(
-    `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`,
-    40,
-    y
-  );
-
+  drawSimpleLine(doc, `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`, y);
   drawSimpleFooter(doc, company);
   const buffer = await bufferFromDoc(doc);
   return { buffer, filename: `${booking.bookingRef}-confirmation.pdf` };

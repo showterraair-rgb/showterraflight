@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 import Setting from '../models/Setting.js';
-import { formatCurrency } from './currencyUtils.js';
 
 export const PDF = {
   margin: 45,
@@ -58,20 +57,42 @@ export function contentWidth(doc) {
 }
 
 export function fmtDate(value, pattern = 'DD MMM YYYY') {
-  if (!value) return '—';
+  if (!value) return '-';
   return dayjs(value).format(pattern);
+}
+
+/** Strip/replace Unicode chars that Helvetica cannot render in PDFKit */
+export function sanitizePdfText(value) {
+  if (value == null || value === '') return '-';
+  return String(value)
+    .replace(/\u2192/g, '->')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u00b7/g, '|')
+    .replace(/\u09f3/g, 'BDT ')
+    .replace(/[^\x00-\x7F]/g, '');
+}
+
+function fmtAmount(amount) {
+  return Number(amount || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function fmtMoneyBRL(amount) {
+  return `R$ ${fmtAmount(amount)}`;
+}
+
+export function fmtMoneyBDT(amount) {
+  return `BDT ${fmtAmount(amount)}`;
 }
 
 export function fmtDateTime(value) {
   return fmtDate(value, 'DD MMM YYYY HH:mm');
 }
 
-export function fmtMoneyBRL(amount) {
-  return formatCurrency(amount, 'BRL');
-}
-
-export function fmtMoneyBDT(amount) {
-  return formatCurrency(amount, 'BDT');
+function pdfText(doc, text, x, y, options = {}) {
+  doc.text(sanitizePdfText(text), x, y, { lineBreak: false, ...options });
 }
 
 export function isMoneyKey(key) {
@@ -450,21 +471,27 @@ export function drawSimpleHeader(doc, company, title, subtitle) {
   const left = SIMPLE_MARGIN;
   const width = simpleContentWidth(doc);
 
-  doc.font('Helvetica-Bold').fontSize(13).fillColor(PDF.colors.primary).text(company.name, left, 40);
+  doc.font('Helvetica-Bold').fontSize(13).fillColor(PDF.colors.primary);
+  pdfText(doc, company.name, left, 40, { width });
+
   doc.font('Helvetica').fontSize(7.5).fillColor(PDF.colors.muted);
-  const contact = [company.address, company.email, company.phone].filter(Boolean).join(' · ');
+  const contact = [company.address, company.email, company.phone].filter(Boolean).join(' | ');
   let y = 56;
   if (contact) {
-    doc.text(contact, left, y, { width, lineGap: 1 });
+    pdfText(doc, contact, left, y, { width });
     y += contact.length > 80 ? 22 : 12;
   }
-  doc.font('Helvetica-Bold').fontSize(11).fillColor('#000000').text(title, left, y);
+  doc.font('Helvetica-Bold').fontSize(11).fillColor('#000000');
+  pdfText(doc, title, left, y, { width });
   y += 14;
   if (subtitle) {
-    doc.font('Helvetica').fontSize(8.5).fillColor('#334155').text(subtitle, left, y, { width });
+    doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
+    pdfText(doc, subtitle, left, y, { width });
     y += 12;
   }
   doc.moveTo(left, y + 2).lineTo(left + width, y + 2).strokeColor(PDF.colors.border).stroke();
+  doc.y = y + 12;
+  doc.x = left;
   return y + 12;
 }
 
@@ -474,15 +501,18 @@ export function drawSimpleSection(doc, y, title, rows, cols = 2) {
   const colW = width / cols;
   const rowH = 26;
 
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(PDF.colors.primary).text(title.toUpperCase(), left, y);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(PDF.colors.primary);
+  pdfText(doc, title.toUpperCase(), left, y, { width });
   y += 14;
 
   let col = 0;
   let rowY = y;
   for (const item of rows) {
     const x = left + col * colW;
-    doc.font('Helvetica-Bold').fontSize(7).fillColor(PDF.colors.muted).text(item.label, x, rowY, { width: colW - 8, lineBreak: false });
-    doc.font('Helvetica').fontSize(8.5).fillColor('#000000').text(String(item.value ?? '—'), x, rowY + 9, { width: colW - 8, lineGap: 0 });
+    doc.font('Helvetica-Bold').fontSize(7).fillColor(PDF.colors.muted);
+    pdfText(doc, item.label, x, rowY, { width: colW - 8 });
+    doc.font('Helvetica').fontSize(8.5).fillColor('#000000');
+    pdfText(doc, item.value, x, rowY + 9, { width: colW - 8 });
     col += 1;
     if (col >= cols) {
       col = 0;
@@ -490,6 +520,8 @@ export function drawSimpleSection(doc, y, title, rows, cols = 2) {
     }
   }
   if (col !== 0) rowY += rowH;
+  doc.y = rowY + 8;
+  doc.x = left;
   return rowY + 8;
 }
 
@@ -500,26 +532,29 @@ export function drawSimpleMoneyTable(doc, y, rows) {
   const brlW = width * 0.25;
   const bdtW = width * 0.25;
 
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(PDF.colors.primary).text('AMOUNTS', left, y);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(PDF.colors.primary);
+  pdfText(doc, 'AMOUNTS', left, y, { width });
   y += 14;
 
   doc.save();
   doc.rect(left, y, width, 14).fill(PDF.colors.rowAlt);
   doc.restore();
   doc.font('Helvetica-Bold').fontSize(7).fillColor(PDF.colors.muted);
-  doc.text('Description', left + 4, y + 3, { width: descW });
-  doc.text('BRL', left + descW, y + 3, { width: brlW - 4, align: 'right' });
-  doc.text('BDT', left + descW + brlW, y + 3, { width: bdtW - 4, align: 'right' });
+  pdfText(doc, 'Description', left + 4, y + 3, { width: descW });
+  pdfText(doc, 'BRL', left + descW, y + 3, { width: brlW - 4, align: 'right' });
+  pdfText(doc, 'BDT', left + descW + brlW, y + 3, { width: bdtW - 4, align: 'right' });
   y += 16;
 
   for (const row of rows) {
     doc.font(row.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5).fillColor('#000000');
-    doc.text(row.label, left + 4, y, { width: descW - 8 });
-    doc.text(row.brl, left + descW, y, { width: brlW - 4, align: 'right' });
+    pdfText(doc, row.label, left + 4, y, { width: descW - 8 });
+    pdfText(doc, row.brl, left + descW, y, { width: brlW - 4, align: 'right' });
     doc.font('Helvetica').fontSize(8).fillColor(PDF.colors.muted);
-    doc.text(row.bdt, left + descW + brlW, y + 1, { width: bdtW - 4, align: 'right' });
+    pdfText(doc, row.bdt, left + descW + brlW, y + 1, { width: bdtW - 4, align: 'right' });
     y += 14;
   }
+  doc.y = y + 4;
+  doc.x = left;
   return y + 4;
 }
 
@@ -528,13 +563,14 @@ export function drawSimpleFooter(doc, company) {
   const width = simpleContentWidth(doc);
   const y = doc.page.height - 36;
   doc.moveTo(left, y - 4).lineTo(left + width, y - 4).strokeColor(PDF.colors.border).stroke();
-  doc.font('Helvetica').fontSize(7).fillColor(PDF.colors.muted).text(
-    `${company.name} · Generated ${dayjs().format('DD MMM YYYY HH:mm')}`,
-    left,
-    y,
-    { width, align: 'center' }
-  );
+  doc.font('Helvetica').fontSize(7).fillColor(PDF.colors.muted);
+  pdfText(doc, `${company.name} | Generated ${dayjs().format('DD MMM YYYY HH:mm')}`, left, y, { width, align: 'center' });
   doc.fillColor('#000000');
+}
+
+export function drawSimpleLine(doc, text, y, options = {}) {
+  doc.font('Helvetica').fontSize(options.fontSize || 7.5).fillColor(options.color || PDF.colors.muted);
+  pdfText(doc, text, SIMPLE_MARGIN, y, { width: simpleContentWidth(doc), ...options });
 }
 
 export default {
@@ -565,4 +601,6 @@ export default {
   drawSimpleSection,
   drawSimpleMoneyTable,
   drawSimpleFooter,
+  drawSimpleLine,
+  sanitizePdfText,
 };
