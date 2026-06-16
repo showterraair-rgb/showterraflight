@@ -15,7 +15,11 @@
     "create-demo-user": "node src/scripts/createDemoUser.js",
     "create-admin-user": "node src/scripts/createAdminUser.js"
   },
-  "keywords": ["travel-agency", "air-tickets", "mern"],
+  "keywords": [
+    "travel-agency",
+    "air-tickets",
+    "mern"
+  ],
   "author": "Show Terra Air",
   "license": "UNLICENSED",
   "engines": {
@@ -35,6 +39,7 @@
     "mongoose": "^8.9.3",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.15.2",
     "validator": "^13.12.0",
     "zod": "^3.24.1"

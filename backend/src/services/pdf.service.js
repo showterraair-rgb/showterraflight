@@ -10,6 +10,7 @@ import {
   getPdfCompanyInfo,
   createPdfDoc,
   bufferFromDoc,
+  bufferFromSimpleDoc,
   fmtDate,
   fmtMoneyBRL,
   fmtMoneyBDT,
@@ -74,10 +75,10 @@ export async function generateBookingInvoicePdf(bookingId) {
     { label: 'Route', value: booking.route },
     { label: 'Airline', value: booking.airline },
     { label: 'Departure', value: fmtDate(booking.departureDate) },
-    { label: 'Return', value: booking.returnDate ? fmtDate(booking.returnDate) : '—' },
+    { label: 'Return', value: booking.returnDate ? fmtDate(booking.returnDate) : '-' },
     { label: 'Passengers', value: booking.passengerCount },
-    { label: 'PNR', value: booking.pnr || '—' },
-    { label: 'Ticket No', value: booking.ticketNumber || '—' },
+    { label: 'PNR', value: booking.pnr || '-' },
+    { label: 'Ticket No', value: booking.ticketNumber || '-' },
     { label: 'Class', value: statusLabel(booking.travelClass) },
   ], 2);
 
@@ -98,7 +99,7 @@ export async function generateBookingInvoicePdf(bookingId) {
 
   drawSimpleLine(doc, `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`, y);
   drawSimpleFooter(doc, company);
-  const buffer = await bufferFromDoc(doc);
+  const buffer = await bufferFromSimpleDoc(doc);
   return { buffer, filename: `${invoiceNo}.pdf` };
 }
 
@@ -219,7 +220,7 @@ export async function generateAgentBookingPdf(bookingId, agentId = null) {
 
   drawSimpleLine(doc, `Rate at booking: 1 BRL = ${Number(rate).toFixed(2)} BDT`, y);
   drawSimpleFooter(doc, company);
-  const buffer = await bufferFromDoc(doc);
+  const buffer = await bufferFromSimpleDoc(doc);
   return { buffer, filename: `${booking.bookingRef}-confirmation.pdf` };
 }
 

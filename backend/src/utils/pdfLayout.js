@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { PDFDocument as PDFLibDocument } from 'pdf-lib';
 import Setting from '../models/Setting.js';
 
 export const PDF = {
@@ -92,6 +93,8 @@ export function fmtDateTime(value) {
 }
 
 function pdfText(doc, text, x, y, options = {}) {
+  const maxY = simplePageBottom(doc);
+  if (y > maxY) y = maxY - 10;
   doc.text(sanitizePdfText(text), x, y, { lineBreak: false, ...options });
 }
 
@@ -459,8 +462,39 @@ export function finalizeFooters(doc, company) {
 
 const SIMPLE_MARGIN = 40;
 
+function simplePageBottom(doc) {
+  return doc.page.height - doc.page.margins.bottom;
+}
+
+function resetSimpleDocCursor(doc) {
+  doc.x = SIMPLE_MARGIN;
+  doc.y = SIMPLE_MARGIN;
+}
+
 export function createSimplePdfDoc(PDFDocument, layout = 'portrait') {
-  return new PDFDocument({ size: 'A4', margin: SIMPLE_MARGIN, autoFirstPage: true, layout });
+  return new PDFDocument({
+    size: 'A4',
+    margin: SIMPLE_MARGIN,
+    autoFirstPage: true,
+    layout,
+  });
+}
+
+export function bufferFromSimpleDoc(doc) {
+  resetSimpleDocCursor(doc);
+  return bufferFromDoc(doc).then((buffer) => trimPdfToPageCount(buffer, 1));
+}
+
+/** Keep only the first N pages — removes trailing blank pages from PDFKit overflow */
+export async function trimPdfToPageCount(buffer, pageCount = 1) {
+  const src = await PDFLibDocument.load(buffer, { ignoreEncryption: true });
+  if (src.getPageCount() <= pageCount) return buffer;
+
+  const out = await PDFLibDocument.create();
+  const indices = Array.from({ length: pageCount }, (_, i) => i);
+  const pages = await out.copyPages(src, indices);
+  pages.forEach((page) => out.addPage(page));
+  return Buffer.from(await out.save());
 }
 
 export function simpleContentWidth(doc) {
@@ -561,11 +595,14 @@ export function drawSimpleMoneyTable(doc, y, rows) {
 export function drawSimpleFooter(doc, company) {
   const left = SIMPLE_MARGIN;
   const width = simpleContentWidth(doc);
-  const y = doc.page.height - 36;
-  doc.moveTo(left, y - 4).lineTo(left + width, y - 4).strokeColor(PDF.colors.border).stroke();
+  const bottom = simplePageBottom(doc);
+  const lineY = bottom - 14;
+  const textY = bottom - 10;
+  doc.moveTo(left, lineY).lineTo(left + width, lineY).strokeColor(PDF.colors.border).stroke();
   doc.font('Helvetica').fontSize(7).fillColor(PDF.colors.muted);
-  pdfText(doc, `${company.name} | Generated ${dayjs().format('DD MMM YYYY HH:mm')}`, left, y, { width, align: 'center' });
+  pdfText(doc, `${company.name} | Generated ${dayjs().format('DD MMM YYYY HH:mm')}`, left, textY, { width, align: 'center' });
   doc.fillColor('#000000');
+  resetSimpleDocCursor(doc);
 }
 
 export function drawSimpleLine(doc, text, y, options = {}) {
@@ -603,4 +640,6 @@ export default {
   drawSimpleFooter,
   drawSimpleLine,
   sanitizePdfText,
+  bufferFromSimpleDoc,
+  trimPdfToPageCount,
 };
