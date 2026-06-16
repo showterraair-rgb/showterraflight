@@ -11,9 +11,6 @@ export function buildFullHomeSeedContent() {
       hero: {
         visible: true,
         autoplayMs: 6000,
-        showQuickQuote: true,
-        quickQuoteTitle: 'Tell us where you want to go',
-        quickQuoteSubtitle: 'We reply on WhatsApp with fare options and package pricing in BDT',
         credibility: [
           { value: '10+ yrs', label: 'Serving Sylhet travelers' },
           { value: '15+', label: 'International destinations' },

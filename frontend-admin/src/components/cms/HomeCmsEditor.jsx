@@ -240,12 +240,6 @@ export default function HomeCmsEditor({ page, canManage, onSaved, onMessage }) {
         {sectionKey === 'hero' && (
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Autoplay (ms)" type="number" value={section.autoplayMs} onChange={(v) => patchSection({ autoplayMs: Number(v) || 6000 })} />
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={section.showQuickQuote !== false} onChange={(e) => patchSection({ showQuickQuote: e.target.checked })} />
-              Show quick quote form
-            </label>
-            <Field label="Quick quote title" value={section.quickQuoteTitle} onChange={(v) => patchSection({ quickQuoteTitle: v })} />
-            <Field label="Quick quote subtitle" value={section.quickQuoteSubtitle} onChange={(v) => patchSection({ quickQuoteSubtitle: v })} multiline />
           </div>
         )}
 

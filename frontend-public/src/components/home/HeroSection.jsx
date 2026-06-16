@@ -1,35 +1,21 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCompany } from '../../context/CompanyContext';
 import { useHomeContent } from '../../context/HomeContentContext';
 import SafeImage from '../common/SafeImage';
-import PaymentStrip from './PaymentStrip';
-import DestinationPicker from '../common/DestinationPicker';
-import { getPhoneDigits, getWhatsAppDigits } from '../../utils/companyHelpers';
+import { getWhatsAppDigits } from '../../utils/companyHelpers';
 
 export default function HeroSection() {
   const { company } = useCompany();
   const hero = useHomeContent('hero');
   const prefersReducedMotion = useReducedMotion();
-  const [form, setForm] = useState({ destination: '', date: '', phone: '' });
 
   if (hero?.visible === false) return null;
 
   const headline = hero?.title || '';
   const subline = hero?.subtitle || '';
 
-  const handleQuickInquiry = (e) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (form.destination) params.set('destination', form.destination);
-    if (form.date) params.set('date', form.date);
-    if (form.phone) params.set('phone', form.phone);
-    window.location.href = `/booking?${params.toString()}`;
-  };
-
   const wa = getWhatsAppDigits(company);
-  const phone = getPhoneDigits(company);
   const credibility = hero?.credibility || [];
   const trustPoints = hero?.trustPoints || [];
 
@@ -74,7 +60,7 @@ export default function HeroSection() {
           </motion.div>
         )}
 
-        <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 xl:gap-14">
+        <div className="max-w-3xl">
           <div>
             {hero?.eyebrow && (
               <motion.p {...fade(0.04)} className="section-eyebrow text-sky-300/90">
@@ -129,65 +115,6 @@ export default function HeroSection() {
               </div>
             </motion.div>
           </div>
-
-          <motion.div
-            {...fade(0.18)}
-            className="overflow-visible rounded-2xl border border-white/10 bg-white shadow-2xl md:rounded-3xl lg:sticky lg:top-24"
-          >
-            <div className="border-b border-slate-100 bg-slate-50 px-5 py-4 md:px-7 md:py-5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-brand-600">Free quote · no obligation</p>
-              <h2 className="mt-1 text-lg font-bold text-brand-900 md:text-xl">Tell us where you want to go</h2>
-              <p className="mt-1 text-sm text-slate-600">We reply on WhatsApp with fare options and package pricing in BDT</p>
-            </div>
-            <form onSubmit={handleQuickInquiry} className="space-y-4 p-5 md:p-7">
-              <DestinationPicker
-                id="hero-destination"
-                label="Destination or route"
-                placeholder="Dubai, Jeddah, Kuala Lumpur, London…"
-                value={form.destination}
-                onChange={(destination) => setForm((f) => ({ ...f, destination }))}
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="hero-date" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    Preferred travel date
-                  </label>
-                  <input
-                    id="hero-date"
-                    type="date"
-                    className="input-field"
-                    value={form.date}
-                    onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="hero-phone" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                    WhatsApp number
-                  </label>
-                  <input
-                    id="hero-phone"
-                    className="input-field"
-                    placeholder="01XXXXXXXXX"
-                    value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <button type="submit" className="btn-primary w-full">
-                Plan Your Trip
-              </button>
-            </form>
-            <div className="space-y-3 border-t border-slate-100 px-5 py-4 md:px-7">
-              <PaymentStrip variant="light" />
-              <p className="text-center text-xs text-slate-500">
-                Or call{' '}
-                <a href={`tel:+88${phone}`} className="tap-link inline-flex font-medium text-slate-600 hover:text-brand-600">
-                  {company?.directorPhone}
-                </a>
-                {' · '}Gasbari Bazar, Kanaighat, Sylhet
-              </p>
-            </div>
-          </motion.div>
         </div>
       </div>
     </section>

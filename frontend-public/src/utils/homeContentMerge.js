@@ -24,9 +24,6 @@ const withLocalImages = {
   hero: {
     visible: true,
     autoplayMs: 6000,
-    showQuickQuote: true,
-    quickQuoteTitle: 'Tell us where you want to go',
-    quickQuoteSubtitle: 'We reply on WhatsApp with fare options and package pricing in BDT',
     credibility: HERO_CREDIBILITY,
     slides: DEFAULT_HERO_SLIDES,
   },
