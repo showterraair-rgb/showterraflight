@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ordersApi } from '../services/crm.api';
+import { ordersApi, customersApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
@@ -52,6 +52,7 @@ export default function OrdersPage() {
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState('');
+  const [customers, setCustomers] = useState([]);
 
   const form = useForm({ resolver: zodResolver(schema), defaultValues: {
     source: 'phone', journeyType: 'one_way', travelClass: 'economy', passengerCount: 1,
@@ -72,10 +73,38 @@ export default function OrdersPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const loadCustomers = useCallback(async () => {
+    try {
+      const { data } = await customersApi.list({ limit: 500, isActive: 'true' });
+      setCustomers(data.data || []);
+    } catch {
+      setCustomers([]);
+    }
+  }, []);
+
+  useEffect(() => { loadCustomers(); }, [loadCustomers]);
+
+  const mergeCustomer = (list, extra) => {
+    if (!extra?.id) return list;
+    if (list.some((c) => c.id === extra.id)) return list;
+    return [{ id: extra.id, name: extra.name, phone: extra.phone, email: extra.email }, ...list];
+  };
+
+  const applyCustomer = (customerId) => {
+    form.setValue('customerId', customerId || '');
+    const customer = customers.find((c) => c.id === customerId);
+    if (customer) {
+      form.setValue('customerName', customer.name);
+      form.setValue('customerPhone', customer.phone || '');
+      form.setValue('customerEmail', customer.email || '');
+    }
+  };
+
   const openCreate = () => {
     setEditing(null);
     form.reset({ source: 'phone', journeyType: 'one_way', travelClass: 'economy', passengerCount: 1 });
     setError('');
+    loadCustomers();
     setModalOpen(true);
   };
 
@@ -85,6 +114,16 @@ export default function OrdersPage() {
     try {
       const { data } = await ordersApi.get(row.id);
       setDetail(data.data);
+      if (data.data.customerDetails) {
+        setCustomers((prev) => mergeCustomer(prev, data.data.customerDetails));
+      } else if (row.customer) {
+        setCustomers((prev) => mergeCustomer(prev, {
+          id: row.customer,
+          name: row.customerName,
+          phone: row.customerPhone,
+          email: row.customerEmail,
+        }));
+      }
     } catch {
       setDetail(row);
     }
@@ -107,6 +146,7 @@ export default function OrdersPage() {
       nextFollowUpDate: row.nextFollowUpDate?.slice(0, 10) || '',
     });
     setError('');
+    loadCustomers();
     setModalOpen(true);
   };
 
@@ -234,6 +274,33 @@ export default function OrdersPage() {
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <fieldset disabled={Boolean(editing && !can('orders:update'))} className="space-y-4 disabled:opacity-90">
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium">Customer *</label>
+              <select
+                className="input-field"
+                value={form.watch('customerId') || ''}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (id) {
+                    applyCustomer(id);
+                  } else {
+                    form.setValue('customerId', '');
+                  }
+                }}
+              >
+                <option value="">Select existing customer…</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
+                ))}
+              </select>
+              {!customers.length && (
+                <p className="mt-1 text-xs text-slate-500">
+                  No customers found.{' '}
+                  <Link to="/customers" className="text-brand-600 hover:underline">Add a customer first</Link>
+                  {' '}or enter details below.
+                </p>
+              )}
+            </div>
             <div><label className="mb-1 block text-sm font-medium">Customer Name *</label><input className="input-field" {...form.register('customerName')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Phone *</label><input className="input-field" {...form.register('customerPhone')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Email</label><input className="input-field" {...form.register('customerEmail')} /></div>

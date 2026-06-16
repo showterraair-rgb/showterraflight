@@ -38,12 +38,21 @@ export default function AgentsPage() {
   const onSubmit = async (values) => {
     setError('');
     try {
-      await agentsApi.create(values);
+      await agentsApi.create({
+        ...values,
+        creditLimit: values.creditLimit === '' || values.creditLimit == null ? 0 : Number(values.creditLimit),
+        initialBalance: values.initialBalance === '' || values.initialBalance == null ? 0 : Number(values.initialBalance),
+      });
       setModalOpen(false);
       reset();
       load();
     } catch (err) {
-      setError(err.response?.data?.message || 'Create failed');
+      const apiErrors = err.response?.data?.errors;
+      if (Array.isArray(apiErrors) && apiErrors.length) {
+        setError(apiErrors.map((e) => `${e.field}: ${e.message}`).join(' · '));
+      } else {
+        setError(err.response?.data?.message || 'Create failed');
+      }
     }
   };
 
@@ -96,7 +105,10 @@ export default function AgentsPage() {
           <input className="input-field" placeholder="Phone *" {...register('phone', { required: true })} />
           <select className="input-field" {...register('agentType')}><option value="regular">Regular</option><option value="corporate">Corporate</option><option value="franchise">Franchise</option></select>
           <input type="number" className="input-field" placeholder="Credit limit" {...register('creditLimit')} />
-          <input type="password" className="input-field" placeholder="Password *" {...register('password', { required: true })} />
+          <div>
+            <input type="password" className="input-field" placeholder="Password *" {...register('password', { required: true, minLength: 10 })} />
+            <p className="mt-1 text-xs text-slate-500">At least 10 characters with uppercase, lowercase, and a number (e.g. Agent@123456)</p>
+          </div>
           <textarea className="input-field" placeholder="Internal notes" {...register('notes')} />
           <button type="submit" disabled={isSubmitting} className="btn-primary w-full">Create Agent</button>
         </form>
