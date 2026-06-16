@@ -71,6 +71,14 @@ export const PERMISSIONS = {
   'settings:manage': 'Company settings',
   'notifications:view': 'View notification settings and logs',
   'notifications:manage': 'Manage SMS, email, templates, and automation',
+
+  // B2B Agents (separate from suppliers)
+  'agents:view': 'View B2B agent accounts',
+  'agents:manage': 'Create, edit, and deactivate B2B agents',
+  'agent-bookings:view': 'View agent ticket requests',
+  'agent-bookings:manage': 'Process and confirm agent bookings',
+  'agent-accounting:view': 'View agent ledger and balances',
+  'agent-accounting:manage': 'Record agent credits and debits',
 };
 
 /** @type {Record<string, string[]>} */
@@ -106,6 +114,10 @@ export const ROLE_PERMISSIONS = {
     'reminders:manage',
     'reports:view',
     'reports:export',
+    'agents:view',
+    'agent-bookings:view',
+    'agent-accounting:view',
+    'agent-accounting:manage',
     'cms:view',
     'audit:view',
   ],

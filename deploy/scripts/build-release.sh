@@ -29,6 +29,17 @@ npm ci
 npm run build
 cd "$ROOT"
 
+# Agent portal
+echo ">> Build agent frontend"
+if [[ -f deploy/env/frontend-agent.production.env.example ]] && [[ ! -f frontend-agent/.env.production ]]; then
+  cp deploy/env/frontend-agent.production.env.example frontend-agent/.env.production
+  echo "Created frontend-agent/.env.production from example"
+fi
+cd frontend-agent
+if [[ -f package-lock.json ]]; then npm ci; else npm install; fi
+npm run build
+cd "$ROOT"
+
 # Backend deps (production only)
 cd backend
 npm ci --omit=dev
@@ -37,5 +48,6 @@ cd "$ROOT"
 echo "==> Build complete"
 bash deploy/scripts/verify-static-assets.sh
 echo "    frontend-admin/dist"
+echo "    frontend-agent/dist"
 echo "    frontend-public/dist"
 echo "    backend/node_modules (production)"

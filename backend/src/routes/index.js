@@ -22,6 +22,9 @@ import backupRoutes from './backup.routes.js';
 import auditRoutes from './audit.routes.js';
 import securityRoutes from './security.routes.js';
 import notificationRoutes from './notification.routes.js';
+import agentAuthRoutes from './agent/auth.routes.js';
+import agentRoutes from './agent/index.js';
+import adminAgentRoutes from './adminAgent.routes.js';
 import authenticate from '../middlewares/authenticate.js';
 
 const router = Router();
@@ -40,6 +43,10 @@ router.use('/public', publicRoutes);
 
 // Auth (mixed — login public, me/logout protected)
 router.use('/auth', authRoutes);
+
+// Agent portal auth (public login) + protected agent API
+router.use('/agent/auth', agentAuthRoutes);
+router.use('/agent', agentRoutes);
 
 // Protected admin routes
 router.use(authenticate);
@@ -60,5 +67,6 @@ router.use('/backups', backupRoutes);
 router.use('/audit', auditRoutes);
 router.use('/security', securityRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/admin', adminAgentRoutes);
 
 export default router;

@@ -34,6 +34,26 @@ export const NAV_ITEMS = [
     path: '/suppliers',
     icon: 'suppliers',
     permissions: ['suppliers:view'],
+    description: 'GDS, airlines, ticket sources',
+  },
+  {
+    label: 'B2B Agents',
+    path: '/agents',
+    icon: 'users',
+    permissions: ['agents:view'],
+    description: 'Agencies who buy from you',
+  },
+  {
+    label: 'Agent Bookings',
+    path: '/agent-bookings',
+    icon: 'bookings',
+    permissions: ['agent-bookings:view'],
+  },
+  {
+    label: 'Agent Accounting',
+    path: '/agent-accounting',
+    icon: 'accounts',
+    permissions: ['agent-accounting:view'],
   },
   {
     label: 'Accounts',

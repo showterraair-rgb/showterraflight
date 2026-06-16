@@ -22,6 +22,7 @@ export const env = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
     cookieName: process.env.JWT_COOKIE_NAME || 'sta_token',
+    agentCookieName: process.env.JWT_AGENT_COOKIE_NAME || 'sta_agent_token',
   },
   cookie: {
     secure: process.env.COOKIE_SECURE === 'true',
@@ -30,6 +31,7 @@ export const env = {
   cors: {
     publicUrl: process.env.CLIENT_PUBLIC_URL || 'http://localhost:5173',
     adminUrl: process.env.CLIENT_ADMIN_URL || 'http://localhost:5174',
+    agentUrl: process.env.CLIENT_AGENT_URL || 'http://localhost:5175',
   },
   upload: {
     maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '10', 10),

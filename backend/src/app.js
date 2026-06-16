@@ -19,7 +19,7 @@ app.set('trust proxy', 1);
 app.use(helmet());
 app.use(
   cors({
-    origin: [env.cors.publicUrl, env.cors.adminUrl],
+    origin: [env.cors.publicUrl, env.cors.adminUrl, env.cors.agentUrl],
     credentials: true,
   })
 );

@@ -27,6 +27,11 @@ import EmailSettingsPage from '../pages/EmailSettingsPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
 import UsersPage from '../pages/UsersPage';
+import AgentsPage from '../pages/AgentsPage';
+import AgentDetailPage from '../pages/AgentDetailPage';
+import AgentBookingsPage from '../pages/AgentBookingsPage';
+import AgentBookingDetailPage from '../pages/AgentBookingDetailPage';
+import AgentAccountingPage from '../pages/AgentAccountingPage';
 
 export default function AppRoutes() {
   return (
@@ -65,6 +70,14 @@ export default function AppRoutes() {
             <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
             <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
             <Route path="users" element={<ProtectedRoute permissions={['users:view']}><UsersPage /></ProtectedRoute>} />
+
+            <Route path="agents" element={<ProtectedRoute permissions={['agents:view']}><AgentsPage /></ProtectedRoute>} />
+            <Route path="agents/:id" element={<ProtectedRoute permissions={['agents:view']}><AgentDetailPage /></ProtectedRoute>} />
+            <Route path="agents/:id/bookings" element={<ProtectedRoute permissions={['agents:view']}><AgentBookingsPage agentScoped /></ProtectedRoute>} />
+            <Route path="agent-bookings" element={<ProtectedRoute permissions={['agent-bookings:view']}><AgentBookingsPage /></ProtectedRoute>} />
+            <Route path="agent-bookings/:id" element={<ProtectedRoute permissions={['agent-bookings:view']}><AgentBookingDetailPage /></ProtectedRoute>} />
+            <Route path="agent-accounting" element={<ProtectedRoute permissions={['agent-accounting:view']}><AgentAccountingPage /></ProtectedRoute>} />
+            <Route path="agent-accounting/:agentId" element={<ProtectedRoute permissions={['agent-accounting:view']}><AgentAccountingPage /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

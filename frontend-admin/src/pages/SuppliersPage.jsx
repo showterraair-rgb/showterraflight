@@ -123,8 +123,8 @@ export default function SuppliersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Suppliers & Agents</h2>
-          <p className="text-sm text-slate-500">Manage ticket suppliers and airline agents</p>
+          <h2 className="text-xl font-bold text-slate-900">Suppliers</h2>
+          <p className="text-sm text-slate-500">GDS portals, airline offices, and ticket sources you buy from — not B2B agents</p>
         </div>
         {can('suppliers:create') && (
           <button type="button" onClick={openCreate} className="btn-primary">Add Supplier</button>

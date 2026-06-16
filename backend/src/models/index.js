@@ -1,4 +1,8 @@
 export { default as User } from './User.js';
+export { default as Agent } from './Agent.js';
+export { default as AgentBooking } from './AgentBooking.js';
+export { default as AgentTransaction } from './AgentTransaction.js';
+export { default as AgentNotification } from './AgentNotification.js';
 export { default as Role } from './Role.js';
 export { default as Customer } from './Customer.js';
 export { default as Supplier } from './Supplier.js';

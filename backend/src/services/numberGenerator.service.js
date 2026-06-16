@@ -6,6 +6,8 @@ import CustomerPayment from '../models/CustomerPayment.js';
 import SupplierPayment from '../models/SupplierPayment.js';
 import Expense from '../models/Expense.js';
 import Transfer from '../models/Transfer.js';
+import Agent from '../models/Agent.js';
+import AgentBooking from '../models/AgentBooking.js';
 
 /**
  * Generate sequential document numbers: PREFIX-YYYYMM-0001
@@ -91,6 +93,32 @@ export async function generateExpenseNumber() {
 
 export async function generateTransferNumber() {
   return generateSequentialNumber(Transfer, 'transferNumber', 'TRF');
+}
+
+export async function generateAgentId() {
+  const last = await Agent.findOne({ agentId: /^STA-\d+$/ })
+    .sort({ agentId: -1 })
+    .select('agentId')
+    .lean();
+
+  let seq = 1;
+  if (last?.agentId) {
+    seq = parseInt(last.agentId.replace('STA-', ''), 10) + 1;
+  }
+  return `STA-${String(seq).padStart(4, '0')}`;
+}
+
+export async function generateAgentBookingRef() {
+  const last = await AgentBooking.findOne({ bookingRef: /^STA-BK-\d+$/ })
+    .sort({ bookingRef: -1 })
+    .select('bookingRef')
+    .lean();
+
+  let seq = 1;
+  if (last?.bookingRef) {
+    seq = parseInt(last.bookingRef.replace('STA-BK-', ''), 10) + 1;
+  }
+  return `STA-BK-${String(seq).padStart(6, '0')}`;
 }
 
 export default generateOrderNumber;

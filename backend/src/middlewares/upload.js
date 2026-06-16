@@ -50,6 +50,9 @@ export const cmsUpload = multer({
 /** Passport scan — JPEG, PNG, PDF up to 8MB */
 export const passportUpload = createUpload('passports', 8, ['image/', 'application/pdf']);
 
+/** Agent ticket files — PDF/images up to 10MB */
+export const agentTicketUpload = createUpload('agent-tickets', 10, ['image/', 'application/pdf']);
+
 export function toPublicUploadPath(absolutePath) {
   const rel = path.relative(path.join(process.cwd(), env.upload.dir), absolutePath).replace(/\\/g, '/');
   return `/uploads/${rel}`;
