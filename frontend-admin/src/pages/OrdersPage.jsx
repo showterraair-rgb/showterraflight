@@ -53,6 +53,7 @@ export default function OrdersPage() {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState('');
   const [customers, setCustomers] = useState([]);
+  const [customersError, setCustomersError] = useState('');
 
   const form = useForm({ resolver: zodResolver(schema), defaultValues: {
     source: 'phone', journeyType: 'one_way', travelClass: 'economy', passengerCount: 1,
@@ -74,11 +75,21 @@ export default function OrdersPage() {
   useEffect(() => { load(); }, [load]);
 
   const loadCustomers = useCallback(async () => {
+    setCustomersError('');
     try {
-      const { data } = await customersApi.list({ limit: 500, isActive: 'true' });
-      setCustomers(data.data || []);
-    } catch {
+      const all = [];
+      let pageNum = 1;
+      let totalPages = 1;
+      do {
+        const { data } = await customersApi.list({ page: pageNum, limit: 100 });
+        all.push(...(data.data || []));
+        totalPages = data.pagination?.totalPages || 1;
+        pageNum += 1;
+      } while (pageNum <= totalPages);
+      setCustomers(all);
+    } catch (err) {
       setCustomers([]);
+      setCustomersError(err.response?.data?.message || 'Could not load customers');
     }
   }, []);
 
@@ -293,12 +304,15 @@ export default function OrdersPage() {
                   <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
                 ))}
               </select>
-              {!customers.length && (
+              {!customers.length && !customersError && (
                 <p className="mt-1 text-xs text-slate-500">
                   No customers found.{' '}
                   <Link to="/customers" className="text-brand-600 hover:underline">Add a customer first</Link>
                   {' '}or enter details below.
                 </p>
+              )}
+              {customersError && (
+                <p className="mt-1 text-xs text-red-600">{customersError}</p>
               )}
             </div>
             <div><label className="mb-1 block text-sm font-medium">Customer Name *</label><input className="input-field" {...form.register('customerName')} /></div>
