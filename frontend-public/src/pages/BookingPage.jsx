@@ -6,6 +6,8 @@ import { z } from 'zod';
 import PublicLayout from '../layouts/PublicLayout';
 import PageHero from '../components/PageHero';
 import DestinationPicker from '../components/common/DestinationPicker';
+import { useCompany } from '../context/CompanyContext';
+import { getWhatsAppDigits } from '../utils/companyHelpers';
 import { publicApi } from '../services/api';
 
 const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
@@ -38,21 +40,42 @@ const CLASS_LABELS = {
   first: 'First Class',
 };
 
+function formatBookingWhatsAppMessage(data) {
+  const lines = [
+    '*Booking Request — Show Terra Flight*',
+    '',
+    `*Name:* ${data.customerName}`,
+    `*Phone:* ${data.customerPhone}`,
+  ];
+  if (data.customerEmail) lines.push(`*Email:* ${data.customerEmail}`);
+  lines.push(
+    `*Journey:* ${JOURNEY_LABELS[data.journeyType]}`,
+    `*Class:* ${CLASS_LABELS[data.travelClass]}`,
+    `*Route:* ${data.fromDestination} → ${data.toDestination}`,
+    `*Travel date:* ${data.journeyDate}`,
+  );
+  if (data.journeyType === 'round_trip' && data.returnDate) {
+    lines.push(`*Return date:* ${data.returnDate}`);
+  }
+  lines.push(`*Passengers:* ${data.passengerCount}`);
+  if (data.requestNotes?.trim()) {
+    lines.push('', `*Notes:* ${data.requestNotes.trim()}`);
+  }
+  lines.push('', 'Sent from showterraflight.com/booking');
+  return lines.join('\n');
+}
+
 export default function BookingPage() {
+  const { company } = useCompany();
   const [searchParams] = useSearchParams();
   const [page, setPage] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [passportFile, setPassportFile] = useState(null);
-  const [passportMsg, setPassportMsg] = useState('');
-  const [passportUploading, setPassportUploading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
-    reset,
     setValue,
     formState: { errors },
   } = useForm({
@@ -73,87 +96,44 @@ export default function BookingPage() {
   const journeyType = watch('journeyType');
   const fromDestination = watch('fromDestination');
   const toDestination = watch('toDestination');
+  const wa = getWhatsAppDigits(company);
 
   useEffect(() => {
     publicApi.getCmsPage('booking').then(({ data }) => setPage(data.data)).catch(() => {});
   }, []);
 
-  const onSubmit = async (data) => {
+  const onSubmit = (data) => {
     setError('');
-    setSuccess(null);
-    setSubmitting(true);
-    try {
-      const payload = { ...data, customerEmail: data.customerEmail || undefined };
-      const { data: res } = await publicApi.submitBookingRequest(payload);
-      setSuccess(res.data);
-      reset();
-      setPassportFile(null);
-      setPassportMsg('');
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Submission failed. Please try again.';
-      const fieldErrors = err.response?.data?.errors;
-      setError(fieldErrors?.length ? fieldErrors.map((e) => e.message).join(', ') : msg);
-    } finally {
-      setSubmitting(false);
+    setSent(false);
+    if (!wa) {
+      setError('WhatsApp number is not configured. Please call our office instead.');
+      return;
     }
-  };
-
-  const handlePassportUpload = async () => {
-    if (!success?.orderNumber || !passportFile) return;
-    setPassportUploading(true);
-    setPassportMsg('');
-    try {
-      const { data: res } = await publicApi.uploadPassport(success.orderNumber, passportFile);
-      setPassportMsg(res.message || 'Passport uploaded successfully.');
-      setPassportFile(null);
-    } catch (err) {
-      setPassportMsg(err.response?.data?.message || 'Passport upload failed.');
-    } finally {
-      setPassportUploading(false);
-    }
+    const message = formatBookingWhatsAppMessage(data);
+    const url = `https://wa.me/88${wa}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setSent(true);
   };
 
   return (
-    <PublicLayout title="Book a Ticket" description="Submit an air ticket booking request to Show Terra Air">
+    <PublicLayout title="Book a Ticket" description="Submit an air ticket booking request to Show Terra Air via WhatsApp">
       <PageHero
         title={page?.content?.heading || 'Request an Air Ticket'}
-        subtitle={page?.content?.note || 'Fill in your travel details and we will contact you with the best fare.'}
+        subtitle={page?.content?.note || 'Fill in your travel details and send the request to us on WhatsApp for a fare quote.'}
       />
 
       <section className="container-page py-12">
         <div className="mx-auto max-w-2xl">
-          {success && (
+          {sent && (
             <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-6">
-              <p className="text-center text-lg font-semibold text-green-800">Request Submitted!</p>
-              <p className="mt-2 text-center text-sm text-green-700">{success.message}</p>
-              <p className="mt-1 text-center text-sm font-medium text-green-800">Order reference: {success.orderNumber}</p>
-              <p className="mt-2 text-center text-xs text-green-700">This is a booking inquiry. Our team will quote the fare and contact you soon.</p>
-
-              <div className="mt-6 rounded-lg border border-green-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-900">Upload passport copy (optional)</p>
-                <p className="mt-1 text-xs text-slate-500">JPEG, PNG or PDF — max 8MB. Speeds up ticket processing.</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                    className="text-sm"
-                    onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
-                  />
-                  <button
-                    type="button"
-                    onClick={handlePassportUpload}
-                    disabled={!passportFile || passportUploading}
-                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-                  >
-                    {passportUploading ? 'Uploading…' : 'Upload passport'}
-                  </button>
-                </div>
-                {passportMsg && (
-                  <p className={`mt-2 text-sm ${passportMsg.includes('failed') ? 'text-red-600' : 'text-green-700'}`}>
-                    {passportMsg}
-                  </p>
-                )}
-              </div>
+              <p className="text-center text-lg font-semibold text-green-800">Opening WhatsApp…</p>
+              <p className="mt-2 text-center text-sm text-green-700">
+                Your booking details were prepared. Send the message in WhatsApp to{' '}
+                <strong>{company?.whatsapp || 'our desk'}</strong> — our team will reply with fare options.
+              </p>
+              <p className="mt-2 text-center text-xs text-green-700">
+                You can attach a passport copy in the same WhatsApp chat if you have one ready.
+              </p>
             </div>
           )}
 
@@ -242,8 +222,8 @@ export default function BookingPage() {
               <textarea rows={4} className="input-field" placeholder="Preferred airline, time, special requests..." {...register('requestNotes')} />
             </div>
 
-            <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
-              {submitting ? 'Submitting...' : 'Submit Booking Request'}
+            <button type="submit" className="btn-whatsapp w-full justify-center">
+              Submit Booking Request to WhatsApp
             </button>
           </form>
         </div>
