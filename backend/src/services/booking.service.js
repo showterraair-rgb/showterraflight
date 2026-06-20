@@ -19,6 +19,9 @@ import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './appro
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 import { getCurrencyRatesMap } from './currency.service.js';
 import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing } from '../utils/currencyUtils.js';
+import Account from '../models/Account.js';
+import { createCustomerPayment } from './customerPayment.service.js';
+import { createSupplierPayment } from './supplierPayment.service.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -194,6 +197,80 @@ export async function getBookingById(id) {
   return formatBooking(booking);
 }
 
+async function resolveAccountPaymentMethod(accountId) {
+  const account = await Account.findById(accountId).lean();
+  if (!account) throw ApiError.notFound('Payment account not found');
+  if (!account.isActive) throw ApiError.badRequest('Selected payment account is inactive');
+  const methodByType = {
+    cash: 'Cash',
+    bank: 'Bank Transfer',
+    bkash: 'bKash',
+    nagad: 'Nagad',
+  };
+  return {
+    account,
+    paymentMethod: methodByType[account.type] || 'Bank Transfer',
+  };
+}
+
+async function recordInitialBookingPayments(booking, data, userId, req) {
+  const rate = Number(booking.bdtRateAtBooking || booking.exchangeRateAtBooking || 1);
+  const paymentDate = data.departureDate
+    ? String(data.departureDate).slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+  const autoNote = `Auto-created from booking ${booking.bookingNumber}`;
+
+  const customerPaidBRL = Number(data.customerPaidAmountBRL) || 0;
+  if (customerPaidBRL > 0.001) {
+    const amountBDT = Math.round(customerPaidBRL * rate * 100) / 100;
+    if (amountBDT > (booking.salePrice || 0) + 0.01) {
+      throw ApiError.badRequest('Customer paid amount exceeds booking sale price');
+    }
+    const { paymentMethod } = await resolveAccountPaymentMethod(data.customerPaymentAccountId);
+    await createCustomerPayment(
+      {
+        customerId: booking.customer.toString(),
+        bookingId: booking._id.toString(),
+        accountId: data.customerPaymentAccountId,
+        amount: amountBDT,
+        paymentDate,
+        paymentMethod,
+        notes: autoNote,
+        onAccount: false,
+      },
+      userId,
+      req
+    );
+  }
+
+  const supplierPaidBRL = Number(data.supplierPaidAmountBRL) || 0;
+  if (supplierPaidBRL > 0.001) {
+    if (!booking.supplier) {
+      throw ApiError.badRequest('Supplier is required to record a supplier payment');
+    }
+    const purchaseTotalBDT = (booking.purchasePrice || 0) + (booking.directCosts || 0);
+    const amountBDT = Math.round(supplierPaidBRL * rate * 100) / 100;
+    if (amountBDT > purchaseTotalBDT + 0.01) {
+      throw ApiError.badRequest('Supplier paid amount exceeds purchase total');
+    }
+    const { paymentMethod } = await resolveAccountPaymentMethod(data.supplierPaymentAccountId);
+    await createSupplierPayment(
+      {
+        supplierId: booking.supplier.toString(),
+        bookingId: booking._id.toString(),
+        accountId: data.supplierPaymentAccountId,
+        amount: amountBDT,
+        paymentDate,
+        paymentMethod,
+        notes: autoNote,
+        onAccount: false,
+      },
+      userId,
+      req
+    );
+  }
+}
+
 async function createBookingRecord(data, userId, req, orderDoc = null) {
   const bookingNumber = await generateBookingNumber();
   const currencyFields = await resolveBookingCurrencyFields(data);
@@ -264,7 +341,15 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     fireApprovalSms(booking, 'booking');
   }
 
-  await syncBookingFinancials(booking._id);
+  const hasInitialPayment =
+    (Number(data.customerPaidAmountBRL) || 0) > 0
+    || (Number(data.supplierPaidAmountBRL) || 0) > 0;
+
+  if (hasInitialPayment) {
+    await recordInitialBookingPayments(booking, data, userId, req);
+  } else {
+    await syncBookingFinancials(booking._id);
+  }
 
   return getBookingById(booking._id);
 }
@@ -315,6 +400,12 @@ export async function createBookingFromOrder(orderId, data, userId, req) {
     status: data.status || 'confirmed',
     ticketCopyPath: data.ticketCopyPath,
     ticketCopyFileName: data.ticketCopyFileName,
+    customerPaymentStatus: data.customerPaymentStatus,
+    customerPaidAmountBRL: data.customerPaidAmountBRL,
+    customerPaymentAccountId: data.customerPaymentAccountId,
+    supplierPaymentStatus: data.supplierPaymentStatus,
+    supplierPaidAmountBRL: data.supplierPaidAmountBRL,
+    supplierPaymentAccountId: data.supplierPaymentAccountId,
   };
 
   return createBookingRecord(payload, userId, req, order);

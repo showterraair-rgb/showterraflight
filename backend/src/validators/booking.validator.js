@@ -58,18 +58,79 @@ export const createBookingBaseSchema = z.object({
   ticketCopyFileName: z.string().max(255).optional(),
 });
 
-export const createBookingSchema = roundTripRefine(createBookingBaseSchema);
+const initialPaymentFields = {
+  customerPaymentStatus: z.enum(['due', 'paid']).optional().default('due'),
+  customerPaidAmountBRL: z.coerce.number().min(0).optional().default(0),
+  customerPaymentAccountId: optionalObjectId,
+  supplierPaymentStatus: z.enum(['due', 'paid']).optional().default('due'),
+  supplierPaidAmountBRL: z.coerce.number().min(0).optional().default(0),
+  supplierPaymentAccountId: optionalObjectId,
+};
+
+function validateInitialPayments(schema) {
+  return schema.superRefine((data, ctx) => {
+    const saleBRL = Number(data.salePriceBRL ?? data.salePrice ?? 0);
+    const purchaseBRL = Number(data.purchasePriceBRL ?? data.purchasePrice ?? 0);
+    const costsBRL = Number(data.directCostsBRL ?? data.directCosts ?? 0);
+    const purchaseTotalBRL = purchaseBRL + costsBRL;
+    const customerPaidBRL = Number(data.customerPaidAmountBRL) || 0;
+    const supplierPaidBRL = Number(data.supplierPaidAmountBRL) || 0;
+
+    if (customerPaidBRL > saleBRL + 0.001) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Customer paid amount cannot exceed sale price',
+        path: ['customerPaidAmountBRL'],
+      });
+    }
+    if (customerPaidBRL > 0 && !data.customerPaymentAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Payment account is required when customer paid amount is greater than 0',
+        path: ['customerPaymentAccountId'],
+      });
+    }
+    if (supplierPaidBRL > purchaseTotalBRL + 0.001) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Supplier paid amount cannot exceed purchase price plus direct costs',
+        path: ['supplierPaidAmountBRL'],
+      });
+    }
+    if (supplierPaidBRL > 0 && !data.supplierId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Supplier is required when recording a supplier payment',
+        path: ['supplierId'],
+      });
+    }
+    if (supplierPaidBRL > 0 && !data.supplierPaymentAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Payment account is required when supplier paid amount is greater than 0',
+        path: ['supplierPaymentAccountId'],
+      });
+    }
+  });
+}
+
+export const createBookingSchema = validateInitialPayments(
+  roundTripRefine(createBookingBaseSchema.extend(initialPaymentFields))
+);
 
 /** From-order: customerId optional — backend auto-creates from order contact */
-export const createBookingFromOrderSchema = roundTripRefine(
-  createBookingBaseSchema.partial().extend({
-    customerId: optionalObjectId,
-    fromDestination: z.string().min(2).max(100).trim().optional(),
-    toDestination: z.string().min(2).max(100).trim().optional(),
-    airline: z.string().min(2).max(100).trim().optional(),
-    route: z.string().min(2).max(200).trim().optional(),
-    departureDate: z.string().min(1).optional(),
-  })
+export const createBookingFromOrderSchema = validateInitialPayments(
+  roundTripRefine(
+    createBookingBaseSchema.partial().extend({
+      customerId: optionalObjectId,
+      fromDestination: z.string().min(2).max(100).trim().optional(),
+      toDestination: z.string().min(2).max(100).trim().optional(),
+      airline: z.string().min(2).max(100).trim().optional(),
+      route: z.string().min(2).max(200).trim().optional(),
+      departureDate: z.string().min(1).optional(),
+      ...initialPaymentFields,
+    })
+  )
 );
 
 export const updateBookingSchema = roundTripRefine(
