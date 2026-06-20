@@ -22,6 +22,7 @@ const PAGE_TITLES = {
   '/backup': 'Backup',
   '/security': 'Security',
   '/settings/payment-accounts': 'Payment Accounts',
+  '/settings/notifications': 'Notifications',
   '/settings/sms': 'SMS Settings',
   '/settings/email': 'Email Settings',
   '/settings/whatsapp': 'WhatsApp Settings',

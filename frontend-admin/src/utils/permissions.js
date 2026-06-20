@@ -115,6 +115,12 @@ export const NAV_ITEMS = [
     permissions: ['settings:manage', 'cms:manage'],
   },
   {
+    label: 'Notifications',
+    path: '/settings/notifications',
+    icon: 'reminders',
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+  },
+  {
     label: 'Payment Accounts',
     path: '/settings/payment-accounts',
     icon: 'accounts',
@@ -124,31 +130,36 @@ export const NAV_ITEMS = [
     label: 'SMS Settings',
     path: '/settings/sms',
     icon: 'reminders',
-    permissions: ['notifications:view', 'settings:manage'],
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+    hiddenFromNav: true,
   },
   {
     label: 'Email Settings',
     path: '/settings/email',
     icon: 'reminders',
-    permissions: ['notifications:view', 'settings:manage'],
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+    hiddenFromNav: true,
   },
   {
     label: 'WhatsApp Settings',
     path: '/settings/whatsapp',
     icon: 'reminders',
-    permissions: ['notifications:view', 'settings:manage'],
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+    hiddenFromNav: true,
   },
   {
     label: 'Notification Templates',
     path: '/settings/notification-templates',
     icon: 'cms',
-    permissions: ['notifications:view', 'settings:manage'],
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+    hiddenFromNav: true,
   },
   {
     label: 'Notification Logs',
     path: '/notifications/logs',
     icon: 'reports',
-    permissions: ['notifications:view', 'settings:manage'],
+    permissions: ['notifications:view', 'notifications:manage', 'settings:manage'],
+    hiddenFromNav: true,
   },
   {
     label: 'Users',
@@ -182,7 +193,7 @@ export function isReadOnlyUser(user) {
 export function getVisibleNavItems(user) {
   if (!user) return [];
   return NAV_ITEMS.filter((item) =>
-    hasPermission(user.permissions, user.role, item.permissions)
+    !item.hiddenFromNav && hasPermission(user.permissions, user.role, item.permissions)
   );
 }
 

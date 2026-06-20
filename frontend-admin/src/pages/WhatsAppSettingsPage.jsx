@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { notificationsApi } from '../services/notifications.api';
@@ -70,7 +71,8 @@ export default function WhatsAppSettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">WhatsApp Settings</h2>
+        <Link to="/settings/notifications" className="text-xs font-medium text-brand-600 hover:underline">← All notification settings</Link>
+        <h2 className="mt-2 text-xl font-bold text-slate-900">WhatsApp Settings</h2>
         <p className="text-sm text-slate-500">
           Meta WhatsApp Business Cloud API for transactional booking and payment messages.
         </p>

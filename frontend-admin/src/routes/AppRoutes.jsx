@@ -24,6 +24,7 @@ import PaymentAccountsPage from '../pages/PaymentAccountsPage';
 import SmsSettingsPage from '../pages/SmsSettingsPage';
 import EmailSettingsPage from '../pages/EmailSettingsPage';
 import WhatsAppSettingsPage from '../pages/WhatsAppSettingsPage';
+import NotificationsHubPage from '../pages/NotificationsHubPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
 import UsersPage from '../pages/UsersPage';
@@ -67,11 +68,12 @@ export default function AppRoutes() {
             <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
             <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />
             <Route path="settings/payment-accounts" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentAccountsPage /></ProtectedRoute>} />
-            <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />
-            <Route path="settings/email" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><EmailSettingsPage /></ProtectedRoute>} />
-            <Route path="settings/whatsapp" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><WhatsAppSettingsPage /></ProtectedRoute>} />
-            <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
-            <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
+            <Route path="settings/notifications" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><NotificationsHubPage /></ProtectedRoute>} />
+            <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/email" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><EmailSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/whatsapp" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><WhatsAppSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
+            <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
             <Route path="users" element={<ProtectedRoute permissions={['users:view']}><UsersPage /></ProtectedRoute>} />
             <Route path="roles" element={<ProtectedRoute permissions={['roles:manage']}><RolesPermissionsPage /></ProtectedRoute>} />
 
