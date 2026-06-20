@@ -5,8 +5,10 @@ import validate from '../middlewares/validate.js';
 import {
   updateSmsSettingsSchema,
   updateEmailSettingsSchema,
+  updateWhatsAppSettingsSchema,
   testSmsSchema,
   testEmailSchema,
+  testWhatsAppSchema,
   updateTemplateSchema,
   updateAutomationSchema,
   templateKeyParamSchema,
@@ -24,6 +26,10 @@ router.get('/settings/sms/balance', authorize('notifications:view', 'settings:ma
 router.get('/settings/email', authorize('notifications:view', 'settings:manage'), notificationController.getEmailSettings);
 router.put('/settings/email', authorize('notifications:manage', 'settings:manage'), validate(updateEmailSettingsSchema), notificationController.updateEmailSettings);
 router.post('/settings/email/test', authorize('notifications:manage', 'settings:manage'), validate(testEmailSchema), notificationController.testEmail);
+
+router.get('/settings/whatsapp', authorize('notifications:view', 'settings:manage'), notificationController.getWhatsAppSettings);
+router.put('/settings/whatsapp', authorize('notifications:manage', 'settings:manage'), validate(updateWhatsAppSettingsSchema), notificationController.updateWhatsAppSettings);
+router.post('/settings/whatsapp/test', authorize('notifications:manage', 'settings:manage'), validate(testWhatsAppSchema), notificationController.testWhatsApp);
 
 router.get('/templates', authorize('notifications:view', 'settings:manage'), notificationController.listTemplates);
 router.get('/templates/:templateKey', authorize('notifications:view', 'settings:manage'), validate(templateKeyParamSchema, 'params'), notificationController.getTemplate);

@@ -1,5 +1,6 @@
 import SmsSetting from '../models/SmsSetting.js';
 import EmailSetting from '../models/EmailSetting.js';
+import WhatsAppSetting from '../models/WhatsAppSetting.js';
 import Setting from '../models/Setting.js';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
 import { logAudit } from './audit.service.js';
@@ -24,6 +25,18 @@ const EMAIL_DEFAULTS = {
   fromEmail: '',
   fromName: 'Show Terra Flight',
   replyTo: '',
+  isEnabled: false,
+};
+
+const WHATSAPP_DEFAULTS = {
+  accessToken: '',
+  phoneNumberId: '',
+  businessAccountId: '',
+  webhookVerifyToken: '',
+  apiVersion: 'v21.0',
+  defaultCountryCode: '880',
+  defaultLanguageCode: 'en',
+  testTemplateName: 'hello_world',
   isEnabled: false,
 };
 
@@ -53,6 +66,22 @@ function formatEmail(doc) {
     fromEmail: doc.fromEmail || '',
     fromName: doc.fromName || '',
     replyTo: doc.replyTo || '',
+    isEnabled: Boolean(doc.isEnabled),
+    updatedAt: doc.updatedAt,
+  };
+}
+
+function formatWhatsApp(doc) {
+  if (!doc) return { ...WHATSAPP_DEFAULTS };
+  return {
+    accessToken: doc.accessToken ? '********' : '',
+    phoneNumberId: doc.phoneNumberId || '',
+    businessAccountId: doc.businessAccountId || '',
+    webhookVerifyToken: doc.webhookVerifyToken ? '********' : '',
+    apiVersion: doc.apiVersion || 'v21.0',
+    defaultCountryCode: doc.defaultCountryCode || '880',
+    defaultLanguageCode: doc.defaultLanguageCode || 'en',
+    testTemplateName: doc.testTemplateName || 'hello_world',
     isEnabled: Boolean(doc.isEnabled),
     updatedAt: doc.updatedAt,
   };
@@ -114,6 +143,43 @@ export async function updateEmailSettings(data, userId, req) {
   return formatEmail(doc);
 }
 
+export async function getWhatsAppSettings() {
+  const doc = await WhatsAppSetting.findOne({ key: 'whatsapp' }).lean();
+  return formatWhatsApp(doc);
+}
+
+export async function updateWhatsAppSettings(data, userId, req) {
+  const existing = await WhatsAppSetting.findOne({ key: 'whatsapp' }).lean();
+  const update = { ...data, updatedBy: userId };
+  if (update.accessToken === '********') delete update.accessToken;
+  else if (!update.accessToken && existing?.accessToken) delete update.accessToken;
+  if (update.webhookVerifyToken === '********') delete update.webhookVerifyToken;
+  else if (!update.webhookVerifyToken && existing?.webhookVerifyToken) delete update.webhookVerifyToken;
+
+  const doc = await WhatsAppSetting.findOneAndUpdate(
+    { key: 'whatsapp' },
+    { $set: update, $setOnInsert: { key: 'whatsapp' } },
+    { upsert: true, new: true, runValidators: true }
+  ).lean();
+
+  await logAudit({
+    action: 'update',
+    module: 'settings',
+    entityType: 'WhatsAppSetting',
+    entityId: doc._id,
+    description: 'WhatsApp settings updated',
+    userId,
+    req,
+  });
+
+  return formatWhatsApp(doc);
+}
+
+export async function getWhatsAppSettingsRaw() {
+  const doc = await WhatsAppSetting.findOne({ key: 'whatsapp' }).lean();
+  return doc ? { ...WHATSAPP_DEFAULTS, ...doc } : { ...WHATSAPP_DEFAULTS };
+}
+
 export async function getSmsSettingsRaw() {
   const doc = await SmsSetting.findOne({ key: 'sms' }).lean();
   return doc ? { ...SMS_DEFAULTS, ...doc } : { ...SMS_DEFAULTS };
@@ -122,6 +188,15 @@ export async function getSmsSettingsRaw() {
 export async function getEmailSettingsRaw() {
   const doc = await EmailSetting.findOne({ key: 'email' }).lean();
   return doc ? { ...EMAIL_DEFAULTS, ...doc } : { ...EMAIL_DEFAULTS };
+}
+
+export async function getCompanyNotificationVars() {
+  const settings = await Setting.findOne({ key: 'company' }).lean();
+  const company = settings?.company || COMPANY_DEFAULTS;
+  return {
+    companyName: company.name || company.tradeName || 'Show Terra Flight',
+    supportNumber: company.whatsapp || company.directorPhone || company.phone || '',
+  };
 }
 
 export async function getAdminContact() {
@@ -139,7 +214,11 @@ export default {
   updateSmsSettings,
   getEmailSettings,
   updateEmailSettings,
+  getWhatsAppSettings,
+  updateWhatsAppSettings,
   getSmsSettingsRaw,
   getEmailSettingsRaw,
+  getWhatsAppSettingsRaw,
   getAdminContact,
+  getCompanyNotificationVars,
 };

@@ -24,6 +24,7 @@ const PAGE_TITLES = {
   '/settings/payment-accounts': 'Payment Accounts',
   '/settings/sms': 'SMS Settings',
   '/settings/email': 'Email Settings',
+  '/settings/whatsapp': 'WhatsApp Settings',
   '/settings/notification-templates': 'Notification Templates',
   '/notifications/logs': 'Notification Logs',
   '/users': 'Users',

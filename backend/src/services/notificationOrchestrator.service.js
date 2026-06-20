@@ -6,16 +6,27 @@ import NotificationLog from '../models/NotificationLog.js';
 import {
   getSmsSettingsRaw,
   getEmailSettingsRaw,
+  getWhatsAppSettingsRaw,
   getAdminContact,
+  getCompanyNotificationVars,
 } from './notificationSettings.service.js';
 import {
   getTemplateByKey,
   getAutomationRule,
   renderTemplate,
 } from './notificationTemplate.service.js';
-import { DEFAULT_AUTOMATION_RULES, DEFAULT_NOTIFICATION_TEMPLATES } from '../config/constants.js';
+import {
+  DEFAULT_AUTOMATION_RULES,
+  DEFAULT_NOTIFICATION_TEMPLATES,
+  DEFAULT_WHATSAPP_PARAM_KEYS,
+} from '../config/constants.js';
 import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
+import { sendMetaWhatsAppTemplate, sendMetaWhatsAppText } from './whatsapp/metaCloud.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
+import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
+import { normalizeWaPhone } from '../utils/phoneUtils.js';
+
+const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 async function createLogEntry(payload) {
   try {
@@ -39,6 +50,40 @@ async function finalizeLog(logId, result) {
   } catch (err) {
     console.error('[notification] failed to update log', err.message);
   }
+}
+
+async function isDuplicateSend({ eventType, channel, recipient, bookingId, orderId }) {
+  const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+  const filter = {
+    eventType,
+    channel,
+    recipient,
+    status: { $in: ['pending', 'sent', 'delivered', 'read'] },
+    createdAt: { $gte: since },
+  };
+  if (bookingId) filter.booking = bookingId;
+  else if (orderId) filter.order = orderId;
+  else return false;
+
+  const existing = await NotificationLog.findOne(filter).lean();
+  return Boolean(existing);
+}
+
+function parseParamKeys(template, eventType) {
+  const fromTemplate = String(template?.whatsappParamKeys || '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+  if (fromTemplate.length) return fromTemplate;
+  return DEFAULT_WHATSAPP_PARAM_KEYS[eventType] || ['customerName'];
+}
+
+function buildWhatsAppBodyParams(template, eventType, vars) {
+  const keys = parseParamKeys(template, eventType);
+  return keys.map((key) => {
+    const val = vars[key];
+    return val != null ? String(val) : '';
+  });
 }
 
 export async function sendSmsMessage({ to, message }) {
@@ -117,7 +162,6 @@ export async function sendEmailMessage({ to, subject, message, replyTo }) {
   }
 
   try {
-    // Provider hook — nodemailer / SMTP here
     console.log('[NOTIFICATION:email:send]', subject, '→', recipient);
     return { success: true, channel: 'email', messageId: `email-${Date.now()}` };
   } catch (err) {
@@ -125,7 +169,93 @@ export async function sendEmailMessage({ to, subject, message, replyTo }) {
   }
 }
 
+export async function sendWhatsAppMessage({
+  to,
+  templateName,
+  languageCode,
+  bodyParams = [],
+  textFallback = '',
+}) {
+  const rawSettings = await getWhatsAppSettingsRaw();
+  const settings = resolveWhatsAppConfig(rawSettings);
+  const recipient = normalizeWaPhone(to, settings.defaultCountryCode);
+
+  if (!recipient) {
+    return { success: false, error: 'Missing recipient phone', channel: 'whatsapp' };
+  }
+
+  if (!settings.isEnabled) {
+    console.log('[NOTIFICATION:whatsapp:disabled]', recipient, templateName || textFallback?.slice(0, 80));
+    return { success: true, channel: 'whatsapp', messageId: `wa-disabled-${Date.now()}`, mocked: true };
+  }
+
+  if (!settings.isConfigured) {
+    console.log('[NOTIFICATION:whatsapp:no-config]', recipient);
+    return {
+      success: false,
+      channel: 'whatsapp',
+      error: 'WhatsApp Cloud API not configured (access token and phone number ID required)',
+    };
+  }
+
+  try {
+    let result;
+    if (templateName) {
+      result = await sendMetaWhatsAppTemplate({
+        graphApiBase: settings.graphApiBase,
+        phoneNumberId: settings.phoneNumberId,
+        accessToken: settings.accessToken,
+        to: recipient,
+        templateName,
+        languageCode: languageCode || settings.defaultLanguageCode,
+        bodyParams,
+      });
+    } else if (textFallback) {
+      result = await sendMetaWhatsAppText({
+        graphApiBase: settings.graphApiBase,
+        phoneNumberId: settings.phoneNumberId,
+        accessToken: settings.accessToken,
+        to: recipient,
+        text: textFallback,
+      });
+    } else {
+      return {
+        success: false,
+        channel: 'whatsapp',
+        error: 'WhatsApp template name or text message required',
+      };
+    }
+
+    if (!result.success) {
+      console.error('[NOTIFICATION:whatsapp:failed]', recipient, result.error);
+    } else {
+      console.log('[NOTIFICATION:whatsapp:sent]', recipient, result.messageId);
+    }
+
+    return {
+      success: result.success,
+      channel: 'whatsapp',
+      messageId: result.messageId || '',
+      error: result.error,
+      mocked: false,
+    };
+  } catch (err) {
+    return { success: false, channel: 'whatsapp', error: err.message || 'WhatsApp send failed' };
+  }
+}
+
 async function dispatchChannel({ channel, recipient, subject, body, meta }) {
+  if (await isDuplicateSend({
+    eventType: meta.eventType,
+    channel,
+    recipient,
+    bookingId: meta.bookingId,
+    orderId: meta.orderId,
+  })) {
+    console.log('[NOTIFICATION:dedupe]', meta.eventType, channel, recipient);
+    return { success: true, channel, skipped: true, deduped: true };
+  }
+
   const log = await createLogEntry({
     eventType: meta.eventType,
     templateKey: meta.templateKey,
@@ -146,12 +276,22 @@ async function dispatchChannel({ channel, recipient, subject, body, meta }) {
     result = await sendSmsMessage({ to: recipient, message: body });
   } else if (channel === 'email') {
     result = await sendEmailMessage({ to: recipient, subject, message: body, replyTo: meta.replyTo });
+  } else if (channel === 'whatsapp') {
+    result = await sendWhatsAppMessage({
+      to: recipient,
+      templateName: meta.whatsappTemplateName,
+      languageCode: meta.whatsappTemplateLanguage,
+      bodyParams: meta.whatsappBodyParams,
+      textFallback: meta.whatsappTextFallback,
+    });
   } else {
     console.log('[NOTIFICATION:console]', { recipient, subject, body: body?.slice(0, 120) });
     result = { success: true, channel: 'console', messageId: `console-${Date.now()}` };
   }
 
-  await finalizeLog(log?._id, result);
+  if (!result.skipped) {
+    await finalizeLog(log?._id, result);
+  }
   return result;
 }
 
@@ -181,18 +321,21 @@ export async function triggerNotificationEvent(eventType, context = {}) {
       return { skipped: true, reason: 'template inactive' };
     }
 
-    const vars = context.vars || {};
+    const companyVars = await getCompanyNotificationVars();
+    const vars = { ...companyVars, ...(context.vars || {}) };
     const admin = await getAdminContact();
     const recipients = [];
 
     if (rule.notifyCustomer && context.customerPhone) {
       recipients.push({ channel: 'sms', to: context.customerPhone, audience: 'customer' });
+      recipients.push({ channel: 'whatsapp', to: context.customerPhone, audience: 'customer' });
     }
     if (rule.notifyCustomer && context.customerEmail) {
       recipients.push({ channel: 'email', to: context.customerEmail, audience: 'customer' });
     }
     if (rule.notifyAdmin && admin.adminPhone) {
       recipients.push({ channel: 'sms', to: admin.adminPhone, audience: 'admin' });
+      recipients.push({ channel: 'whatsapp', to: admin.adminWhatsapp || admin.adminPhone, audience: 'admin' });
     }
     if (rule.notifyAdmin && admin.adminEmail) {
       recipients.push({ channel: 'email', to: admin.adminEmail, audience: 'admin' });
@@ -201,14 +344,25 @@ export async function triggerNotificationEvent(eventType, context = {}) {
     const smsBody = renderTemplate(template?.smsBody || '', vars);
     const emailSubject = renderTemplate(template?.emailSubject || '', vars);
     const emailBody = renderTemplate(template?.emailBody || '', vars);
+    const whatsappTemplateName = template?.whatsappTemplateName || '';
+    const whatsappTemplateLanguage = template?.whatsappTemplateLanguage || 'en';
+    const whatsappBodyParams = buildWhatsAppBodyParams(template, eventType, vars);
+    const whatsappTextFallback = renderTemplate(template?.whatsappBody || template?.smsBody || '', vars);
 
     const results = [];
     for (const r of recipients) {
       if (r.channel === 'sms' && !rule.smsEnabled) continue;
       if (r.channel === 'email' && !rule.emailEnabled) continue;
+      if (r.channel === 'whatsapp' && !rule.whatsappEnabled) continue;
 
-      const body = r.channel === 'sms' ? smsBody : emailBody;
-      if (!body && r.channel === 'sms') continue;
+      if (r.channel === 'sms' && !smsBody) continue;
+      if (r.channel === 'whatsapp' && !whatsappTemplateName && !whatsappTextFallback) continue;
+
+      const body = r.channel === 'sms'
+        ? smsBody
+        : r.channel === 'email'
+          ? emailBody
+          : whatsappTextFallback;
 
       const result = await dispatchChannel({
         channel: r.channel,
@@ -224,6 +378,10 @@ export async function triggerNotificationEvent(eventType, context = {}) {
           customerPaymentId: context.customerPaymentId,
           replyTo: admin.adminEmail,
           vars,
+          whatsappTemplateName,
+          whatsappTemplateLanguage,
+          whatsappBodyParams,
+          whatsappTextFallback: r.channel === 'whatsapp' && !whatsappTemplateName ? whatsappTextFallback : '',
         },
       });
       results.push({ ...result, audience: r.audience });
@@ -251,6 +409,23 @@ export async function sendTestEmail({ to, subject, message }) {
     to,
     subject: subject || 'Test email — Show Terra Flight',
     message: message || 'This is a test email from Show Terra Flight admin panel.',
+  });
+}
+
+export async function sendTestWhatsApp({ to, templateName, message }) {
+  const rawSettings = await getWhatsAppSettingsRaw();
+  const settings = resolveWhatsAppConfig(rawSettings);
+  const name = templateName || settings.testTemplateName || 'hello_world';
+
+  if (name === 'hello_world' || !message) {
+    return sendWhatsAppMessage({ to, templateName: name, languageCode: settings.defaultLanguageCode });
+  }
+
+  return sendWhatsAppMessage({
+    to,
+    templateName: name,
+    languageCode: settings.defaultLanguageCode,
+    bodyParams: [message],
   });
 }
 
@@ -282,6 +457,7 @@ export async function listNotificationLogs(query) {
       body: l.body?.slice(0, 200),
       status: l.status,
       errorMessage: l.errorMessage,
+      providerMessageId: l.providerMessageId || '',
       orderId: l.order?.toString(),
       bookingId: l.booking?.toString(),
       customerId: l.customer?.toString(),
@@ -297,8 +473,10 @@ export default {
   triggerNotificationEventSafe,
   sendTestSms,
   sendTestEmail,
+  sendTestWhatsApp,
   listNotificationLogs,
   sendSmsMessage,
   sendEmailMessage,
+  sendWhatsAppMessage,
   getSmsBalance,
 };

@@ -339,6 +339,7 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
   });
   if (!orderDoc) {
     fireApprovalSms(booking, 'booking');
+    await fireBookingNotification('manual_order_created', booking);
   }
 
   const hasInitialPayment =

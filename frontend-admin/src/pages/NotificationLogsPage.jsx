@@ -6,8 +6,8 @@ import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { formatDate } from '../utils/date';
 
-const STATUS_OPTIONS = ['', 'pending', 'sent', 'failed'];
-const CHANNEL_OPTIONS = ['', 'sms', 'email', 'console'];
+const STATUS_OPTIONS = ['', 'pending', 'sent', 'delivered', 'read', 'failed'];
+const CHANNEL_OPTIONS = ['', 'sms', 'email', 'whatsapp', 'console'];
 
 export default function NotificationLogsPage() {
   const [items, setItems] = useState([]);
@@ -52,7 +52,7 @@ export default function NotificationLogsPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Notification Logs</h2>
-        <p className="text-sm text-slate-500">History of SMS and email delivery attempts</p>
+        <p className="text-sm text-slate-500">History of SMS, WhatsApp, and email delivery attempts</p>
       </div>
 
       <div className="flex flex-wrap gap-3">

@@ -34,6 +34,10 @@ export default function NotificationTemplatesPage() {
       smsBody: '',
       emailSubject: '',
       emailBody: '',
+      whatsappTemplateName: '',
+      whatsappTemplateLanguage: 'en',
+      whatsappParamKeys: '',
+      whatsappBody: '',
       isActive: true,
     },
   });
@@ -62,6 +66,10 @@ export default function NotificationTemplatesPage() {
       smsBody: tpl.smsBody || '',
       emailSubject: tpl.emailSubject || '',
       emailBody: tpl.emailBody || '',
+      whatsappTemplateName: tpl.whatsappTemplateName || '',
+      whatsappTemplateLanguage: tpl.whatsappTemplateLanguage || 'en',
+      whatsappParamKeys: tpl.whatsappParamKeys || '',
+      whatsappBody: tpl.whatsappBody || '',
       isActive: tpl.isActive !== false,
     });
     setModalOpen(true);
@@ -113,7 +121,7 @@ export default function NotificationTemplatesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Notification Templates</h2>
-        <p className="text-sm text-slate-500">Edit SMS and email content. Use placeholders like {'{{customerName}}'}, {'{{bookingNumber}}'}.</p>
+        <p className="text-sm text-slate-500">Edit SMS, email, and WhatsApp content. Use placeholders like {'{{customerName}}'}, {'{{bookingNumber}}'}.</p>
       </div>
 
       {msg && <p className="text-sm text-brand-700">{msg}</p>}
@@ -132,6 +140,7 @@ export default function NotificationTemplatesPage() {
                 <th className="py-2 pr-4">Admin</th>
                 <th className="py-2 pr-4">SMS</th>
                 <th className="py-2 pr-4">Email</th>
+                <th className="py-2 pr-4">WhatsApp</th>
                 <th className="py-2">Enabled</th>
               </tr>
             </thead>
@@ -139,7 +148,7 @@ export default function NotificationTemplatesPage() {
               {rules.map((rule) => (
                 <tr key={rule.eventType} className="border-b border-slate-100">
                   <td className="py-2 pr-4 font-medium">{EVENT_LABELS[rule.eventType] || rule.eventType}</td>
-                  {['notifyCustomer', 'notifyAdmin', 'smsEnabled', 'emailEnabled', 'isEnabled'].map((field) => (
+                  {['notifyCustomer', 'notifyAdmin', 'smsEnabled', 'emailEnabled', 'whatsappEnabled', 'isEnabled'].map((field) => (
                     <td key={field} className="py-2 pr-4">
                       <input
                         type="checkbox"
@@ -193,6 +202,27 @@ export default function NotificationTemplatesPage() {
             <span className="text-slate-600">Email body</span>
             <textarea {...form.register('emailBody')} rows={6} className="input mt-1 w-full font-mono text-xs" />
           </label>
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 space-y-3">
+            <p className="text-xs font-semibold text-emerald-900">WhatsApp (Meta approved template)</p>
+            <label className="block text-sm">
+              <span className="text-slate-600">Template name</span>
+              <input {...form.register('whatsappTemplateName')} className="input mt-1 w-full font-mono text-xs" placeholder="payment_received" />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-slate-600">Language code</span>
+                <input {...form.register('whatsappTemplateLanguage')} className="input mt-1 w-full" placeholder="en" />
+              </label>
+              <label className="block text-sm">
+                <span className="text-slate-600">Body param keys (comma-separated)</span>
+                <input {...form.register('whatsappParamKeys')} className="input mt-1 w-full font-mono text-xs" placeholder="customerName,amount,bookingNumber" />
+              </label>
+            </div>
+            <label className="block text-sm">
+              <span className="text-slate-600">WhatsApp body preview (fallback reference)</span>
+              <textarea {...form.register('whatsappBody')} rows={3} className="input mt-1 w-full font-mono text-xs" />
+            </label>
+          </div>
         </form>
       </Modal>
     </div>

@@ -22,6 +22,7 @@ import backupRoutes from './backup.routes.js';
 import auditRoutes from './audit.routes.js';
 import securityRoutes from './security.routes.js';
 import notificationRoutes from './notification.routes.js';
+import whatsappWebhookRoutes from './whatsappWebhook.routes.js';
 import agentAuthRoutes from './agent/auth.routes.js';
 import agentRoutes from './agent/index.js';
 import adminAgentRoutes from './adminAgent.routes.js';
@@ -41,6 +42,7 @@ router.get('/health', (_req, res) => {
 
 // Public (no auth)
 router.use('/public', publicRoutes);
+router.use('/webhooks/whatsapp', whatsappWebhookRoutes);
 
 // Auth (mixed — login public, me/logout protected)
 router.use('/auth', authRoutes);

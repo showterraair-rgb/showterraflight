@@ -133,6 +133,12 @@ export const NAV_ITEMS = [
     permissions: ['notifications:view', 'settings:manage'],
   },
   {
+    label: 'WhatsApp Settings',
+    path: '/settings/whatsapp',
+    icon: 'reminders',
+    permissions: ['notifications:view', 'settings:manage'],
+  },
+  {
     label: 'Notification Templates',
     path: '/settings/notification-templates',
     icon: 'cms',

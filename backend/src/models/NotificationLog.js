@@ -5,7 +5,7 @@ const notificationLogSchema = new mongoose.Schema(
   {
     eventType: { type: String, enum: NOTIFICATION_EVENT_TYPES, required: true },
     templateKey: { type: String, trim: true, default: '' },
-    channel: { type: String, enum: ['sms', 'email', 'console'], required: true },
+    channel: { type: String, enum: ['sms', 'email', 'whatsapp', 'console'], required: true },
     recipient: { type: String, required: true, trim: true },
     subject: { type: String, default: '', trim: true },
     body: { type: String, default: '' },

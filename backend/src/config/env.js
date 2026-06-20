@@ -54,6 +54,17 @@ export const env = {
     senderId: process.env.BULKSMSBD_SENDER_ID || '',
     enabled: process.env.BULKSMSBD_ENABLED === 'true',
   },
+  whatsapp: {
+    accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+    businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
+    webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '',
+    apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+    defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '880',
+    defaultLanguageCode: process.env.WHATSAPP_DEFAULT_LANGUAGE || 'en',
+    testTemplateName: process.env.WHATSAPP_TEST_TEMPLATE || 'hello_world',
+    enabled: process.env.WHATSAPP_ENABLED === 'true',
+  },
   isProduction: process.env.NODE_ENV === 'production',
 };
 

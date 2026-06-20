@@ -13,6 +13,10 @@ function formatTemplate(doc) {
     smsBody: doc.smsBody || '',
     emailSubject: doc.emailSubject || '',
     emailBody: doc.emailBody || '',
+    whatsappTemplateName: doc.whatsappTemplateName || '',
+    whatsappTemplateLanguage: doc.whatsappTemplateLanguage || 'en',
+    whatsappParamKeys: doc.whatsappParamKeys || '',
+    whatsappBody: doc.whatsappBody || '',
     isActive: Boolean(doc.isActive),
     updatedAt: doc.updatedAt,
   };
@@ -26,6 +30,7 @@ function formatRule(doc) {
     notifyAdmin: Boolean(doc.notifyAdmin),
     smsEnabled: Boolean(doc.smsEnabled),
     emailEnabled: Boolean(doc.emailEnabled),
+    whatsappEnabled: Boolean(doc.whatsappEnabled),
     isEnabled: Boolean(doc.isEnabled),
     updatedAt: doc.updatedAt,
   };
@@ -56,6 +61,10 @@ export async function updateTemplate(templateKey, data, userId, req) {
         smsBody: data.smsBody ?? '',
         emailSubject: data.emailSubject ?? '',
         emailBody: data.emailBody ?? '',
+        whatsappTemplateName: data.whatsappTemplateName ?? '',
+        whatsappTemplateLanguage: data.whatsappTemplateLanguage ?? 'en',
+        whatsappParamKeys: data.whatsappParamKeys ?? '',
+        whatsappBody: data.whatsappBody ?? '',
         isActive: data.isActive ?? true,
         updatedBy: userId,
       },
@@ -91,6 +100,7 @@ export async function updateAutomationRule(eventType, data, userId, req) {
         notifyAdmin: data.notifyAdmin ?? false,
         smsEnabled: data.smsEnabled ?? true,
         emailEnabled: data.emailEnabled ?? true,
+        whatsappEnabled: data.whatsappEnabled ?? false,
         isEnabled: data.isEnabled ?? true,
         updatedBy: userId,
       },
@@ -116,7 +126,7 @@ export async function getAutomationRule(eventType) {
   const doc = await NotificationAutomationRule.findOne({ eventType }).lean();
   if (!doc) {
     const fallback = DEFAULT_AUTOMATION_RULES.find((r) => r.eventType === eventType);
-    return fallback ? { ...fallback, id: null } : null;
+    return fallback ? { ...fallback, id: null, whatsappEnabled: fallback.whatsappEnabled ?? false } : null;
   }
   return formatRule(doc);
 }

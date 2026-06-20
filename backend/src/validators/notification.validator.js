@@ -57,12 +57,34 @@ export const testEmailSchema = z.object({
   message: z.string().max(2000).optional(),
 });
 
+export const updateWhatsAppSettingsSchema = z.object({
+  accessToken: z.string().max(2000).optional(),
+  phoneNumberId: z.string().max(80).optional(),
+  businessAccountId: z.string().max(80).optional(),
+  webhookVerifyToken: z.string().max(200).optional(),
+  apiVersion: z.string().max(20).optional(),
+  defaultCountryCode: z.string().max(5).optional(),
+  defaultLanguageCode: z.string().max(10).optional(),
+  testTemplateName: z.string().max(120).optional(),
+  isEnabled: z.boolean().optional(),
+});
+
+export const testWhatsAppSchema = z.object({
+  to: z.string().min(6).max(30),
+  templateName: z.string().max(120).optional(),
+  message: z.string().max(500).optional(),
+});
+
 export const updateTemplateSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).optional(),
   smsBody: z.string().max(2000).optional(),
   emailSubject: z.string().max(200).optional(),
   emailBody: z.string().max(5000).optional(),
+  whatsappTemplateName: z.string().max(120).optional(),
+  whatsappTemplateLanguage: z.string().max(10).optional(),
+  whatsappParamKeys: z.string().max(500).optional(),
+  whatsappBody: z.string().max(2000).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -71,6 +93,7 @@ export const updateAutomationSchema = z.object({
   notifyAdmin: z.boolean().optional(),
   smsEnabled: z.boolean().optional(),
   emailEnabled: z.boolean().optional(),
+  whatsappEnabled: z.boolean().optional(),
   isEnabled: z.boolean().optional(),
 });
 
@@ -85,8 +108,8 @@ export const eventTypeParamSchema = z.object({
 export const notificationLogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
-  status: z.enum(['pending', 'sent', 'failed']).optional(),
-  channel: z.enum(['sms', 'email', 'console']).optional(),
+  status: z.enum(['pending', 'sent', 'delivered', 'read', 'failed']).optional(),
+  channel: z.enum(['sms', 'email', 'whatsapp', 'console']).optional(),
   eventType: z.enum(NOTIFICATION_EVENT_TYPES).optional(),
   bookingId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
@@ -100,6 +123,8 @@ export default {
   updateEmailSettingsSchema,
   testSmsSchema,
   testEmailSchema,
+  updateWhatsAppSettingsSchema,
+  testWhatsAppSchema,
   updateTemplateSchema,
   updateAutomationSchema,
   templateKeyParamSchema,

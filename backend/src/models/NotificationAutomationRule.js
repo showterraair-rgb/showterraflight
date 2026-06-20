@@ -13,6 +13,7 @@ const notificationAutomationRuleSchema = new mongoose.Schema(
     notifyAdmin: { type: Boolean, default: false },
     smsEnabled: { type: Boolean, default: true },
     emailEnabled: { type: Boolean, default: true },
+    whatsappEnabled: { type: Boolean, default: false },
     isEnabled: { type: Boolean, default: true },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },

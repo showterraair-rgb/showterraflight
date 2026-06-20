@@ -23,6 +23,7 @@ import SecurityPage from '../pages/SecurityPage';
 import PaymentAccountsPage from '../pages/PaymentAccountsPage';
 import SmsSettingsPage from '../pages/SmsSettingsPage';
 import EmailSettingsPage from '../pages/EmailSettingsPage';
+import WhatsAppSettingsPage from '../pages/WhatsAppSettingsPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
 import UsersPage from '../pages/UsersPage';
@@ -67,6 +68,7 @@ export default function AppRoutes() {
             <Route path="settings/payment-accounts" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentAccountsPage /></ProtectedRoute>} />
             <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />
             <Route path="settings/email" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><EmailSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/whatsapp" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><WhatsAppSettingsPage /></ProtectedRoute>} />
             <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
             <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
             <Route path="users" element={<ProtectedRoute permissions={['users:view']}><UsersPage /></ProtectedRoute>} />

@@ -3,6 +3,7 @@ import * as notificationTemplateService from '../services/notificationTemplate.s
 import {
   sendTestSms,
   sendTestEmail,
+  sendTestWhatsApp,
   listNotificationLogs,
   getSmsBalance,
 } from '../services/notificationOrchestrator.service.js';
@@ -45,6 +46,22 @@ export const testEmail = asyncHandler(async (req, res) => {
   const result = await sendTestEmail(req.body);
   if (!result.success) throw ApiError.badRequest(result.error || 'Test email failed');
   res.json({ success: true, data: result, message: 'Test email dispatched' });
+});
+
+export const getWhatsAppSettings = asyncHandler(async (_req, res) => {
+  const data = await notificationSettingsService.getWhatsAppSettings();
+  res.json({ success: true, data });
+});
+
+export const updateWhatsAppSettings = asyncHandler(async (req, res) => {
+  const data = await notificationSettingsService.updateWhatsAppSettings(req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'WhatsApp settings saved' });
+});
+
+export const testWhatsApp = asyncHandler(async (req, res) => {
+  const result = await sendTestWhatsApp(req.body);
+  if (!result.success) throw ApiError.badRequest(result.error || 'Test WhatsApp failed');
+  res.json({ success: true, data: result, message: 'Test WhatsApp dispatched', mocked: result.mocked });
 });
 
 export const listTemplates = asyncHandler(async (_req, res) => {
@@ -95,6 +112,9 @@ export default {
   getEmailSettings,
   updateEmailSettings,
   testEmail,
+  getWhatsAppSettings,
+  updateWhatsAppSettings,
+  testWhatsApp,
   listTemplates,
   getTemplate,
   updateTemplate,

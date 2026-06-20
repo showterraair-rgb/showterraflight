@@ -83,7 +83,28 @@ export const NOTIFICATION_EVENT_TYPES = [
   'daily_ledger_summary',
 ];
 
-export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'failed'];
+export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'delivered', 'read', 'failed'];
+
+export const NOTIFICATION_CHANNELS = ['sms', 'email', 'whatsapp', 'console'];
+
+/** Default WhatsApp template variable order per event (Meta body params). */
+export const DEFAULT_WHATSAPP_PARAM_KEYS = {
+  website_order_created: ['customerName', 'orderNumber', 'companyName'],
+  manual_order_created: ['customerName', 'bookingNumber', 'salePrice', 'companyName'],
+  admin_new_booking_alert: ['orderNumber', 'customerName', 'customerPhone', 'route'],
+  admin_manual_order_alert: ['orderNumber', 'customerName', 'customerPhone', 'route'],
+  admin_manual_booking_alert: ['bookingNumber', 'customerName', 'customerPhone', 'route'],
+  approval_pending: ['customerName', 'referenceNumber', 'companyName'],
+  approval_checking: ['customerName', 'referenceNumber', 'companyName'],
+  approval_processing: ['customerName', 'referenceNumber', 'companyName'],
+  approval_approved: ['customerName', 'referenceNumber', 'companyName'],
+  booking_approved: ['customerName', 'bookingNumber', 'companyName'],
+  ticket_issued: ['bookingNumber', 'pnr', 'companyName'],
+  payment_received: ['customerName', 'amount', 'bookingNumber', 'companyName'],
+  payment_due_reminder: ['dueAmount', 'bookingNumber', 'companyName', 'supportNumber'],
+  booking_canceled: ['bookingNumber', 'companyName'],
+  daily_ledger_summary: ['reportDate', 'totalBalance', 'todayOrders', 'todayBookings'],
+};
 
 export const DEFAULT_NOTIFICATION_TEMPLATES = [
   {
@@ -194,21 +215,21 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
 ];
 
 export const DEFAULT_AUTOMATION_RULES = [
-  { eventType: 'website_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'admin_new_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'admin_manual_order_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'admin_manual_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'approval_pending', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'approval_checking', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'approval_processing', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'approval_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'booking_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'ticket_issued', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, isEnabled: true },
-  { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, isEnabled: true },
+  { eventType: 'website_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'admin_new_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'admin_manual_order_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'admin_manual_booking_alert', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'approval_pending', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'approval_checking', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'approval_processing', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'approval_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'booking_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'ticket_issued', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: false, isEnabled: true },
 ];
 
 export const TRANSACTION_TYPES = [

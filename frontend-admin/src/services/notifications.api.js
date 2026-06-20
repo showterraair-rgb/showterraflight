@@ -10,6 +10,10 @@ export const notificationsApi = {
   updateEmailSettings: (data) => api.put('/notifications/settings/email', data),
   testEmail: (data) => api.post('/notifications/settings/email/test', data),
 
+  getWhatsAppSettings: () => api.get('/notifications/settings/whatsapp'),
+  updateWhatsAppSettings: (data) => api.put('/notifications/settings/whatsapp', data),
+  testWhatsApp: (data) => api.post('/notifications/settings/whatsapp/test', data),
+
   listTemplates: () => api.get('/notifications/templates'),
   getTemplate: (key) => api.get(`/notifications/templates/${key}`),
   updateTemplate: (key, data) => api.put(`/notifications/templates/${key}`, data),
