@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Role from '../models/Role.js';
 import ApiError from '../utils/ApiError.js';
 import { ROLES } from '../config/constants.js';
 import {
@@ -7,6 +8,7 @@ import {
   buildSearchFilter,
 } from '../utils/pagination.js';
 import { logAudit } from './audit.service.js';
+import { PERMISSIONS } from '../config/permissions.js';
 
 function formatUser(doc) {
   return {
@@ -15,12 +17,29 @@ function formatUser(doc) {
     email: doc.email,
     phone: doc.phone || '',
     role: doc.role,
+    department: doc.department || '',
+    designation: doc.designation || '',
+    notes: doc.notes || '',
+    permissionOverrides: doc.permissionOverrides || { grants: [], denies: [] },
     isActive: doc.isActive,
     lastLoginAt: doc.lastLoginAt,
     lastActivityAt: doc.lastActivityAt,
     mfaEnabled: Boolean(doc.mfaEnabled),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+  };
+}
+
+function snapshotUser(user) {
+  return {
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    department: user.department,
+    designation: user.designation,
+    isActive: user.isActive,
+    permissionOverrides: user.permissionOverrides,
   };
 }
 
@@ -52,9 +71,21 @@ async function assertCanModifyUser(targetId, data, actorId) {
   return target;
 }
 
+async function linkRoleRef(user) {
+  const roleDoc = await Role.findOne({ name: user.role }).select('_id');
+  if (roleDoc) user.roleRef = roleDoc._id;
+}
+
+function validateOverrides(overrides) {
+  if (!overrides) return { grants: [], denies: [] };
+  const grants = (overrides.grants || []).filter((p) => PERMISSIONS[p] || p === '*');
+  const denies = (overrides.denies || []).filter((p) => PERMISSIONS[p] || p === '*');
+  return { grants, denies };
+}
+
 export async function listUsers(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query);
-  const filter = { ...buildSearchFilter(query.search, ['name', 'email', 'phone']) };
+  const filter = { ...buildSearchFilter(query.search, ['name', 'email', 'phone', 'department', 'designation']) };
 
   if (query.role) filter.role = query.role;
   if (query.isActive === 'true') filter.isActive = true;
@@ -81,14 +112,21 @@ export async function createUser(data, userId, req) {
   const existing = await User.findOne({ email: data.email.toLowerCase() });
   if (existing) throw ApiError.badRequest('A user with this email already exists');
 
-  const user = await User.create({
+  const user = new User({
     name: data.name,
     email: data.email,
     phone: data.phone || undefined,
     password: data.password,
-    role: data.role || ROLES.EXECUTIVE,
+    role: data.role || ROLES.SALES_EXECUTIVE,
+    department: data.department || '',
+    designation: data.designation || '',
+    notes: data.notes || '',
+    permissionOverrides: validateOverrides(data.permissionOverrides),
     createdBy: userId,
   });
+
+  await linkRoleRef(user);
+  await user.save();
 
   await logAudit({
     action: 'create',
@@ -105,6 +143,7 @@ export async function createUser(data, userId, req) {
 
 export async function updateUser(id, data, userId, req) {
   const user = await assertCanModifyUser(id, data, userId);
+  const before = snapshotUser(user);
 
   if (data.email && data.email !== user.email) {
     const dup = await User.findOne({ email: data.email.toLowerCase(), _id: { $ne: id } });
@@ -115,19 +154,36 @@ export async function updateUser(id, data, userId, req) {
   if (data.name) user.name = data.name;
   if (data.phone !== undefined) user.phone = data.phone || undefined;
   if (data.role) user.role = data.role;
+  if (data.department !== undefined) user.department = data.department || '';
+  if (data.designation !== undefined) user.designation = data.designation || '';
+  if (data.notes !== undefined) user.notes = data.notes || '';
+  if (data.permissionOverrides !== undefined) {
+    user.permissionOverrides = validateOverrides(data.permissionOverrides);
+  }
   if (data.isActive !== undefined) user.isActive = data.isActive;
   if (data.password) user.password = data.password;
 
+  if (data.role) await linkRoleRef(user);
+
   await user.save();
+
+  const after = snapshotUser(user);
+  const statusChanged = before.isActive !== after.isActive;
+  const roleChanged = before.role !== after.role;
 
   await logAudit({
     action: 'update',
     module: 'users',
     entityType: 'User',
     entityId: user._id,
-    description: `Updated user ${user.email}`,
+    description: statusChanged
+      ? `User ${user.email} ${after.isActive ? 'enabled' : 'disabled'}`
+      : roleChanged
+        ? `User ${user.email} role changed to ${after.role}`
+        : `Updated user ${user.email}`,
     userId,
     req,
+    changes: { before, after },
   });
 
   return formatUser(user.toObject());
@@ -137,10 +193,15 @@ export async function deactivateUser(id, userId, req) {
   return updateUser(id, { isActive: false }, userId, req);
 }
 
+export async function setUserActive(id, isActive, userId, req) {
+  return updateUser(id, { isActive }, userId, req);
+}
+
 export default {
   listUsers,
   getUserById,
   createUser,
   updateUser,
   deactivateUser,
+  setUserActive,
 };

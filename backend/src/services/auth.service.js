@@ -1,25 +1,31 @@
 import User from '../models/User.js';
 import LoginLog from '../models/LoginLog.js';
 import AuditLog from '../models/AuditLog.js';
-import { ROLE_PERMISSIONS } from '../config/permissions.js';
+import { resolveUserAccess } from './permissions.service.js';
 import { signToken, getCookieOptions } from '../utils/jwt.js';
 import { getSecuritySettings, validatePasswordStrength } from '../utils/passwordPolicy.js';
 import ApiError from '../utils/ApiError.js';
 import env from '../config/env.js';
 
-function sanitizeUser(user) {
+async function sanitizeUser(user) {
+  const access = await resolveUserAccess(user);
   return {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
     phone: user.phone,
     role: user.role,
-    permissions: ROLE_PERMISSIONS[user.role] || [],
+    roleLabel: access.roleLabel,
+    permissions: access.permissions,
+    fieldAccess: access.fieldAccess,
+    department: user.department || '',
+    designation: user.designation || '',
     lastLoginAt: user.lastLoginAt,
     mfaEnabled: user.mfaEnabled || false,
     mfaPending: user.mfaPending || false,
   };
 }
+
 export async function login({ email, password, ipAddress, userAgent }) {
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
@@ -72,7 +78,7 @@ export async function login({ email, password, ipAddress, userAgent }) {
   const token = signToken({ userId: user._id.toString(), role: user.role });
 
   return {
-    user: sanitizeUser(user),
+    user: await sanitizeUser(user),
     token,
     cookieOptions: getCookieOptions(),
   };

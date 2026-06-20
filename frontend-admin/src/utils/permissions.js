@@ -156,6 +156,12 @@ export const NAV_ITEMS = [
     icon: 'users',
     permissions: ['users:view'],
   },
+  {
+    label: 'Roles & Permissions',
+    path: '/roles',
+    icon: 'security',
+    permissions: ['roles:manage'],
+  },
 ];
 
 export function hasPermission(userPermissions, role, required) {
@@ -170,7 +176,7 @@ export function hasPermission(userPermissions, role, required) {
 }
 
 export function isReadOnlyUser(user) {
-  return user?.role === 'demo';
+  return user?.role === 'demo' || user?.role === 'viewer';
 }
 
 export function getVisibleNavItems(user) {

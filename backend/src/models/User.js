@@ -17,9 +17,16 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: Object.values(ROLES),
-      default: ROLES.EXECUTIVE,
+      default: ROLES.SALES_EXECUTIVE,
     },
     roleRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
+    department: { type: String, trim: true, default: '' },
+    designation: { type: String, trim: true, default: '' },
+    notes: { type: String, trim: true, default: '', maxlength: 2000 },
+    permissionOverrides: {
+      grants: { type: [String], default: [] },
+      denies: { type: [String], default: [] },
+    },
     isActive: { type: Boolean, default: true },
     lastLoginAt: { type: Date },
     lastActivityAt: { type: Date },

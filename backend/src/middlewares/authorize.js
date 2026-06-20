@@ -11,7 +11,7 @@ export function authorize(...requiredPermissions) {
     }
 
     const allowed = requiredPermissions.some((permission) =>
-      hasPermission(req.user.role, permission)
+      hasPermission(req.user.role, permission, req.user.permissions)
     );
 
     if (!allowed) {

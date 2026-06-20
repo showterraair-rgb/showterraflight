@@ -57,13 +57,30 @@ export const APPROVAL_STATUS_LABELS = {
 
 export const SUPPLIER_TYPES = ['agent', 'supplier', 'airline_office', 'other'];
 
-export const USER_ROLES = ['admin', 'accountant', 'executive', 'demo'];
+export const USER_ROLES = [
+  'admin',
+  'administrator',
+  'manager',
+  'accountant',
+  'booking_officer',
+  'sales_executive',
+  'support',
+  'viewer',
+  'executive',
+  'demo',
+];
 
 export const USER_ROLE_LABELS = {
-  admin: 'Administrator',
+  admin: 'Super Admin',
+  administrator: 'Admin',
+  manager: 'Manager',
   accountant: 'Accountant',
-  executive: 'Executive',
-  demo: 'Demo (Read-only)',
+  booking_officer: 'Booking Officer',
+  sales_executive: 'Sales Executive',
+  support: 'Support',
+  viewer: 'Viewer',
+  executive: 'Executive (legacy)',
+  demo: 'Demo (legacy)',
 };
 
 export const STATUS_COLORS = {

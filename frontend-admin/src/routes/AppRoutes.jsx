@@ -27,6 +27,7 @@ import WhatsAppSettingsPage from '../pages/WhatsAppSettingsPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
 import UsersPage from '../pages/UsersPage';
+import RolesPermissionsPage from '../pages/RolesPermissionsPage';
 import AgentsPage from '../pages/AgentsPage';
 import AgentDetailPage from '../pages/AgentDetailPage';
 import AgentBookingsPage from '../pages/AgentBookingsPage';
@@ -72,6 +73,7 @@ export default function AppRoutes() {
             <Route path="settings/notification-templates" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationTemplatesPage /></ProtectedRoute>} />
             <Route path="notifications/logs" element={<ProtectedRoute permissions={['notifications:view', 'settings:manage']}><NotificationLogsPage /></ProtectedRoute>} />
             <Route path="users" element={<ProtectedRoute permissions={['users:view']}><UsersPage /></ProtectedRoute>} />
+            <Route path="roles" element={<ProtectedRoute permissions={['roles:manage']}><RolesPermissionsPage /></ProtectedRoute>} />
 
             <Route path="agents" element={<ProtectedRoute permissions={['agents:view']}><AgentsPage /></ProtectedRoute>} />
             <Route path="agents/:id" element={<ProtectedRoute permissions={['agents:view']}><AgentDetailPage /></ProtectedRoute>} />

@@ -26,4 +26,13 @@ export const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'User deactivated' });
 });
 
-export default { list, getById, create, update, remove };
+export const setStatus = asyncHandler(async (req, res) => {
+  const data = await userService.setUserActive(req.params.id, req.body.isActive, req.user.id, req);
+  res.json({
+    success: true,
+    data,
+    message: data.isActive ? 'User enabled' : 'User disabled',
+  });
+});
+
+export default { list, getById, create, update, remove, setStatus };

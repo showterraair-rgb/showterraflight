@@ -28,6 +28,7 @@ const PAGE_TITLES = {
   '/settings/notification-templates': 'Notification Templates',
   '/notifications/logs': 'Notification Logs',
   '/users': 'Users',
+  '/roles': 'Roles & Permissions',
 };
 
 export default function AdminLayout() {

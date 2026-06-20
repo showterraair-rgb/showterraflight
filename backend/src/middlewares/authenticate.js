@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import env from '../config/env.js';
 import { verifyToken } from '../utils/jwt.js';
 import ApiError from '../utils/ApiError.js';
-import { ROLE_PERMISSIONS } from '../config/permissions.js';
+import { resolveUserAccess } from '../services/permissions.service.js';
 
 export async function authenticate(req, _res, next) {
   const token = req.cookies?.[env.jwt.cookieName];
@@ -42,12 +42,16 @@ export async function authenticate(req, _res, next) {
   user.lastActivityAt = new Date();
   await user.save({ validateBeforeSave: false });
 
+  const access = await resolveUserAccess(user);
+
   req.user = {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
-    permissions: ROLE_PERMISSIONS[user.role] || [],
+    roleLabel: access.roleLabel,
+    permissions: access.permissions,
+    fieldAccess: access.fieldAccess,
   };
 
   next();

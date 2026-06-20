@@ -11,6 +11,11 @@ const passwordBase = z
   .regex(/[a-z]/, 'Password must contain a lowercase letter')
   .regex(/[0-9]/, 'Password must contain a number');
 
+const permissionOverridesSchema = z.object({
+  grants: z.array(z.string().max(80)).optional(),
+  denies: z.array(z.string().max(80)).optional(),
+}).optional();
+
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -24,18 +29,30 @@ export const listQuerySchema = z.object({
 export const createUserSchema = z.object({
   name: z.string().min(2).max(100).trim(),
   email: z.string().email().trim().toLowerCase(),
-  phone: z.string().min(10).max(20).trim().optional().or(z.literal('')),
+  phone: z.string().min(6).max(20).trim().optional().or(z.literal('')),
   password: passwordBase,
-  role: z.enum(Object.values(ROLES)).default(ROLES.EXECUTIVE),
+  role: z.enum(Object.values(ROLES)).default(ROLES.SALES_EXECUTIVE),
+  department: z.string().max(120).trim().optional(),
+  designation: z.string().max(120).trim().optional(),
+  notes: z.string().max(2000).trim().optional(),
+  permissionOverrides: permissionOverridesSchema,
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).trim().optional(),
   email: z.string().email().trim().toLowerCase().optional(),
-  phone: z.string().min(10).max(20).trim().optional().or(z.literal('')),
+  phone: z.string().min(6).max(20).trim().optional().or(z.literal('')),
   role: z.enum(Object.values(ROLES)).optional(),
+  department: z.string().max(120).trim().optional(),
+  designation: z.string().max(120).trim().optional(),
+  notes: z.string().max(2000).trim().optional(),
+  permissionOverrides: permissionOverridesSchema,
   isActive: z.boolean().optional(),
   password: passwordBase.optional(),
+});
+
+export const setUserStatusSchema = z.object({
+  isActive: z.boolean(),
 });
 
 export const idParamSchema = z.object({
@@ -46,5 +63,6 @@ export default {
   listQuerySchema,
   createUserSchema,
   updateUserSchema,
+  setUserStatusSchema,
   idParamSchema,
 };

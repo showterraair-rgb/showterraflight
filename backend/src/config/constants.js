@@ -4,9 +4,30 @@
 
 export const ROLES = {
   ADMIN: 'admin',
+  ADMINISTRATOR: 'administrator',
+  MANAGER: 'manager',
   ACCOUNTANT: 'accountant',
+  BOOKING_OFFICER: 'booking_officer',
+  SALES_EXECUTIVE: 'sales_executive',
+  SUPPORT: 'support',
+  VIEWER: 'viewer',
+  /** @deprecated Use sales_executive — kept for existing users */
   EXECUTIVE: 'executive',
+  /** @deprecated Use viewer — kept for existing users */
   DEMO: 'demo',
+};
+
+export const ROLE_LABELS = {
+  [ROLES.ADMIN]: 'Super Admin',
+  [ROLES.ADMINISTRATOR]: 'Admin',
+  [ROLES.MANAGER]: 'Manager',
+  [ROLES.ACCOUNTANT]: 'Accountant',
+  [ROLES.BOOKING_OFFICER]: 'Booking Officer',
+  [ROLES.SALES_EXECUTIVE]: 'Sales Executive',
+  [ROLES.SUPPORT]: 'Support',
+  [ROLES.VIEWER]: 'Viewer',
+  [ROLES.EXECUTIVE]: 'Executive (legacy)',
+  [ROLES.DEMO]: 'Demo (legacy)',
 };
 
 export const ORDER_SOURCES = ['website', 'phone', 'whatsapp', 'walk_in'];

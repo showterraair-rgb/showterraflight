@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import env from '../config/env.js';
 import {
   ROLES,
+  ROLE_LABELS,
   ACCOUNT_TYPES,
   ACCOUNT_TYPE_LABELS,
   DEFAULT_EXPENSE_CATEGORIES,
@@ -26,12 +27,7 @@ import EmailSetting from '../models/EmailSetting.js';
 import NotificationTemplate from '../models/NotificationTemplate.js';
 import NotificationAutomationRule from '../models/NotificationAutomationRule.js';
 
-const ROLE_LABELS = {
-  [ROLES.ADMIN]: 'Administrator',
-  [ROLES.ACCOUNTANT]: 'Accountant',
-  [ROLES.EXECUTIVE]: 'Executive',
-  [ROLES.DEMO]: 'Demo (Read-only)',
-};
+const ROLE_SEED_LABELS = ROLE_LABELS;
 
 async function seedRoles() {
   for (const name of Object.values(ROLES)) {
@@ -39,8 +35,8 @@ async function seedRoles() {
       { name },
       {
         name,
-        label: ROLE_LABELS[name],
-        permissions: ROLE_PERMISSIONS[name],
+        label: ROLE_SEED_LABELS[name] || name,
+        permissions: ROLE_PERMISSIONS[name] || [],
         isActive: true,
       },
       { upsert: true, new: true }

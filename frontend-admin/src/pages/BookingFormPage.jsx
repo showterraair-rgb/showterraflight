@@ -8,6 +8,7 @@ import { accountsApi } from '../services/finance.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
+import { useFieldPermission } from '../hooks/useFieldPermission';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
@@ -89,6 +90,10 @@ export default function BookingFormPage() {
   const { id: editId } = useParams();
   const isEdit = Boolean(editId);
   const { brlRate } = useCurrency();
+  const financeFields = useFieldPermission('finance');
+  const paymentFields = useFieldPermission('payments');
+  const statusFields = useFieldPermission('status');
+  const notesFields = useFieldPermission('notes');
 
   const [loadingData, setLoadingData] = useState(isEdit);
   const [customers, setCustomers] = useState([]);
@@ -356,9 +361,13 @@ export default function BookingFormPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Status</label>
-            <select className="input-field" {...form.register('status')}>
-              {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{BOOKING_STATUS_LABELS[s]}</option>)}
-            </select>
+            {statusFields.hidden ? (
+              <p className="text-xs text-slate-500">Status hidden for your role</p>
+            ) : (
+              <select className="input-field" disabled={statusFields.readOnly} {...form.register('status')}>
+                {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{BOOKING_STATUS_LABELS[s]}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">PNR</label>
@@ -370,6 +379,7 @@ export default function BookingFormPage() {
           </div>
         </div>
 
+        {!financeFields.hidden && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Pricing (BRL)</h3>
           <p className="mt-1 text-xs text-slate-500">
@@ -380,21 +390,21 @@ export default function BookingFormPage() {
               <label className="mb-1 block text-xs font-medium">Purchase Price</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
-                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('purchasePriceBRL')} />
+                <input type="number" min={0} step="0.01" disabled={financeFields.readOnly} className="input-field pl-9" {...form.register('purchasePriceBRL')} />
               </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium">Sale Price</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
-                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('salePriceBRL')} />
+                <input type="number" min={0} step="0.01" disabled={financeFields.readOnly} className="input-field pl-9" {...form.register('salePriceBRL')} />
               </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium">Direct Costs</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">R$</span>
-                <input type="number" min={0} step="0.01" className="input-field pl-9" {...form.register('directCostsBRL')} />
+                <input type="number" min={0} step="0.01" disabled={financeFields.readOnly} className="input-field pl-9" {...form.register('directCostsBRL')} />
               </div>
             </div>
           </div>
@@ -448,8 +458,9 @@ export default function BookingFormPage() {
           </div>
           <p className="mt-3 text-xs text-slate-500">Rate used: 1 BRL = ৳ {fmt(effectiveRate)}</p>
         </div>
+        )}
 
-        {!isEdit && (
+        {!isEdit && !paymentFields.hidden && (
           <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Payments at booking</h3>
@@ -572,10 +583,12 @@ export default function BookingFormPage() {
           )}
         </div>
 
+        {!notesFields.hidden && (
         <div>
           <label className="mb-1 block text-sm font-medium">Notes</label>
-          <textarea rows={3} className="input-field" {...form.register('notes')} />
+          <textarea rows={3} disabled={notesFields.readOnly} className="input-field" {...form.register('notes')} />
         </div>
+        )}
 
         <div className="flex justify-end gap-2">
           <Link to={backLink} className="btn-secondary">Cancel</Link>

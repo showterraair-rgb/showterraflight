@@ -6,6 +6,7 @@ import {
   listQuerySchema,
   createUserSchema,
   updateUserSchema,
+  setUserStatusSchema,
   idParamSchema,
 } from '../validators/user.validator.js';
 
@@ -15,6 +16,7 @@ router.get('/', authorize('users:view'), validate(listQuerySchema, 'query'), use
 router.post('/', authorize('users:manage'), validate(createUserSchema), userController.create);
 router.get('/:id', authorize('users:view'), validate(idParamSchema, 'params'), userController.getById);
 router.put('/:id', authorize('users:manage'), validate(idParamSchema, 'params'), validate(updateUserSchema), userController.update);
+router.patch('/:id/status', authorize('users:manage'), validate(idParamSchema, 'params'), validate(setUserStatusSchema), userController.setStatus);
 router.delete('/:id', authorize('users:manage'), validate(idParamSchema, 'params'), userController.remove);
 
 export default router;

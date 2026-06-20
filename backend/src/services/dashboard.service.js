@@ -75,7 +75,7 @@ export async function getDashboardSummary(user) {
 
   const result = { summary };
 
-  if (hasPermission(user.role, 'accounts:view')) {
+  if (hasPermission(user.role, 'accounts:view', user.permissions)) {
     result.accountBalances = accounts.map((a) => ({
       id: a._id.toString(),
       name: a.name,

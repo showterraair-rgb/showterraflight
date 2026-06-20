@@ -24,7 +24,10 @@ function buildSchema(isEdit) {
     name: z.string().min(2, 'Name required'),
     email: z.string().email('Valid email required'),
     phone: z.string().optional().or(z.literal('')),
-    role: z.enum(['admin', 'accountant', 'executive', 'demo']),
+    role: z.enum(USER_ROLES),
+    department: z.string().optional().or(z.literal('')),
+    designation: z.string().optional().or(z.literal('')),
+    notes: z.string().optional().or(z.literal('')),
     password: isEdit ? passwordSchema.optional().or(z.literal('')) : passwordSchema,
     isActive: z.boolean().optional(),
   });
@@ -34,7 +37,10 @@ const empty = {
   name: '',
   email: '',
   phone: '',
-  role: 'executive',
+  role: 'sales_executive',
+  department: '',
+  designation: '',
+  notes: '',
   password: '',
   isActive: true,
 };
@@ -56,6 +62,9 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
         email: editing.email,
         phone: editing.phone || '',
         role: editing.role,
+        department: editing.department || '',
+        designation: editing.designation || '',
+        notes: editing.notes || '',
         password: '',
         isActive: editing.isActive,
       });
@@ -72,6 +81,9 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
         email: form.email,
         phone: form.phone || undefined,
         role: form.role,
+        department: form.department || undefined,
+        designation: form.designation || undefined,
+        notes: form.notes || undefined,
       };
       if (form.password) payload.password = form.password;
       if (editing) {
@@ -118,6 +130,22 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
           <select className="input-field" {...register('role')}>
             {USER_ROLES.map((r) => <option key={r} value={r}>{USER_ROLE_LABELS[r]}</option>)}
           </select>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Department</label>
+            <input className="input-field" {...register('department')} />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Designation</label>
+            <input className="input-field" {...register('designation')} />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Internal notes</label>
+          <textarea rows={2} className="input-field" {...register('notes')} />
         </div>
 
         <div>
@@ -184,13 +212,17 @@ export default function UsersPage() {
     setModalOpen(true);
   };
 
-  const handleDeactivate = async (row) => {
-    if (!window.confirm(`Deactivate user "${row.name}"? They will no longer be able to log in.`)) return;
+  const handleToggleActive = async (row) => {
+    const enabling = !row.isActive;
+    const msg = enabling
+      ? `Enable user "${row.name}"?`
+      : `Disable user "${row.name}"? They will be logged out on their next request.`;
+    if (!window.confirm(msg)) return;
     try {
-      await usersApi.deactivate(row.id);
+      await usersApi.setStatus(row.id, enabling);
       load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Deactivate failed');
+      alert(err.response?.data?.message || 'Status update failed');
     }
   };
 
@@ -199,13 +231,14 @@ export default function UsersPage() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
     { key: 'role', label: 'Role', render: (r) => USER_ROLE_LABELS[r.role] || r.role },
+    { key: 'department', label: 'Department', render: (r) => r.department || '—' },
     {
       key: 'isActive',
       label: 'Status',
       render: (r) => (
         <StatusBadge
           status={r.isActive ? 'success' : 'cancelled'}
-          label={r.isActive ? 'Active' : 'Inactive'}
+          label={r.isActive ? 'Active' : 'Disabled'}
         />
       ),
     },
@@ -219,11 +252,11 @@ export default function UsersPage() {
         <RowActions
           items={[
             can('users:manage') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
-            can('users:manage') && r.isActive && r.id !== currentUser?.id && {
+            can('users:manage') && r.id !== currentUser?.id && {
               type: 'button',
-              label: 'Deactivate',
-              onClick: () => handleDeactivate(r),
-              variant: 'danger',
+              label: r.isActive ? 'Disable' : 'Enable',
+              onClick: () => handleToggleActive(r),
+              variant: r.isActive ? 'danger' : 'muted',
             },
           ]}
         />
