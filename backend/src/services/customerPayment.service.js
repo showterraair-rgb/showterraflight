@@ -64,6 +64,8 @@ function formatPayment(doc) {
 
     status: doc.status,
 
+    isRefund: Boolean(doc.isRefund),
+
     createdAt: doc.createdAt,
 
   };
@@ -346,6 +348,144 @@ export async function createCustomerPayment(data, userId, req) {
 
 
 
+export async function createCustomerRefund(data, userId, req) {
+
+  return withTransaction(async (session) => {
+
+    const customer = await Customer.findById(data.customerId).session(session);
+
+    if (!customer) throw ApiError.notFound('Customer not found');
+
+
+
+    const booking = await Booking.findById(data.bookingId).session(session);
+
+    if (!booking) throw ApiError.notFound('Booking not found');
+
+    if (booking.customer.toString() !== data.customerId) {
+
+      throw ApiError.badRequest('Booking does not belong to this customer');
+
+    }
+
+
+
+    if (data.amount <= 0) throw ApiError.badRequest('Refund amount must be positive');
+
+
+
+    const paymentNumber = await generateCustomerPaymentNumber();
+
+    const [payment] = await CustomerPayment.create(
+
+      [{
+
+        paymentNumber,
+
+        customer: data.customerId,
+
+        booking: data.bookingId,
+
+        account: data.accountId,
+
+        amount: data.amount,
+
+        paymentDate: new Date(data.paymentDate || Date.now()),
+
+        paymentMethod: data.paymentMethod || 'Bank Transfer',
+
+        referenceNumber: data.referenceNumber,
+
+        notes: data.notes || '[Customer refund]',
+
+        status: 'paid',
+
+        isRefund: true,
+
+        createdBy: userId,
+
+      }],
+
+      { session }
+
+    );
+
+
+
+    await postDebit({
+
+      type: 'refund',
+
+      accountId: data.accountId,
+
+      amount: data.amount,
+
+      transactionDate: new Date(data.paymentDate || Date.now()),
+
+      paymentMethod: data.paymentMethod || 'Bank Transfer',
+
+      referenceNumber: data.referenceNumber,
+
+      notes: data.notes || `Refund ${paymentNumber}`,
+
+      customerId: data.customerId,
+
+      bookingId: data.bookingId,
+
+      customerPaymentId: payment._id,
+
+      userId,
+
+    }, session);
+
+
+
+    await syncBookingFinancials(data.bookingId, session);
+
+
+
+    await logAudit({
+
+      action: 'create',
+
+      module: 'payments',
+
+      entityType: 'CustomerPayment',
+
+      entityId: payment._id,
+
+      description: `Customer refund ${paymentNumber} — ৳${data.amount}`,
+
+      userId,
+
+      req,
+
+    });
+
+
+
+    const populated = await CustomerPayment.findById(payment._id)
+
+      .populate('customer', 'name phone')
+
+      .populate('booking', 'bookingNumber')
+
+      .populate('account', 'name type')
+
+      .session(session)
+
+      .lean();
+
+
+
+    return formatPayment(populated);
+
+  });
+
+}
+
+
+
 export async function voidCustomerPayment(id, { reason } = {}, userId, req) {
 
   return withTransaction(async (session) => {
@@ -426,6 +566,6 @@ export async function voidCustomerPayment(id, { reason } = {}, userId, req) {
 
 
 
-export default { listCustomerPayments, getCustomerPaymentById, createCustomerPayment, voidCustomerPayment };
+export default { listCustomerPayments, getCustomerPaymentById, createCustomerPayment, createCustomerRefund, voidCustomerPayment };
 
 

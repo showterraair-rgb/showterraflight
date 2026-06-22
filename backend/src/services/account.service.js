@@ -65,6 +65,11 @@ function formatTransaction(doc) {
 
 export async function listAccounts(query = {}) {
   const filter = query.includeInactive ? {} : { isActive: true };
+  if (query.type) filter.type = query.type;
+  if (query.types) {
+    const types = String(query.types).split(',').map((t) => t.trim()).filter(Boolean);
+    if (types.length) filter.type = { $in: types };
+  }
   const accounts = await Account.find(filter).sort({ type: 1, name: 1 }).lean();
   return accounts.map(formatAccount);
 }

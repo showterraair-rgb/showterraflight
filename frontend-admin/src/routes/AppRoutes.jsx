@@ -21,6 +21,9 @@ import CmsPage from '../pages/CmsPage';
 import BackupPage from '../pages/BackupPage';
 import SecurityPage from '../pages/SecurityPage';
 import PaymentAccountsPage from '../pages/PaymentAccountsPage';
+import PaymentSettingsHubPage from '../pages/PaymentSettingsHubPage';
+import BankListPage from '../pages/BankListPage';
+import MfsListPage from '../pages/MfsListPage';
 import SmsSettingsPage from '../pages/SmsSettingsPage';
 import EmailSettingsPage from '../pages/EmailSettingsPage';
 import WhatsAppSettingsPage from '../pages/WhatsAppSettingsPage';
@@ -71,6 +74,9 @@ export default function AppRoutes() {
             <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />
             <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
             <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />
+            <Route path="settings/payment" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentSettingsHubPage /></ProtectedRoute>} />
+            <Route path="settings/payment/banks" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><BankListPage /></ProtectedRoute>} />
+            <Route path="settings/payment/mfs" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><MfsListPage /></ProtectedRoute>} />
             <Route path="settings/payment-accounts" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentAccountsPage /></ProtectedRoute>} />
             <Route path="settings/notifications" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><NotificationsHubPage /></ProtectedRoute>} />
             <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />

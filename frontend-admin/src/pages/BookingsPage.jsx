@@ -17,6 +17,9 @@ const STATUS_TABS = [
   { key: '', label: 'All' },
   { key: 'ticket_issued', label: 'Ticketed' },
   { key: 'confirmed', label: 'Confirmed' },
+  { key: 'refunded', label: 'Refund' },
+  { key: 'voided', label: 'Void' },
+  { key: 'reissued', label: 'Reissue' },
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
@@ -82,10 +85,18 @@ export default function BookingsPage() {
     ...(!financeFields.hidden ? [
       {
         key: 'salePrice',
-        label: 'Sale',
+        label: 'Customer Price',
         render: (r) => {
           const m = getBookingMoney(r);
           return <MoneyAmount totalBRL={m.saleBRL} totalBDT={m.saleBDT} size="sm" />;
+        },
+      },
+      {
+        key: 'purchasePrice',
+        label: 'Agent Price',
+        render: (r) => {
+          const m = getBookingMoney(r);
+          return <MoneyAmount totalBRL={m.purchaseBRL} totalBDT={m.purchaseBDT ?? r.purchasePrice} size="sm" />;
         },
       },
       { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" className={r.customerDue > 0 ? 'text-red-600' : ''} /> },
@@ -140,9 +151,11 @@ export default function BookingsPage() {
       </div>
 
       {summary && !financeFields.hidden && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
           <SummaryStatCard label="Ticketed" amount={summary.ticketed?.amount} count={summary.ticketed?.count} color="teal" />
-          <SummaryStatCard label="Cancelled" amount={summary.cancelled?.amount} count={summary.cancelled?.count} color="slate" />
+          <SummaryStatCard label="Refund" amount={summary.refunded?.amount} count={summary.refunded?.count} color="teal" />
+          <SummaryStatCard label="Reissue" amount={summary.reissued?.amount} count={summary.reissued?.count} color="indigo" />
+          <SummaryStatCard label="Void" amount={summary.voided?.amount} count={summary.voided?.count} color="slate" />
           <SummaryStatCard label="Total Due" amount={summary.totalDue} color="red" />
           <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
         </div>

@@ -41,6 +41,21 @@ export const updateStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Booking status updated' });
 });
 
+export const voidBooking = asyncHandler(async (req, res) => {
+  const data = await bookingService.voidBooking(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Booking voided' });
+});
+
+export const refundBooking = asyncHandler(async (req, res) => {
+  const data = await bookingService.refundBooking(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Booking refunded' });
+});
+
+export const reissueBooking = asyncHandler(async (req, res) => {
+  const data = await bookingService.reissueBooking(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Booking reissued' });
+});
+
 export const addNote = asyncHandler(async (req, res) => {
   const data = await bookingService.addBookingNote(req.params.id, req.body.note, req.user.id, req);
   res.json({ success: true, data, message: 'Note added' });
@@ -86,6 +101,9 @@ export default {
   createFromOrder,
   update,
   updateStatus,
+  voidBooking,
+  refundBooking,
+  reissueBooking,
   updateApproval,
   uploadPassport,
   uploadTicketCopy,

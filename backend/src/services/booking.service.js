@@ -20,8 +20,8 @@ import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 import { getCurrencyRatesMap } from './currency.service.js';
 import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing } from '../utils/currencyUtils.js';
 import Account from '../models/Account.js';
-import { createCustomerPayment } from './customerPayment.service.js';
-import { createSupplierPayment } from './supplierPayment.service.js';
+import { createCustomerPayment, createCustomerRefund, voidCustomerPayment } from './customerPayment.service.js';
+import { createSupplierPayment, voidSupplierPayment } from './supplierPayment.service.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -69,6 +69,13 @@ function formatBooking(doc) {
     paymentStatus: doc.paymentStatus,
     supplierPaymentStatus: doc.supplierPaymentStatus,
     status: doc.status,
+    bookingType: doc.bookingType || 'standard',
+    parentBooking: doc.parentBooking?._id?.toString() || doc.parentBooking?.toString() || null,
+    parentBookingNumber: doc.parentBooking?.bookingNumber || null,
+    rrvNote: doc.rrvNote || '',
+    rrvPenalty: doc.rrvPenalty || 0,
+    rrvRefundAmount: doc.rrvRefundAmount || 0,
+    rrvProcessedAt: doc.rrvProcessedAt,
     approvalStatus: doc.approvalStatus || 'pending',
     approvalTimeline: doc.approvalTimeline?.map((t) => ({
       status: t.status,
@@ -163,6 +170,31 @@ function pushTimeline(booking, status, note, userId) {
   booking.statusTimeline.push({ status, note: note || '', changedBy: userId, changedAt: new Date() });
 }
 
+const TERMINAL_STATUSES = ['voided', 'refunded', 'reissued', 'cancelled'];
+
+async function syncLinkedOrderStatus(booking, status) {
+  if (!booking.order) return;
+  const order = await Order.findById(booking.order);
+  if (!order) return;
+  const statusMap = {
+    ticket_issued: 'ticket_added',
+    delivered: 'delivered',
+    completed: 'closed',
+    cancelled: 'cancelled',
+    voided: 'cancelled',
+    refunded: 'cancelled',
+    reissued: 'cancelled',
+  };
+  if (statusMap[status]) {
+    order.status = statusMap[status];
+    if (status === 'closed') order.closedAt = new Date();
+    if (['cancelled', 'voided', 'refunded', 'reissued'].includes(status)) {
+      order.cancelledAt = order.cancelledAt || new Date();
+    }
+    await order.save();
+  }
+}
+
 async function fireBookingNotification(eventType, booking, customerDoc = null, extra = {}) {
   try {
     const customer = customerDoc || (booking.customer
@@ -221,6 +253,9 @@ export async function getBookingsSummary(query = {}) {
     unpaidDue: { count: 0, amount: 0 },
     todayDue: { count: 0, amount: 0 },
     overdueDue: { count: 0, amount: 0 },
+    voided: { count: 0, amount: 0 },
+    refunded: { count: 0, amount: 0 },
+    reissued: { count: 0, amount: 0 },
   };
 
   for (const b of bookings) {
@@ -236,6 +271,15 @@ export async function getBookingsSummary(query = {}) {
     if (ticketedStatuses.includes(b.status)) {
       summary.ticketed.count += 1;
       summary.ticketed.amount += sale;
+    } else if (b.status === 'voided') {
+      summary.voided.count += 1;
+      summary.voided.amount += sale;
+    } else if (b.status === 'refunded') {
+      summary.refunded.count += 1;
+      summary.refunded.amount += sale;
+    } else if (b.status === 'reissued') {
+      summary.reissued.count += 1;
+      summary.reissued.amount += sale;
     } else if (b.status === 'cancelled') {
       summary.cancelled.count += 1;
       summary.cancelled.amount += sale;
@@ -272,6 +316,7 @@ export async function getBookingById(id) {
     .populate('customer', 'name phone email')
     .populate('supplier', 'name company phone')
     .populate('order', 'orderNumber status source')
+    .populate('parentBooking', 'bookingNumber status')
     .populate('statusTimeline.changedBy', 'name')
     .populate('activityNotes.createdBy', 'name')
     .lean();
@@ -385,6 +430,8 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     ticketCopyPath: data.ticketCopyPath,
     ticketCopyFileName: data.ticketCopyFileName,
     status: data.status || 'draft',
+    bookingType: data.bookingType || 'standard',
+    parentBooking: data.parentBookingId || data.parentBooking,
     createdBy: userId,
     approvalStatus: orderDoc?.approvalStatus || 'pending',
     approvalTimeline: orderDoc?.approvalTimeline?.length
@@ -577,22 +624,7 @@ export async function updateBookingStatus(id, { status, note }, userId, req) {
 
   await booking.save();
 
-  if (booking.order) {
-    const order = await Order.findById(booking.order);
-    if (order) {
-      const statusMap = {
-        ticket_issued: 'ticket_added',
-        delivered: 'delivered',
-        completed: 'closed',
-        cancelled: 'cancelled',
-      };
-      if (statusMap[status]) {
-        order.status = statusMap[status];
-        if (status === 'closed') order.closedAt = new Date();
-        await order.save();
-      }
-    }
-  }
+  await syncLinkedOrderStatus(booking, status);
 
   await logAudit({
     action: 'update',
@@ -605,17 +637,181 @@ export async function updateBookingStatus(id, { status, note }, userId, req) {
     req,
   });
 
+  if (status === 'cancelled' && prev !== 'cancelled') {
+    await fireBookingNotification('booking_canceled', booking);
+  }
   if (status === 'confirmed' && prev !== 'confirmed') {
     await fireBookingNotification('booking_approved', booking);
   }
   if (status === 'ticket_issued' && prev !== 'ticket_issued') {
     await fireBookingNotification('ticket_issued', booking);
   }
-  if (status === 'cancelled' && prev !== 'cancelled') {
-    await fireBookingNotification('booking_canceled', booking);
-  }
 
   return getBookingById(id);
+}
+
+export async function voidBooking(id, { reason, voidPayments = false } = {}, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+  if (TERMINAL_STATUSES.includes(booking.status)) {
+    throw ApiError.badRequest('Booking is already closed or processed');
+  }
+  if (!['draft', 'confirmed'].includes(booking.status)) {
+    throw ApiError.badRequest('Void is only allowed before ticket is issued');
+  }
+  if (booking.ticketCopyPath) {
+    throw ApiError.badRequest('Remove ticket copy or use refund after ticket is issued');
+  }
+
+  if (voidPayments) {
+    const customerPayments = await CustomerPayment.find({ booking: id, isVoided: false });
+    for (const p of customerPayments) {
+      await voidCustomerPayment(p._id.toString(), { reason: reason || 'Booking voided' }, userId, req);
+    }
+    const supplierPayments = await SupplierPayment.find({ booking: id, isVoided: false });
+    for (const p of supplierPayments) {
+      await voidSupplierPayment(p._id.toString(), { reason: reason || 'Booking voided' }, userId, req);
+    }
+  }
+
+  booking.bookingType = 'void';
+  booking.status = 'voided';
+  booking.rrvNote = reason || '';
+  booking.rrvProcessedAt = new Date();
+  booking.rrvProcessedBy = userId;
+  pushTimeline(booking, 'voided', reason || 'Booking voided', userId);
+  await booking.save();
+
+  await syncLinkedOrderStatus(booking, 'voided');
+  await fireBookingNotification('booking_canceled', booking);
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Voided booking ${booking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return getBookingById(id);
+}
+
+export async function refundBooking(id, data, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+  if (TERMINAL_STATUSES.includes(booking.status)) {
+    throw ApiError.badRequest('Booking is already closed or processed');
+  }
+  if (!['ticket_issued', 'delivered', 'completed'].includes(booking.status)) {
+    throw ApiError.badRequest('Refund requires ticket to be issued');
+  }
+
+  const penalty = Math.max(0, Number(data.penalty) || 0);
+  const paid = booking.amountPaid || 0;
+  const maxRefund = Math.max(0, paid - penalty);
+  const refundAmount = data.refundAmount != null
+    ? Math.min(Math.max(0, Number(data.refundAmount)), maxRefund)
+    : maxRefund;
+
+  if (refundAmount > 0.01) {
+    if (!data.accountId) throw ApiError.badRequest('Payment account is required for refund payout');
+    const { paymentMethod } = await resolveAccountPaymentMethod(data.accountId);
+    await createCustomerRefund({
+      customerId: booking.customer.toString(),
+      bookingId: id,
+      accountId: data.accountId,
+      amount: refundAmount,
+      paymentDate: data.paymentDate || new Date().toISOString().slice(0, 10),
+      paymentMethod,
+      notes: data.reason ? `Refund: ${data.reason}` : `Refund for ${booking.bookingNumber}`,
+    }, userId, req);
+  }
+
+  booking.bookingType = 'refund';
+  booking.status = 'refunded';
+  booking.rrvNote = data.reason || '';
+  booking.rrvPenalty = penalty;
+  booking.rrvRefundAmount = refundAmount;
+  booking.rrvProcessedAt = new Date();
+  booking.rrvProcessedBy = userId;
+  pushTimeline(booking, 'refunded', data.reason || `Refund ৳${refundAmount}`, userId);
+  await booking.save();
+
+  await syncLinkedOrderStatus(booking, 'refunded');
+  await fireBookingNotification('booking_canceled', booking);
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Refunded booking ${booking.bookingNumber} — ৳${refundAmount}`,
+    userId,
+    req,
+  });
+
+  return getBookingById(id);
+}
+
+export async function reissueBooking(id, data, userId, req) {
+  const original = await Booking.findById(id);
+  if (!original) throw ApiError.notFound('Booking not found');
+  if (TERMINAL_STATUSES.includes(original.status)) {
+    throw ApiError.badRequest('Booking is already closed or processed');
+  }
+  if (!['ticket_issued', 'delivered', 'completed', 'confirmed'].includes(original.status)) {
+    throw ApiError.badRequest('Reissue requires a confirmed or ticketed booking');
+  }
+
+  const reissuePayload = {
+    customerId: original.customer.toString(),
+    supplierId: original.supplier?.toString(),
+    journeyType: data.journeyType || original.journeyType,
+    fromDestination: data.fromDestination || original.fromDestination,
+    toDestination: data.toDestination || original.toDestination,
+    travelClass: data.travelClass || original.travelClass,
+    airline: data.airline || original.airline,
+    route: data.route || original.route,
+    sector: data.sector || original.sector,
+    departureDate: data.departureDate || original.departureDate?.toISOString?.().slice(0, 10),
+    returnDate: data.returnDate || (original.returnDate ? original.returnDate.toISOString().slice(0, 10) : undefined),
+    passengerCount: data.passengerCount || original.passengerCount,
+    pnr: data.pnr || '',
+    ticketNumber: data.ticketNumber || '',
+    purchasePrice: data.purchasePrice ?? original.purchasePrice,
+    salePrice: data.salePrice ?? original.salePrice,
+    directCosts: data.directCosts ?? original.directCosts,
+    notes: data.notes || `Reissue from ${original.bookingNumber}`,
+    status: 'confirmed',
+    bookingType: 'standard',
+    parentBookingId: id,
+  };
+
+  const newBooking = await createBookingRecord(reissuePayload, userId, req);
+
+  original.bookingType = 'reissue';
+  original.status = 'reissued';
+  original.rrvNote = data.reason || `Reissued as ${newBooking.bookingNumber}`;
+  original.rrvProcessedAt = new Date();
+  original.rrvProcessedBy = userId;
+  pushTimeline(original, 'reissued', original.rrvNote, userId);
+  await original.save();
+
+  await syncLinkedOrderStatus(original, 'reissued');
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: original._id,
+    description: `Reissued ${original.bookingNumber} → ${newBooking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return { original: await getBookingById(id), newBooking };
 }
 
 export async function addBookingNote(id, note, userId, req) {
@@ -774,6 +970,9 @@ export default {
   createBookingFromOrder,
   updateBooking,
   updateBookingStatus,
+  voidBooking,
+  refundBooking,
+  reissueBooking,
   updateBookingApproval,
   uploadBookingPassport,
   uploadBookingTicketCopy,

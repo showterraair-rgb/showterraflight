@@ -50,7 +50,12 @@ export const BOOKING_STATUSES = [
   'delivered',
   'completed',
   'cancelled',
+  'voided',
+  'refunded',
+  'reissued',
 ];
+
+export const BOOKING_TYPES = ['standard', 'reissue', 'refund', 'void'];
 
 export const PAYMENT_STATUSES = ['unpaid', 'partial', 'paid'];
 

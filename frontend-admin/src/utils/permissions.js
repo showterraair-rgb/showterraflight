@@ -98,6 +98,20 @@ export const NAV_ITEMS = [
     section: 'Payments',
   },
   {
+    label: 'Bank List',
+    path: '/settings/payment/banks',
+    icon: 'accounts',
+    permissions: ['accounts:view'],
+    section: 'Payments',
+  },
+  {
+    label: 'MFS List',
+    path: '/settings/payment/mfs',
+    icon: 'payments',
+    permissions: ['accounts:view'],
+    section: 'Payments',
+  },
+  {
     label: 'Reminders',
     path: '/reminders',
     icon: 'reminders',

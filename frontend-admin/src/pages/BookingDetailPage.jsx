@@ -11,6 +11,7 @@ import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 import ApprovalControls from '../components/bookings/ApprovalPanel';
 import PassportUpload from '../components/bookings/PassportUpload';
+import BookingRrvPanel from '../components/bookings/BookingRrvPanel';
 import { useFieldPermission } from '../hooks/useFieldPermission';
 
 export default function BookingDetailPage() {
@@ -171,6 +172,8 @@ export default function BookingDetailPage() {
         </div>
       </div>
       )}
+
+      <BookingRrvPanel booking={booking} onDone={load} />
 
       <div className="card space-y-4">
         <h3 className="font-semibold text-slate-900">Approval workflow</h3>

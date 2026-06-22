@@ -11,6 +11,9 @@ import {
   addBookingNoteSchema,
   fromOrderParamSchema,
   idParamSchema,
+  voidBookingSchema,
+  refundBookingSchema,
+  reissueBookingSchema,
 } from '../validators/booking.validator.js';
 import { updateApprovalSchema } from '../validators/approval.validator.js';
 import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
@@ -24,6 +27,9 @@ router.post('/from-order/:orderId', authorize('bookings:create'), validate(fromO
 router.get('/:id', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getById);
 router.put('/:id', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingSchema), bookingController.update);
 router.patch('/:id/status', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingStatusSchema), bookingController.updateStatus);
+router.post('/:id/void', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(voidBookingSchema), bookingController.voidBooking);
+router.post('/:id/refund', authorize('bookings:update', 'payments:customer'), validate(idParamSchema, 'params'), validate(refundBookingSchema), bookingController.refundBooking);
+router.post('/:id/reissue', authorize('bookings:update', 'bookings:create'), validate(idParamSchema, 'params'), validate(reissueBookingSchema), bookingController.reissueBooking);
 router.patch('/:id/approval', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateApprovalSchema), bookingController.updateApproval);
 router.post('/:id/passport', authorize('bookings:update'), validate(idParamSchema, 'params'), passportUpload.single('passport'), bookingController.uploadPassport);
 router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.uploadTicketCopy);

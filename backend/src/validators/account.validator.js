@@ -10,6 +10,8 @@ export const listQuerySchema = z.object({
     .union([z.boolean(), z.enum(['true', 'false'])])
     .optional()
     .transform((v) => v === true || v === 'true'),
+  type: z.enum(['cash', 'bank', 'bkash', 'nagad']).optional(),
+  types: z.string().optional(),
 });
 
 export const openingBalanceSchema = z.object({

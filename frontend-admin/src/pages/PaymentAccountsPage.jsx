@@ -27,7 +27,14 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-export default function PaymentAccountsPage() {
+export function PaymentAccountsPanel({
+  title = 'Payment Accounts',
+  description = 'Cash, bank, bKash, and Nagad accounts used for payments and expenses',
+  allowedTypes = null,
+  defaultType = 'cash',
+  lockTypeOnCreate = false,
+}) {
+  const typeOptions = allowedTypes?.length ? allowedTypes : ACCOUNT_TYPES;
   const { can } = usePermission();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,18 +49,21 @@ export default function PaymentAccountsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await accountsApi.list({ includeInactive: showInactive ? 'true' : undefined });
+      const params = { includeInactive: showInactive ? 'true' : undefined };
+      if (allowedTypes?.length === 1) params.type = allowedTypes[0];
+      else if (allowedTypes?.length > 1) params.types = allowedTypes.join(',');
+      const { data } = await accountsApi.list(params);
       setAccounts(data.data || []);
     } finally {
       setLoading(false);
     }
-  }, [showInactive]);
+  }, [showInactive, allowedTypes]);
 
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => {
     setEditing(null);
-    form.reset(EMPTY_FORM);
+    form.reset({ ...EMPTY_FORM, type: defaultType });
     setModalOpen(true);
   };
 
@@ -139,8 +149,8 @@ export default function PaymentAccountsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Payment Accounts</h2>
-          <p className="text-sm text-slate-500">Cash, bank, bKash, and Nagad accounts used for payments and expenses</p>
+          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          <p className="text-sm text-slate-500">{description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -181,8 +191,8 @@ export default function PaymentAccountsPage() {
             </label>
             <label className="block text-sm">
               <span className="text-slate-600">Account type *</span>
-              <select {...form.register('type')} className="input mt-1 w-full" disabled={Boolean(editing)}>
-                {ACCOUNT_TYPES.map((t) => (
+              <select {...form.register('type')} className="input mt-1 w-full" disabled={Boolean(editing) || (lockTypeOnCreate && !editing)}>
+                {typeOptions.map((t) => (
                   <option key={t} value={t}>{ACCOUNT_TYPE_LABELS[t]}</option>
                 ))}
               </select>
@@ -242,4 +252,8 @@ export default function PaymentAccountsPage() {
       </Modal>
     </div>
   );
+}
+
+export default function PaymentAccountsPage() {
+  return <PaymentAccountsPanel />;
 }

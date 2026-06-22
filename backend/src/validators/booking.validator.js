@@ -159,6 +159,39 @@ export const idParamSchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
 });
 
+export const voidBookingSchema = z.object({
+  reason: z.string().max(1000).optional(),
+  voidPayments: z.boolean().optional().default(false),
+});
+
+export const refundBookingSchema = z.object({
+  reason: z.string().max(1000).optional(),
+  penalty: z.coerce.number().min(0).optional().default(0),
+  refundAmount: z.coerce.number().min(0).optional(),
+  accountId: objectId.optional(),
+  paymentDate: z.string().optional(),
+});
+
+export const reissueBookingSchema = z.object({
+  reason: z.string().max(1000).optional(),
+  journeyType: z.enum(JOURNEY_TYPES).optional(),
+  fromDestination: z.string().min(2).max(100).trim().optional(),
+  toDestination: z.string().min(2).max(100).trim().optional(),
+  travelClass: z.enum(TRAVEL_CLASSES).optional(),
+  airline: z.string().min(2).max(100).trim().optional(),
+  route: z.string().min(2).max(200).trim().optional(),
+  sector: z.string().max(100).optional(),
+  departureDate: z.string().optional(),
+  returnDate: z.string().optional(),
+  passengerCount: z.coerce.number().int().min(1).max(20).optional(),
+  pnr: z.string().max(50).optional(),
+  ticketNumber: z.string().max(50).optional(),
+  purchasePrice: z.coerce.number().min(0).optional(),
+  salePrice: z.coerce.number().min(0).optional(),
+  directCosts: z.coerce.number().min(0).optional(),
+  notes: z.string().max(2000).optional(),
+});
+
 export default {
   listQuerySchema,
   createBookingSchema,
@@ -168,4 +201,7 @@ export default {
   addBookingNoteSchema,
   fromOrderParamSchema,
   idParamSchema,
+  voidBookingSchema,
+  refundBookingSchema,
+  reissueBookingSchema,
 };

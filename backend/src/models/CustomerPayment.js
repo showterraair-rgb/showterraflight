@@ -28,6 +28,7 @@ const customerPaymentSchema = new mongoose.Schema(
       default: 'paid',
     },
     isVoided: { type: Boolean, default: false },
+    isRefund: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

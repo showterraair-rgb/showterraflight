@@ -24,6 +24,7 @@ export const ORDER_SOURCE_LABELS = {
 
 export const BOOKING_STATUSES = [
   'draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled',
+  'voided', 'refunded', 'reissued',
 ];
 
 export const BOOKING_STATUS_LABELS = {
@@ -33,6 +34,9 @@ export const BOOKING_STATUS_LABELS = {
   delivered: 'Delivered',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  voided: 'Voided',
+  refunded: 'Refund Completed',
+  reissued: 'Reissued',
 };
 
 export const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
@@ -96,6 +100,9 @@ export const STATUS_COLORS = {
   confirmed: 'bg-blue-100 text-blue-700',
   ticket_issued: 'bg-purple-100 text-purple-700',
   completed: 'bg-green-100 text-green-700',
+  voided: 'bg-slate-800 text-white',
+  refunded: 'bg-teal-100 text-teal-800',
+  reissued: 'bg-indigo-100 text-indigo-800',
   pending: 'bg-amber-100 text-amber-800',
   checking: 'bg-sky-100 text-sky-800',
   processing: 'bg-indigo-100 text-indigo-700',

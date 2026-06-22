@@ -21,7 +21,11 @@ export async function recalculateBookingPaidFromPayments(bookingId, session = nu
     applySession(SupplierPayment.find({ booking: bookingId, isVoided: false }), session).lean(),
   ]);
 
-  booking.amountPaid = customerPayments.reduce((s, p) => s + (p.amount || 0), 0);
+  booking.amountPaid = customerPayments.reduce((s, p) => {
+    const amt = p.amount || 0;
+    return s + (p.isRefund ? -amt : amt);
+  }, 0);
+  booking.amountPaid = Math.max(0, booking.amountPaid);
   booking.supplierPaid = supplierPayments.reduce((s, p) => s + (p.amount || 0), 0);
 
   const purchaseTotal = (booking.purchasePrice || 0) + (booking.directCosts || 0);
@@ -56,7 +60,10 @@ export async function syncCustomerTotals(customerId, session = null) {
 
   const totalSales = bookings.reduce((s, b) => s + (b.salePrice || 0), 0);
   const totalDue = bookings.reduce((s, b) => s + (b.customerDue || 0), 0);
-  const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalPaid = payments.reduce((s, p) => {
+    const amt = p.amount || 0;
+    return s + (p.isRefund ? -amt : amt);
+  }, 0);
 
   await Customer.updateOne(
     { _id: customerId },
