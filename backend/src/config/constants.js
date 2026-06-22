@@ -323,6 +323,8 @@ export const COMPANY_DEFAULTS = {
   address: 'GASBARI BAZAR, GROUND FLOOR OF BRAC BANK, KANAIGHAT, SYLHET-3183, Bangladesh',
   email: 'showterraair@gmail.com',
   whatsapp: '01741148529',
+  iataNumber: '42343755',
+  emergencyContact: '01741148529',
   directorName: 'Kamil Hussen',
   directorPhone: '01316160206',
   ownerEmail: 'k.h.kamil74@gmail.com',

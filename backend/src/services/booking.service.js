@@ -52,6 +52,9 @@ function formatBooking(doc) {
     departureDate: doc.departureDate,
     returnDate: doc.returnDate,
     passengerCount: doc.passengerCount,
+    passengers: doc.passengers || [],
+    flightSegment: doc.flightSegment || null,
+    fareBreakdown: doc.fareBreakdown || null,
     pnr: doc.pnr || '',
     ticketNumber: doc.ticketNumber || '',
     purchasePrice: doc.purchasePrice,
@@ -440,7 +443,10 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     sector: data.sector,
     departureDate: new Date(data.departureDate),
     returnDate: data.returnDate ? new Date(data.returnDate) : undefined,
-    passengerCount: data.passengerCount,
+    passengerCount: data.passengers?.length || data.passengerCount,
+    passengers: data.passengers?.length ? data.passengers : undefined,
+    flightSegment: data.flightSegment || undefined,
+    fareBreakdown: data.fareBreakdown || (data.salePrice ? { grandTotal: data.salePrice } : undefined),
     pnr: data.pnr,
     ticketNumber: data.ticketNumber,
     purchasePrice: currencyFields.purchasePrice ?? data.purchasePrice ?? 0,
@@ -599,6 +605,12 @@ export async function updateBooking(id, data, userId, req) {
   if (data.ticketCopyPath !== undefined) booking.ticketCopyPath = data.ticketCopyPath;
   if (data.ticketCopyFileName !== undefined) booking.ticketCopyFileName = data.ticketCopyFileName;
   if (data.passengerCount) booking.passengerCount = data.passengerCount;
+  if (data.passengers !== undefined) {
+    booking.passengers = data.passengers;
+    if (data.passengers.length) booking.passengerCount = data.passengers.length;
+  }
+  if (data.flightSegment !== undefined) booking.flightSegment = data.flightSegment;
+  if (data.fareBreakdown !== undefined) booking.fareBreakdown = data.fareBreakdown;
 
   if (data.status && data.status !== booking.status) {
     pushTimeline(booking, data.status, 'Updated via edit form', userId);

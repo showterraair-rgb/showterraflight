@@ -87,6 +87,36 @@ function brlFromStored(booking, field, rate) {
 
 const CATEGORY_PATHS = { air: '/bookings', hotel: '/bookings/hotel', esim: '/bookings/esim', insurance: '/bookings/insurance' };
 
+const EMPTY_PASSENGER = {
+  title: 'MR',
+  fullName: '',
+  passengerType: 'ADULT',
+  eTicketNumber: '',
+  checkInBaggage: '20kg',
+  cabinBaggage: '7Kg',
+};
+
+const EMPTY_FLIGHT_SEGMENT = {
+  airlinePnr: '',
+  flightNumber: '',
+  aircraft: '',
+  departureTime: '',
+  arrivalTime: '',
+  fromAirportName: '',
+  toAirportName: '',
+  duration: '',
+  distance: '',
+  stops: 'Non Stop',
+};
+
+const EMPTY_FARE_BREAKDOWN = {
+  baseFare: '',
+  taxes: '',
+  aitVat: '0',
+  extraBaggage: '0',
+  bundleCost: '0',
+};
+
 const CATEGORY_LABELS = {
   air: { airline: 'Airline / Carrier *', route: 'Route *', routePh: 'e.g. DAC → DXB', date: 'Departure Date *' },
   hotel: { airline: 'Hotel name *', route: 'City / Location *', routePh: 'e.g. Makkah — 5 nights', date: 'Check-in Date *' },
@@ -118,6 +148,9 @@ export default function BookingFormPage() {
   const [existingTicket, setExistingTicket] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [productCategory, setProductCategory] = useState(categoryParam);
+  const [passengers, setPassengers] = useState([{ ...EMPTY_PASSENGER }]);
+  const [flightSegment, setFlightSegment] = useState({ ...EMPTY_FLIGHT_SEGMENT });
+  const [fareBreakdown, setFareBreakdown] = useState({ ...EMPTY_FARE_BREAKDOWN });
 
   const form = useForm({
     resolver: zodResolver(isEdit ? baseSchema : createSchema),
@@ -194,6 +227,23 @@ export default function BookingFormPage() {
           });
           setExistingTicket(b.ticketCopyUrl ? { url: b.ticketCopyUrl, name: b.ticketCopyFileName } : null);
           setProductCategory(b.productCategory || 'air');
+          if (b.passengers?.length) {
+            setPassengers(b.passengers);
+          } else if (b.passengerCount > 1) {
+            setPassengers(Array.from({ length: b.passengerCount }, () => ({ ...EMPTY_PASSENGER })));
+          }
+          if (b.flightSegment) {
+            setFlightSegment({ ...EMPTY_FLIGHT_SEGMENT, ...b.flightSegment });
+          }
+          if (b.fareBreakdown) {
+            setFareBreakdown({
+              baseFare: b.fareBreakdown.baseFare ?? '',
+              taxes: b.fareBreakdown.taxes ?? '',
+              aitVat: b.fareBreakdown.aitVat ?? '0',
+              extraBaggage: b.fareBreakdown.extraBaggage ?? '0',
+              bundleCost: b.fareBreakdown.bundleCost ?? '0',
+            });
+          }
           setTravelMeta({
             journeyType: b.journeyType || 'one_way',
             travelClass: b.travelClass || 'economy',
@@ -262,6 +312,60 @@ export default function BookingFormPage() {
     : Math.max(0, purchaseTotalBRL * effectiveRate - supplierPaidAmountBRL * effectiveRate);
   const projectedPayableBRL = effectiveRate > 0 ? projectedPayableBDT / effectiveRate : projectedPayableBDT;
 
+  const passengerCount = Number(form.watch('passengerCount')) || 1;
+
+  useEffect(() => {
+    if (productCategory !== 'air') return;
+    setPassengers((prev) => {
+      if (prev.length === passengerCount) return prev;
+      if (prev.length < passengerCount) {
+        return [...prev, ...Array.from({ length: passengerCount - prev.length }, () => ({ ...EMPTY_PASSENGER }))];
+      }
+      return prev.slice(0, passengerCount);
+    });
+  }, [passengerCount, productCategory]);
+
+  const updatePassenger = (index, field, value) => {
+    setPassengers((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
+  };
+
+  const updateFlightSegment = (field, value) => {
+    setFlightSegment((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateFareBreakdown = (field, value) => {
+    setFareBreakdown((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const buildETicketPayload = () => {
+    if (productCategory !== 'air') return {};
+    const filledPassengers = passengers
+      .filter((p) => p.fullName?.trim())
+      .map((p) => ({
+        title: p.title || 'MR',
+        fullName: p.fullName.trim(),
+        passengerType: p.passengerType || 'ADULT',
+        eTicketNumber: p.eTicketNumber || undefined,
+        checkInBaggage: p.checkInBaggage || '20kg',
+        cabinBaggage: p.cabinBaggage || '7Kg',
+      }));
+    const fs = Object.fromEntries(
+      Object.entries(flightSegment).filter(([, v]) => v != null && String(v).trim() !== '')
+    );
+    const fb = {};
+    if (fareBreakdown.baseFare !== '') fb.baseFare = Number(fareBreakdown.baseFare);
+    if (fareBreakdown.taxes !== '') fb.taxes = Number(fareBreakdown.taxes);
+    if (fareBreakdown.aitVat !== '') fb.aitVat = Number(fareBreakdown.aitVat);
+    if (fareBreakdown.extraBaggage !== '') fb.extraBaggage = Number(fareBreakdown.extraBaggage);
+    if (fareBreakdown.bundleCost !== '') fb.bundleCost = Number(fareBreakdown.bundleCost);
+    fb.grandTotal = saleBDT;
+    return {
+      passengers: filledPassengers.length ? filledPassengers : undefined,
+      flightSegment: Object.keys(fs).length ? fs : undefined,
+      fareBreakdown: Object.keys(fb).length ? fb : undefined,
+    };
+  };
+
   const accountLabel = (a) => `${a.name} (${ACCOUNT_TYPE_LABELS[a.type] || a.type})`;
 
   const onSubmit = async (values) => {
@@ -274,6 +378,7 @@ export default function BookingFormPage() {
       const { fromDestination, toDestination } = parseRoute(values.route);
       const payload = {
         ...values,
+        ...buildETicketPayload(),
         productCategory,
         supplierId: values.supplierId || undefined,
         customerId: values.customerId || undefined,
@@ -393,6 +498,116 @@ export default function BookingFormPage() {
             <input className="input-field" {...form.register('ticketNumber')} />
           </div>
         </div>
+
+        {productCategory === 'air' && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">E-Ticket Details</h3>
+              <p className="mt-1 text-xs text-slate-500">Passenger and flight info used when generating the E-Ticket PDF.</p>
+            </div>
+
+            <div className="space-y-3">
+              {passengers.map((p, idx) => (
+                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase text-slate-500">Passenger {idx + 1}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">Title</label>
+                      <select className="input-field" value={p.title} onChange={(e) => updatePassenger(idx, 'title', e.target.value)}>
+                        <option value="MR">MR</option>
+                        <option value="MRS">MRS</option>
+                        <option value="MS">MS</option>
+                        <option value="MSTR">MSTR</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">Full Name *</label>
+                      <input className="input-field" value={p.fullName} onChange={(e) => updatePassenger(idx, 'fullName', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">Type</label>
+                      <select className="input-field" value={p.passengerType} onChange={(e) => updatePassenger(idx, 'passengerType', e.target.value)}>
+                        <option value="ADULT">ADULT</option>
+                        <option value="CHILD">CHILD</option>
+                        <option value="INFANT">INFANT</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">E-Ticket No</label>
+                      <input className="input-field" value={p.eTicketNumber} onChange={(e) => updatePassenger(idx, 'eTicketNumber', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">Check-in Baggage</label>
+                      <input className="input-field" value={p.checkInBaggage} onChange={(e) => updatePassenger(idx, 'checkInBaggage', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium">Cabin Baggage</label>
+                      <input className="input-field" value={p.cabinBaggage} onChange={(e) => updatePassenger(idx, 'cabinBaggage', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium">Airline PNR</label>
+                <input className="input-field" value={flightSegment.airlinePnr} onChange={(e) => updateFlightSegment('airlinePnr', e.target.value)} placeholder="e.g. ANGMMK" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Flight Number</label>
+                <input className="input-field" value={flightSegment.flightNumber} onChange={(e) => updateFlightSegment('flightNumber', e.target.value)} placeholder="e.g. BG-248" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Aircraft</label>
+                <input className="input-field" value={flightSegment.aircraft} onChange={(e) => updateFlightSegment('aircraft', e.target.value)} placeholder="e.g. Boeing 737-800" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Stops</label>
+                <input className="input-field" value={flightSegment.stops} onChange={(e) => updateFlightSegment('stops', e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Departure Time</label>
+                <input className="input-field" value={flightSegment.departureTime} onChange={(e) => updateFlightSegment('departureTime', e.target.value)} placeholder="08:00" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Arrival Time</label>
+                <input className="input-field" value={flightSegment.arrivalTime} onChange={(e) => updateFlightSegment('arrivalTime', e.target.value)} placeholder="09:05" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium">From Airport</label>
+                <input className="input-field" value={flightSegment.fromAirportName} onChange={(e) => updateFlightSegment('fromAirportName', e.target.value)} placeholder="Osmany Intl Airport (ZYL)" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium">To Airport</label>
+                <input className="input-field" value={flightSegment.toAirportName} onChange={(e) => updateFlightSegment('toAirportName', e.target.value)} placeholder="Hazrat Shahjalal Intl Airport (DAC)" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Duration</label>
+                <input className="input-field" value={flightSegment.duration} onChange={(e) => updateFlightSegment('duration', e.target.value)} placeholder="1h 5m" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Distance</label>
+                <input className="input-field" value={flightSegment.distance} onChange={(e) => updateFlightSegment('distance', e.target.value)} placeholder="124 mi" />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium">Base Fare (BDT)</label>
+                <input type="number" min={0} step="0.01" className="input-field" value={fareBreakdown.baseFare} onChange={(e) => updateFareBreakdown('baseFare', e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Taxes (BDT)</label>
+                <input type="number" min={0} step="0.01" className="input-field" value={fareBreakdown.taxes} onChange={(e) => updateFareBreakdown('taxes', e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">AIT & VAT (BDT)</label>
+                <input type="number" min={0} step="0.01" className="input-field" value={fareBreakdown.aitVat} onChange={(e) => updateFareBreakdown('aitVat', e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {!financeFields.hidden && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">

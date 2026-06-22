@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { bookingsApi } from '../services/crm.api';
 import { paymentsApi } from '../services/finance.api';
+import { startOnlinePayment } from '../utils/gatewayPay';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/common/StatusBadge';
 import { usePermission } from '../hooks/usePermission';
@@ -78,6 +79,27 @@ export default function BookingDetailPage() {
     }
   };
 
+  const handleDownloadETicket = async () => {
+    try {
+      const { data } = await bookingsApi.downloadETicketPdf(id);
+      downloadBlob(data, `${booking?.bookingNumber || 'booking'}-e-ticket.pdf`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'E-Ticket download failed');
+    }
+  };
+
+  const handlePayOnline = async () => {
+    try {
+      await startOnlinePayment({
+        customerId: booking.customer,
+        bookingId: booking.id,
+        amount: booking.customerDue,
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Could not start online payment');
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm(`Delete booking ${booking?.bookingNumber}? This cannot be undone if no payments are linked.`)) return;
     try {
@@ -119,16 +141,22 @@ export default function BookingDetailPage() {
                 <button type="button" className="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { handleDownloadPdf(); setVoucherOpen(false); }}>
                   Customer Invoice (PDF)
                 </button>
+                <button type="button" className="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { handleDownloadETicket(); setVoucherOpen(false); }}>
+                  E-Ticket (PDF)
+                </button>
                 {booking.ticketCopyUrl && (
                   <a href={booking.ticketCopyUrl} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm hover:bg-slate-50" onClick={() => setVoucherOpen(false)}>
-                    E-Ticket / Ticket Copy
+                    Uploaded Ticket Copy
                   </a>
                 )}
               </div>
             )}
           </div>
           {can('payments:customer') && booking.customerDue > 0 && (
-            <Link to={`/payments/customers?bookingId=${id}`} className="btn-secondary text-sm">Record Payment</Link>
+            <>
+              <button type="button" onClick={handlePayOnline} className="btn-secondary text-sm">Pay Online</button>
+              <Link to={`/payments/customers?bookingId=${id}`} className="btn-secondary text-sm">Record Payment</Link>
+            </>
           )}
           {can('bookings:update') && (
             <Link to={`/bookings/${id}/edit`} className="btn-primary text-sm">Edit Booking</Link>
@@ -221,6 +249,38 @@ export default function BookingDetailPage() {
             <dt className="text-slate-500">Ticket #</dt><dd>{booking.ticketNumber || '—'}</dd>
             <dt className="text-slate-500">Passengers</dt><dd>{booking.passengerCount}</dd>
           </dl>
+          {booking.passengers?.length > 0 && (
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Type</th>
+                    <th className="py-2 pr-3">E-Ticket</th>
+                    <th className="py-2">Baggage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {booking.passengers.map((p, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-2 pr-3">{p.title} {p.fullName}</td>
+                      <td className="py-2 pr-3">{p.passengerType}</td>
+                      <td className="py-2 pr-3 font-mono text-xs">{p.eTicketNumber || '—'}</td>
+                      <td className="py-2">{p.checkInBaggage} / {p.cabinBaggage}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {booking.flightSegment && (
+            <dl className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 text-sm">
+              {booking.flightSegment.flightNumber && <><dt className="text-slate-500">Flight</dt><dd>{booking.flightSegment.flightNumber}</dd></>}
+              {booking.flightSegment.departureTime && <><dt className="text-slate-500">Dep. Time</dt><dd>{booking.flightSegment.departureTime}</dd></>}
+              {booking.flightSegment.arrivalTime && <><dt className="text-slate-500">Arr. Time</dt><dd>{booking.flightSegment.arrivalTime}</dd></>}
+              {booking.flightSegment.duration && <><dt className="text-slate-500">Duration</dt><dd>{booking.flightSegment.duration}</dd></>}
+            </dl>
+          )}
         </div>
 
         <div className="card space-y-3">

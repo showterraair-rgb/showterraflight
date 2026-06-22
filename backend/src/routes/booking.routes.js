@@ -36,6 +36,7 @@ router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema,
 router.post('/:id/notes', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), bookingController.addNote);
 router.get('/:id/timeline', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getTimeline);
 router.get('/:id/invoice/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadInvoicePdf);
+router.get('/:id/e-ticket/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadETicketPdf);
 router.delete('/:id', authorize('bookings:delete'), validate(idParamSchema, 'params'), bookingController.remove);
 
 export default router;

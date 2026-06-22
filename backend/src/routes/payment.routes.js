@@ -27,6 +27,13 @@ import {
   cancelPaymentRequestSchema,
   paymentRequestIdParamSchema,
 } from '../validators/paymentRequest.validator.js';
+import {
+  initiateSslcommerzSchema,
+  initiateBkashSchema,
+  initiateGatewaySchema,
+  updateGatewaySettingsSchema,
+} from '../validators/gateway.validator.js';
+import * as gatewayController from '../controllers/gateway.controller.js';
 
 
 
@@ -41,6 +48,14 @@ router.post('/requests', authorize('payments:customer'), validate(createPaymentR
 router.post('/requests/:id/cancel', authorize('payments:customer'), validate(paymentRequestIdParamSchema, 'params'), validate(cancelPaymentRequestSchema), paymentController.cancelPaymentRequest);
 
 router.post('/requests/:id/record', authorize('payments:customer'), validate(paymentRequestIdParamSchema, 'params'), validate(recordPaymentRequestSchema), paymentController.recordPaymentRequest);
+
+router.get('/gateway/status', authorize('payments:customer', 'accounts:view'), gatewayController.getGatewayStatusHandler);
+router.get('/gateway/settings', authorize('accounts:view', 'settings:manage'), gatewayController.getGatewaySettings);
+router.patch('/gateway/settings', authorize('settings:manage', 'accounts:view'), validate(updateGatewaySettingsSchema), gatewayController.updateGatewaySettings);
+router.post('/gateway/initiate', authorize('payments:customer'), validate(initiateGatewaySchema), gatewayController.initiateGateway);
+router.post('/gateway/sslcommerz/initiate', authorize('payments:customer'), validate(initiateSslcommerzSchema), gatewayController.initiateSslcommerz);
+router.post('/gateway/bkash/initiate', authorize('payments:customer'), validate(initiateBkashSchema), gatewayController.initiateBkash);
+router.get('/gateway/transactions/:tranId', authorize('payments:customer'), gatewayController.getGatewayPayment);
 
 
 

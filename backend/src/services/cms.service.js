@@ -5,6 +5,7 @@ import ApiError from '../utils/ApiError.js';
 import { CMS_PAGE_KEYS } from '../config/constants.js';
 import { parsePaginationQuery, buildPaginationResponse } from '../utils/pagination.js';
 import { logAudit } from './audit.service.js';
+import { getGatewayStatus, maskGatewaySettings } from './gatewayStatus.service.js';
 
 function formatPage(doc) {
   return {
@@ -167,9 +168,68 @@ export async function getCompanySettings() {
     logo: setting.logo || {},
     socialLinks: setting.socialLinks || {},
     paymentDetails: setting.paymentDetails || {},
+    gatewaySettings: setting.gatewaySettings || {},
     orderNumberPrefix: setting.orderNumberPrefix,
     bookingNumberPrefix: setting.bookingNumberPrefix,
     invoicePrefix: setting.invoicePrefix,
+  };
+}
+
+export async function getGatewaySettings() {
+  const setting = await Setting.findOne({ key: 'company' }).lean();
+  const gatewaySettings = setting?.gatewaySettings || {};
+  const status = await getGatewayStatus();
+  return {
+    ...maskGatewaySettings(gatewaySettings),
+    status,
+  };
+}
+
+export async function updateGatewaySettings(data, userId, req) {
+  const existing = await Setting.findOne({ key: 'company' }).lean();
+  const prev = existing?.gatewaySettings || {};
+  const incoming = data.gatewaySettings || {};
+
+  const merged = {
+    sslcommerz: {
+      ...prev.sslcommerz,
+      ...incoming.sslcommerz,
+    },
+    bkash: {
+      ...prev.bkash,
+      ...incoming.bkash,
+    },
+  };
+
+  if (incoming.sslcommerz?.storePassword === '••••••••' || incoming.sslcommerz?.storePassword === '') {
+    merged.sslcommerz.storePassword = prev.sslcommerz?.storePassword || '';
+  }
+  if (incoming.bkash?.appSecret === '••••••••' || incoming.bkash?.appSecret === '') {
+    merged.bkash.appSecret = prev.bkash?.appSecret || '';
+  }
+  if (incoming.bkash?.password === '••••••••' || incoming.bkash?.password === '') {
+    merged.bkash.password = prev.bkash?.password || '';
+  }
+
+  const setting = await Setting.findOneAndUpdate(
+    { key: 'company' },
+    { gatewaySettings: merged, updatedBy: userId },
+    { new: true, upsert: true }
+  ).lean();
+
+  await logAudit({
+    action: 'update',
+    module: 'settings',
+    entityType: 'Setting',
+    description: 'Payment gateway settings updated',
+    userId,
+    req,
+  });
+
+  const status = await getGatewayStatus();
+  return {
+    ...maskGatewaySettings(setting.gatewaySettings || {}),
+    status,
   };
 }
 

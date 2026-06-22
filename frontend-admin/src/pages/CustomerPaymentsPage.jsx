@@ -11,11 +11,16 @@ import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
 import { PAYMENT_METHODS } from '../utils/finance';
 
-export default function CustomerPaymentsPage() {
+export function CustomerPaymentsList({
+  title = 'Customer Payments',
+  description = 'Record payments received — increases account balance',
+  showRecordButton = true,
+  forceInstantModal = false,
+}) {
   const { can } = usePermission();
   const [searchParams, setSearchParams] = useSearchParams();
   const bookingIdParam = searchParams.get('bookingId');
-  const instantMode = searchParams.get('instant') === '1';
+  const instantMode = forceInstantModal || searchParams.get('instant') === '1';
   const [prefillBooking, setPrefillBooking] = useState(null);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -156,10 +161,10 @@ export default function CustomerPaymentsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{instantMode ? 'Instant Payment' : 'Customer Payments'}</h2>
-          <p className="text-sm text-slate-500">Record payments received — increases account balance</p>
+          <h2 className="text-xl font-bold text-slate-900">{instantMode && showRecordButton ? 'Instant Payment' : title}</h2>
+          <p className="text-sm text-slate-500">{description}</p>
         </div>
-        {can('payments:customer') && (
+        {showRecordButton && can('payments:customer') && (
           <button type="button" onClick={() => { setError(''); setModalOpen(true); }} className="btn-primary">Record Payment</button>
         )}
       </div>
@@ -244,4 +249,8 @@ export default function CustomerPaymentsPage() {
       </Modal>
     </div>
   );
+}
+
+export default function CustomerPaymentsPage() {
+  return <CustomerPaymentsList />;
 }

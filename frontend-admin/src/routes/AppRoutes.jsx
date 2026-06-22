@@ -14,6 +14,7 @@ import TransfersPage from '../pages/TransfersPage';
 import AccountsPage from '../pages/AccountsPage';
 import AccountStatementPage from '../pages/AccountStatementPage';
 import CustomerPaymentsPage from '../pages/CustomerPaymentsPage';
+import PaymentHistoryPage from '../pages/PaymentHistoryPage';
 import InstantPaymentPage from '../pages/InstantPaymentPage';
 import PaymentRequestsPage from '../pages/PaymentRequestsPage';
 import SupplierPaymentsPage from '../pages/SupplierPaymentsPage';
@@ -27,6 +28,8 @@ import HotelBookingsPage from '../pages/HotelBookingsPage';
 import EsimBookingsPage from '../pages/EsimBookingsPage';
 import InsuranceBookingsPage from '../pages/InsuranceBookingsPage';
 import PaymentSettingsHubPage from '../pages/PaymentSettingsHubPage';
+import GatewaySettingsPage from '../pages/GatewaySettingsPage';
+import GatewayResultPage from '../pages/GatewayResultPage';
 import BankListPage from '../pages/BankListPage';
 import MfsListPage from '../pages/MfsListPage';
 import SmsSettingsPage from '../pages/SmsSettingsPage';
@@ -75,6 +78,8 @@ export default function AppRoutes() {
             <Route path="payments/instant" element={<ProtectedRoute permissions={['payments:customer']}><InstantPaymentPage /></ProtectedRoute>} />
             <Route path="payments/requests" element={<ProtectedRoute permissions={['payments:customer']}><PaymentRequestsPage /></ProtectedRoute>} />
             <Route path="payments/customers" element={<ProtectedRoute permissions={['payments:customer']}><CustomerPaymentsPage /></ProtectedRoute>} />
+            <Route path="payments/history" element={<ProtectedRoute permissions={['payments:customer']}><PaymentHistoryPage /></ProtectedRoute>} />
+            <Route path="payments/gateway/result" element={<ProtectedRoute permissions={['payments:customer']}><GatewayResultPage /></ProtectedRoute>} />
             <Route path="payments/suppliers" element={<ProtectedRoute permissions={['payments:supplier']}><SupplierPaymentsPage /></ProtectedRoute>} />
             <Route path="expenses" element={<ProtectedRoute permissions={['expenses:view']}><ExpensesPage /></ProtectedRoute>} />
             <Route path="transfers" element={<ProtectedRoute permissions={['transfers:create', 'accounts:view']}><TransfersPage /></ProtectedRoute>} />
@@ -87,6 +92,7 @@ export default function AppRoutes() {
             <Route path="settings/payment" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentSettingsHubPage /></ProtectedRoute>} />
             <Route path="settings/payment/banks" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><BankListPage /></ProtectedRoute>} />
             <Route path="settings/payment/mfs" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><MfsListPage /></ProtectedRoute>} />
+            <Route path="settings/payment/gateway" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><GatewaySettingsPage /></ProtectedRoute>} />
             <Route path="settings/payment-accounts" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentAccountsPage /></ProtectedRoute>} />
             <Route path="settings/notifications" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><NotificationsHubPage /></ProtectedRoute>} />
             <Route path="settings/sms" element={<ProtectedRoute permissions={['notifications:view', 'notifications:manage', 'settings:manage']}><SmsSettingsPage /></ProtectedRoute>} />

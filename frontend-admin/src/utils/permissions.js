@@ -112,6 +112,13 @@ export const NAV_ITEMS = [
     section: 'Payments',
   },
   {
+    label: 'Payment History',
+    path: '/payments/history',
+    icon: 'payments',
+    permissions: ['payments:customer'],
+    section: 'Payments',
+  },
+  {
     label: 'Supplier Payments',
     path: '/payments/suppliers',
     icon: 'payments',

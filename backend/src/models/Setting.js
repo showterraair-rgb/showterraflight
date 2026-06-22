@@ -31,6 +31,8 @@ const settingSchema = new mongoose.Schema(
       address: { type: String, default: COMPANY_DEFAULTS.address },
       email: { type: String, default: COMPANY_DEFAULTS.email },
       whatsapp: { type: String, default: COMPANY_DEFAULTS.whatsapp },
+      iataNumber: { type: String, default: COMPANY_DEFAULTS.iataNumber },
+      emergencyContact: { type: String, default: COMPANY_DEFAULTS.emergencyContact },
       directorName: { type: String, default: COMPANY_DEFAULTS.directorName },
       directorPhone: { type: String, default: COMPANY_DEFAULTS.directorPhone },
       ownerEmail: { type: String, default: COMPANY_DEFAULTS.ownerEmail },
@@ -54,6 +56,24 @@ const settingSchema = new mongoose.Schema(
       bkashNumber: { type: String, default: '' },
       nagadNumber: { type: String, default: '' },
       paymentNote: { type: String, default: '' },
+    },
+    gatewaySettings: {
+      sslcommerz: {
+        enabled: { type: Boolean, default: false },
+        isSandbox: { type: Boolean, default: true },
+        storeId: { type: String, default: '' },
+        storePassword: { type: String, default: '' },
+        settlementAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
+      },
+      bkash: {
+        enabled: { type: Boolean, default: false },
+        isSandbox: { type: Boolean, default: true },
+        appKey: { type: String, default: '' },
+        appSecret: { type: String, default: '' },
+        username: { type: String, default: '' },
+        password: { type: String, default: '' },
+        settlementAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
+      },
     },
     currencies: {
       BDT: { type: currencyItemSchema, default: () => ({ ...DEFAULT_CURRENCIES.BDT }) },

@@ -62,6 +62,7 @@ export const bookingsApi = {
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
   delete: (id) => api.delete(`/bookings/${id}`),
   downloadInvoicePdf: (id) => api.get(`/bookings/${id}/invoice/pdf`, { responseType: 'blob' }),
+  downloadETicketPdf: (id) => api.get(`/bookings/${id}/e-ticket/pdf`, { responseType: 'blob' }),
   void: (id, data) => api.post(`/bookings/${id}/void`, data),
   refund: (id, data) => api.post(`/bookings/${id}/refund`, data),
   reissue: (id, data) => api.post(`/bookings/${id}/reissue`, data),

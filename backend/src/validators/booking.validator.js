@@ -7,6 +7,43 @@ const optionalObjectId = z.preprocess(
   objectId.optional()
 );
 
+const passengerSchema = z.object({
+  title: z.string().max(10).optional(),
+  fullName: z.string().min(1).max(120).trim(),
+  passengerType: z.enum(['ADULT', 'CHILD', 'INFANT']).optional(),
+  eTicketNumber: z.string().max(50).optional(),
+  checkInBaggage: z.string().max(20).optional(),
+  cabinBaggage: z.string().max(20).optional(),
+});
+
+const flightSegmentSchema = z.object({
+  airlinePnr: z.string().max(50).optional(),
+  flightNumber: z.string().max(20).optional(),
+  aircraft: z.string().max(50).optional(),
+  departureTime: z.string().max(10).optional(),
+  arrivalTime: z.string().max(10).optional(),
+  fromAirportName: z.string().max(200).optional(),
+  toAirportName: z.string().max(200).optional(),
+  duration: z.string().max(30).optional(),
+  distance: z.string().max(30).optional(),
+  stops: z.string().max(30).optional(),
+});
+
+const fareBreakdownSchema = z.object({
+  baseFare: z.coerce.number().min(0).optional(),
+  taxes: z.coerce.number().min(0).optional(),
+  aitVat: z.coerce.number().min(0).optional(),
+  extraBaggage: z.coerce.number().min(0).optional(),
+  bundleCost: z.coerce.number().min(0).optional(),
+  grandTotal: z.coerce.number().min(0).optional(),
+});
+
+const eTicketFields = {
+  passengers: z.array(passengerSchema).max(20).optional(),
+  flightSegment: flightSegmentSchema.optional(),
+  fareBreakdown: fareBreakdownSchema.optional(),
+};
+
 function roundTripRefine(schema) {
   return schema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
     message: 'Return date required for round trip',
@@ -61,6 +98,7 @@ export const createBookingBaseSchema = z.object({
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
+  ...eTicketFields,
 });
 
 const initialPaymentFields = {

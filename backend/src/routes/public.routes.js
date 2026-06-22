@@ -5,6 +5,7 @@ import { bookingRequestSchema } from '../validators/public.validator.js';
 import { publicPassportUploadSchema } from '../validators/approval.validator.js';
 import validate from '../middlewares/validate.js';
 import { passportUpload } from '../middlewares/upload.js';
+import * as gatewayController from '../controllers/gateway.controller.js';
 
 const router = Router();
 
@@ -34,5 +35,12 @@ router.post(
   validate(publicPassportUploadSchema),
   publicController.uploadPassport
 );
+
+router.post('/payments/gateway/sslcommerz/ipn', gatewayController.sslcommerzIpn);
+router.get('/payments/gateway/sslcommerz/success', gatewayController.sslcommerzSuccess);
+router.get('/payments/gateway/sslcommerz/fail', gatewayController.sslcommerzFail);
+router.get('/payments/gateway/sslcommerz/cancel', gatewayController.sslcommerzCancel);
+router.get('/payments/gateway/bkash/callback', gatewayController.bkashCallback);
+router.post('/payments/gateway/bkash/callback', gatewayController.bkashCallback);
 
 export default router;

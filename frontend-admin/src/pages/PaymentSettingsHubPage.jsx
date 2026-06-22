@@ -15,6 +15,12 @@ const CARDS = [
     accent: 'border-emerald-200 bg-emerald-50',
   },
   {
+    title: 'Online Gateway',
+    description: 'SSLCommerz and bKash credentials for online customer payments.',
+    path: '/settings/payment/gateway',
+    accent: 'border-violet-200 bg-violet-50',
+  },
+  {
     title: 'All Payment Accounts',
     description: 'Cash, bank, and MFS accounts in one view.',
     path: '/settings/payment-accounts',
@@ -37,7 +43,7 @@ export default function PaymentSettingsHubPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Payment Settings</h2>
-        <p className="text-sm text-slate-500">Bank and MFS account management</p>
+        <p className="text-sm text-slate-500">Bank, MFS, and online gateway settings</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map((card) => (

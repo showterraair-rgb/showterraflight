@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { paymentRequestsApi, accountsApi } from '../services/finance.api';
+import { startOnlinePayment } from '../utils/gatewayPay';
 import { customersApi, bookingsApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
@@ -111,6 +112,19 @@ export default function PaymentRequestsPage() {
     }
   };
 
+  const handlePayOnline = async (row) => {
+    try {
+      await startOnlinePayment({
+        customerId: row.customer,
+        paymentRequestId: row.id,
+        bookingId: row.booking || undefined,
+        amount: row.amount,
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Could not start online payment');
+    }
+  };
+
   const columns = [
     { key: 'number', label: 'Request #', render: (r) => <span className="font-mono text-xs">{r.requestNumber}</span> },
     { key: 'customer', label: 'Customer', render: (r) => r.customerName },
@@ -124,7 +138,8 @@ export default function PaymentRequestsPage() {
       key: 'actions',
       label: '',
       render: (r) => r.status === 'pending' && can('payments:customer') ? (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => handlePayOnline(r)} className="text-xs text-violet-700 hover:underline">Pay Online</button>
           <button type="button" onClick={() => { setSelected(r); setError(''); recordForm.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Bank Transfer' }); setRecordOpen(true); }} className="text-xs text-brand-600 hover:underline">Record</button>
           <button type="button" onClick={() => handleCancel(r)} className="text-xs text-red-600 hover:underline">Cancel</button>
         </div>

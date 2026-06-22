@@ -32,6 +32,7 @@ import {
   drawSimpleLine,
   drawSimpleLink,
 } from '../utils/pdfLayout.js';
+import { buildETicketPdfBuffer } from '../utils/eTicketPdf.js';
 
 function buildPublicUploadUrl(relativePath) {
   if (!relativePath) return '';
@@ -119,6 +120,13 @@ export async function generateBookingInvoicePdf(bookingId) {
   drawSimpleFooter(doc, company);
   const buffer = await bufferFromSimpleDoc(doc);
   return { buffer, filename: `${invoiceNo}.pdf` };
+}
+
+export async function generateBookingETicketPdf(bookingId) {
+  const booking = await getBookingById(bookingId);
+  const company = await getPdfCompanyInfo();
+  const buffer = await buildETicketPdfBuffer(booking, company);
+  return { buffer, filename: `${booking.bookingNumber}-e-ticket.pdf` };
 }
 
 export async function generateReportPdf(reportKey, query) {

@@ -134,6 +134,8 @@ export default function CmsPage() {
           address: values.address,
           email: values.email,
           whatsapp: values.whatsapp,
+          iataNumber: values.iataNumber,
+          emergencyContact: values.emergencyContact,
           directorName: values.directorName,
           directorPhone: values.directorPhone,
           ownerEmail: values.ownerEmail,
@@ -249,6 +251,8 @@ export default function CmsPage() {
             <div><label className="mb-1 block text-sm font-medium">Company name</label><input className="input-field" {...settingsForm.register('name')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Email</label><input className="input-field" {...settingsForm.register('email')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">WhatsApp</label><input className="input-field" {...settingsForm.register('whatsapp')} disabled={!can('cms:manage')} /></div>
+            <div><label className="mb-1 block text-sm font-medium">IATA No</label><input className="input-field" {...settingsForm.register('iataNumber')} disabled={!can('cms:manage')} /></div>
+            <div><label className="mb-1 block text-sm font-medium">Emergency Contact</label><input className="input-field" {...settingsForm.register('emergencyContact')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Director</label><input className="input-field" {...settingsForm.register('directorName')} disabled={!can('cms:manage')} /></div>
             <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Address</label><textarea className="input-field" rows={2} {...settingsForm.register('address')} disabled={!can('cms:manage')} /></div>
             <div><label className="mb-1 block text-sm font-medium">Logo path</label><input className="input-field" placeholder="/uploads/logo.png" {...settingsForm.register('logoPath')} disabled={!can('cms:manage')} /></div>

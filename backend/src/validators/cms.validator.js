@@ -37,6 +37,8 @@ export const updateCompanySchema = z.object({
       address: z.string().optional(),
       email: z.string().email().optional(),
       whatsapp: z.string().optional(),
+      iataNumber: z.string().optional(),
+      emergencyContact: z.string().optional(),
       directorName: z.string().optional(),
       directorPhone: z.string().optional(),
       ownerEmail: z.string().email().optional(),

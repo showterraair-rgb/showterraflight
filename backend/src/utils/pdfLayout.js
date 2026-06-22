@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { PDFDocument as PDFLibDocument } from 'pdf-lib';
 import Setting from '../models/Setting.js';
+import { COMPANY_DEFAULTS } from '../config/constants.js';
 
 export const PDF = {
   margin: 45,
@@ -22,12 +23,15 @@ const MONEY_KEYS = /price|amount|profit|due|payable|revenue|cost|fare|tax|markup
 
 export async function getPdfCompanyInfo() {
   const setting = await Setting.findOne({ key: 'company' }).lean();
+  const company = setting?.company || {};
   return {
-    name: setting?.company?.name || 'Show Terra Air',
-    address: setting?.company?.address || '',
-    email: setting?.company?.email || '',
-    phone: setting?.company?.whatsapp || setting?.company?.directorPhone || '',
-    website: setting?.company?.website || '',
+    name: company.name || 'Show Terra Air',
+    address: company.address || '',
+    email: company.email || '',
+    phone: company.whatsapp || company.directorPhone || '',
+    website: company.website || '',
+    iataNumber: company.iataNumber || COMPANY_DEFAULTS.iataNumber || '',
+    emergencyContact: company.emergencyContact || company.whatsapp || COMPANY_DEFAULTS.emergencyContact || '',
     invoicePrefix: setting?.invoicePrefix || 'INV',
   };
 }

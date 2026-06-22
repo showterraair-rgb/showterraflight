@@ -89,3 +89,23 @@ export const paymentRequestsApi = {
 };
 
 
+
+export const gatewayApi = {
+
+  getStatus: () => api.get('/payments/gateway/status'),
+
+  getSettings: () => api.get('/payments/gateway/settings'),
+
+  updateSettings: (data) => api.patch('/payments/gateway/settings', data),
+
+  initiate: (data) => api.post('/payments/gateway/initiate', data),
+
+  initiateSslcommerz: (data) => api.post('/payments/gateway/sslcommerz/initiate', data),
+
+  initiateBkash: (data) => api.post('/payments/gateway/bkash/initiate', data),
+
+  getTransaction: (tranId) => api.get(`/payments/gateway/transactions/${encodeURIComponent(tranId)}`),
+
+};
+
+

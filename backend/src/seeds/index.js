@@ -83,7 +83,7 @@ async function seedSettings() {
       company: COMPANY_DEFAULTS,
       socialLinks: {},
       orderNumberPrefix: 'ORD',
-      bookingNumberPrefix: 'BKG',
+      bookingNumberPrefix: 'TFBR',
       invoicePrefix: 'INV',
       currencies: DEFAULT_CURRENCIES,
       currenciesUpdatedAt: new Date(),
