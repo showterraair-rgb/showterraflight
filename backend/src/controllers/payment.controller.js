@@ -2,6 +2,8 @@ import * as customerPaymentService from '../services/customerPayment.service.js'
 
 import * as supplierPaymentService from '../services/supplierPayment.service.js';
 
+import * as paymentRequestService from '../services/paymentRequest.service.js';
+
 import asyncHandler from '../utils/asyncHandler.js';
 
 
@@ -86,6 +88,28 @@ export const voidSupplierPayment = asyncHandler(async (req, res) => {
 
 
 
+export const listPaymentRequests = asyncHandler(async (req, res) => {
+  const data = await paymentRequestService.listPaymentRequests(req.query);
+  res.json({ success: true, data: data.items, pagination: data.pagination });
+});
+
+export const createPaymentRequest = asyncHandler(async (req, res) => {
+  const data = await paymentRequestService.createPaymentRequest(req.body, req.user.id, req);
+  res.status(201).json({ success: true, data, message: 'Payment request sent' });
+});
+
+export const cancelPaymentRequest = asyncHandler(async (req, res) => {
+  const data = await paymentRequestService.cancelPaymentRequest(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Payment request cancelled' });
+});
+
+export const recordPaymentRequest = asyncHandler(async (req, res) => {
+  const data = await paymentRequestService.recordPaymentForRequest(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Payment recorded' });
+});
+
+
+
 export default {
 
   listCustomerPayments,
@@ -103,6 +127,14 @@ export default {
   createSupplierPayment,
 
   voidSupplierPayment,
+
+  listPaymentRequests,
+
+  createPaymentRequest,
+
+  cancelPaymentRequest,
+
+  recordPaymentRequest,
 
 };
 

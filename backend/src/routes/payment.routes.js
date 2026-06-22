@@ -20,9 +20,27 @@ import {
 
 } from '../validators/payment.validator.js';
 
+import {
+  listPaymentRequestQuerySchema,
+  createPaymentRequestSchema,
+  recordPaymentRequestSchema,
+  cancelPaymentRequestSchema,
+  paymentRequestIdParamSchema,
+} from '../validators/paymentRequest.validator.js';
+
 
 
 const router = Router();
+
+
+
+router.get('/requests', authorize('payments:customer'), validate(listPaymentRequestQuerySchema, 'query'), paymentController.listPaymentRequests);
+
+router.post('/requests', authorize('payments:customer'), validate(createPaymentRequestSchema), paymentController.createPaymentRequest);
+
+router.post('/requests/:id/cancel', authorize('payments:customer'), validate(paymentRequestIdParamSchema, 'params'), validate(cancelPaymentRequestSchema), paymentController.cancelPaymentRequest);
+
+router.post('/requests/:id/record', authorize('payments:customer'), validate(paymentRequestIdParamSchema, 'params'), validate(recordPaymentRequestSchema), paymentController.recordPaymentRequest);
 
 
 

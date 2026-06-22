@@ -5,6 +5,7 @@ import AccountTransaction from '../models/AccountTransaction.js';
 import CustomerPayment from '../models/CustomerPayment.js';
 import SupplierPayment from '../models/SupplierPayment.js';
 import Expense from '../models/Expense.js';
+import PaymentRequest from '../models/PaymentRequest.js';
 import Transfer from '../models/Transfer.js';
 import Agent from '../models/Agent.js';
 import AgentBooking from '../models/AgentBooking.js';
@@ -93,6 +94,10 @@ export async function generateExpenseNumber() {
 
 export async function generateTransferNumber() {
   return generateSequentialNumber(Transfer, 'transferNumber', 'TRF');
+}
+
+export async function generatePaymentRequestNumber() {
+  return generateSequentialNumber(PaymentRequest, 'requestNumber', 'PRQ');
 }
 
 export async function generateAgentId() {

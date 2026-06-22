@@ -26,4 +26,9 @@ export const voidExpense = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: data.message });
 });
 
-export default { listCategories, list, getById, create, voidExpense };
+export const uploadBill = asyncHandler(async (req, res) => {
+  const data = await expenseService.uploadExpenseBill(req.params.id, req.file, req.user.id, req);
+  res.json({ success: true, data, message: 'Bill uploaded' });
+});
+
+export default { listCategories, list, getById, create, voidExpense, uploadBill };

@@ -62,7 +62,29 @@ export const expensesApi = {
 
   create: (data) => api.post('/expenses', data),
 
+  uploadBill: (id, file) => {
+    const form = new FormData();
+    form.append('billFile', file);
+    return api.post(`/expenses/${id}/bill`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   void: (id, data) => api.post(`/expenses/${id}/void`, data),
+
+};
+
+
+
+export const paymentRequestsApi = {
+
+  list: (params) => api.get('/payments/requests', { params }),
+
+  create: (data) => api.post('/payments/requests', data),
+
+  cancel: (id, data) => api.post(`/payments/requests/${id}/cancel`, data),
+
+  record: (id, data) => api.post(`/payments/requests/${id}/record`, data),
 
 };
 

@@ -19,6 +19,8 @@ const PAGE_TITLES = {
   '/accounts': 'Accounts',
   '/transfers': 'Transfers',
   '/expenses': 'Expenses',
+  '/payments/instant': 'Instant Payment',
+  '/payments/requests': 'Payment Requests',
   '/payments/customers': 'Customer Payments',
   '/payments/suppliers': 'Supplier Payments',
   '/reminders': 'Reminders',

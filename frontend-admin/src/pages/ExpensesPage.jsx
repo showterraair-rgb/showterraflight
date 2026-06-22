@@ -19,6 +19,7 @@ export default function ExpensesPage() {
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [billFile, setBillFile] = useState(null);
 
   const form = useForm({
     defaultValues: {
@@ -55,7 +56,7 @@ export default function ExpensesPage() {
   const onSubmit = async (values) => {
     setError('');
     try {
-      await expensesApi.create({
+      const { data } = await expensesApi.create({
         categoryId: values.categoryId,
         title: values.title,
         amount: Number(values.amount),
@@ -66,9 +67,12 @@ export default function ExpensesPage() {
         notes: values.notes,
         isRecurring: values.isRecurring,
         recurringFrequency: values.isRecurring ? values.recurringFrequency : undefined,
-        billFilePath: values.billFilePath,
       });
+      if (billFile && data.data?.id) {
+        await expensesApi.uploadBill(data.data.id, billFile);
+      }
       setModalOpen(false);
+      setBillFile(null);
       form.reset({ expenseDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Cash', amount: 0, isRecurring: false });
       load();
     } catch (err) {
@@ -95,6 +99,9 @@ export default function ExpensesPage() {
     { key: 'account', label: 'Paid From', render: (r) => r.accountName },
     { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" className="font-medium text-red-600" /> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.expenseDate) },
+    { key: 'bill', label: 'Bill', render: (r) => r.billUrl ? (
+      <a href={r.billUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline">View</a>
+    ) : '—' },
     { key: 'recurring', label: 'Recurring', render: (r) => r.isRecurring ? 'Yes' : '—' },
     {
       key: 'actions',
@@ -188,8 +195,13 @@ export default function ExpensesPage() {
               </div>
             )}
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Bill attachment (placeholder path)</label>
-              <input className="input-field" placeholder="Upload coming in later phase" {...form.register('billFilePath')} />
+              <label className="mb-1 block text-sm font-medium">Bill / receipt (PDF or image)</label>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                className="input-field"
+                onChange={(e) => setBillFile(e.target.files?.[0] || null)}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Notes</label>

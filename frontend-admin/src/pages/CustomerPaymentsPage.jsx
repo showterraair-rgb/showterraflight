@@ -15,6 +15,7 @@ export default function CustomerPaymentsPage() {
   const { can } = usePermission();
   const [searchParams, setSearchParams] = useSearchParams();
   const bookingIdParam = searchParams.get('bookingId');
+  const instantMode = searchParams.get('instant') === '1';
   const [prefillBooking, setPrefillBooking] = useState(null);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -68,6 +69,12 @@ export default function CustomerPaymentsPage() {
       setBookings([]);
     }
   }, [selectedCustomer]);
+
+  useEffect(() => {
+    if (instantMode && can('payments:customer')) {
+      setModalOpen(true);
+    }
+  }, [instantMode, can]);
 
   useEffect(() => {
     if (!bookingIdParam || !can('payments:customer')) return;
@@ -149,7 +156,7 @@ export default function CustomerPaymentsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Customer Payments</h2>
+          <h2 className="text-xl font-bold text-slate-900">{instantMode ? 'Instant Payment' : 'Customer Payments'}</h2>
           <p className="text-sm text-slate-500">Record payments received — increases account balance</p>
         </div>
         {can('payments:customer') && (

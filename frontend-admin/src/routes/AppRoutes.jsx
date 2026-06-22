@@ -14,6 +14,8 @@ import TransfersPage from '../pages/TransfersPage';
 import AccountsPage from '../pages/AccountsPage';
 import AccountStatementPage from '../pages/AccountStatementPage';
 import CustomerPaymentsPage from '../pages/CustomerPaymentsPage';
+import InstantPaymentPage from '../pages/InstantPaymentPage';
+import PaymentRequestsPage from '../pages/PaymentRequestsPage';
 import SupplierPaymentsPage from '../pages/SupplierPaymentsPage';
 import RemindersPage from '../pages/RemindersPage';
 import ReportsPage from '../pages/ReportsPage';
@@ -70,6 +72,8 @@ export default function AppRoutes() {
 
             <Route path="accounts" element={<ProtectedRoute permissions={['accounts:view']}><AccountsPage /></ProtectedRoute>} />
             <Route path="accounts/:id/statement" element={<ProtectedRoute permissions={['accounts:view']}><AccountStatementPage /></ProtectedRoute>} />
+            <Route path="payments/instant" element={<ProtectedRoute permissions={['payments:customer']}><InstantPaymentPage /></ProtectedRoute>} />
+            <Route path="payments/requests" element={<ProtectedRoute permissions={['payments:customer']}><PaymentRequestsPage /></ProtectedRoute>} />
             <Route path="payments/customers" element={<ProtectedRoute permissions={['payments:customer']}><CustomerPaymentsPage /></ProtectedRoute>} />
             <Route path="payments/suppliers" element={<ProtectedRoute permissions={['payments:supplier']}><SupplierPaymentsPage /></ProtectedRoute>} />
             <Route path="expenses" element={<ProtectedRoute permissions={['expenses:view']}><ExpensesPage /></ProtectedRoute>} />

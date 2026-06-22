@@ -26,6 +26,7 @@ function formatExpense(doc) {
     notes: doc.notes || '',
     billFilePath: doc.billFilePath || '',
     billFileName: doc.billFileName || '',
+    billUrl: doc.billFilePath ? `/uploads/${String(doc.billFilePath).replace(/^uploads\//, '')}` : '',
     isRecurring: doc.isRecurring,
     recurringFrequency: doc.recurringFrequency,
     nextDueDate: doc.nextDueDate,
@@ -177,4 +178,26 @@ export async function voidExpense(id, { reason } = {}, userId, req) {
   });
 }
 
-export default { listExpenseCategories, listExpenses, getExpenseById, createExpense, voidExpense };
+export async function uploadExpenseBill(id, file, userId, req) {
+  const expense = await Expense.findOne({ _id: id, isVoided: false });
+  if (!expense) throw ApiError.notFound('Expense not found');
+  if (!file) throw ApiError.badRequest('No bill file uploaded');
+
+  expense.billFilePath = `expense-bills/${file.filename}`;
+  expense.billFileName = file.originalname;
+  await expense.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'expenses',
+    entityType: 'Expense',
+    entityId: expense._id,
+    description: `Bill uploaded for expense ${expense.expenseNumber}`,
+    userId,
+    req,
+  });
+
+  return getExpenseById(id);
+}
+
+export default { listExpenseCategories, listExpenses, getExpenseById, createExpense, voidExpense, uploadExpenseBill };

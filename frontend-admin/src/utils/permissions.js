@@ -91,6 +91,20 @@ export const NAV_ITEMS = [
     section: 'Finance',
   },
   {
+    label: 'Instant Payment',
+    path: '/payments/instant',
+    icon: 'payments',
+    permissions: ['payments:customer'],
+    section: 'Payments',
+  },
+  {
+    label: 'Send Payment Request',
+    path: '/payments/requests',
+    icon: 'payments',
+    permissions: ['payments:customer'],
+    section: 'Payments',
+  },
+  {
     label: 'Customer Payments',
     path: '/payments/customers',
     icon: 'payments',
