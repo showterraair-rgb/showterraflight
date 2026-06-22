@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
 import { useFieldPermission } from '../hooks/useFieldPermission';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS } from '../utils/constants';
+import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, PRODUCT_CATEGORY_LABELS } from '../utils/constants';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
 const baseSchema = z.object({
@@ -85,9 +85,20 @@ function brlFromStored(booking, field, rate) {
   return rate > 0 ? Number(bdt || 0) / rate : Number(bdt || 0);
 }
 
+const CATEGORY_PATHS = { air: '/bookings', hotel: '/bookings/hotel', esim: '/bookings/esim', insurance: '/bookings/insurance' };
+
+const CATEGORY_LABELS = {
+  air: { airline: 'Airline / Carrier *', route: 'Route *', routePh: 'e.g. DAC → DXB', date: 'Departure Date *' },
+  hotel: { airline: 'Hotel name *', route: 'City / Location *', routePh: 'e.g. Makkah — 5 nights', date: 'Check-in Date *' },
+  esim: { airline: 'Provider *', route: 'Plan / Region *', routePh: 'e.g. Europe 10GB', date: 'Activation Date *' },
+  insurance: { airline: 'Insurer *', route: 'Policy / Coverage *', routePh: 'e.g. Schengen travel', date: 'Start Date *' },
+};
+
 export default function BookingFormPage() {
   const navigate = useNavigate();
   const { id: editId } = useParams();
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category') || 'air';
   const isEdit = Boolean(editId);
   const { brlRate } = useCurrency();
   const financeFields = useFieldPermission('finance');
@@ -106,6 +117,7 @@ export default function BookingFormPage() {
   const [ticketFile, setTicketFile] = useState(null);
   const [existingTicket, setExistingTicket] = useState(null);
   const [accounts, setAccounts] = useState([]);
+  const [productCategory, setProductCategory] = useState(categoryParam);
 
   const form = useForm({
     resolver: zodResolver(isEdit ? baseSchema : createSchema),
@@ -181,6 +193,7 @@ export default function BookingFormPage() {
             status: b.status,
           });
           setExistingTicket(b.ticketCopyUrl ? { url: b.ticketCopyUrl, name: b.ticketCopyFileName } : null);
+          setProductCategory(b.productCategory || 'air');
           setTravelMeta({
             journeyType: b.journeyType || 'one_way',
             travelClass: b.travelClass || 'economy',
@@ -261,6 +274,7 @@ export default function BookingFormPage() {
       const { fromDestination, toDestination } = parseRoute(values.route);
       const payload = {
         ...values,
+        productCategory,
         supplierId: values.supplierId || undefined,
         customerId: values.customerId || undefined,
         journeyType: travelMeta?.journeyType || 'one_way',
@@ -294,8 +308,9 @@ export default function BookingFormPage() {
 
   if (loadingData) return <LoadingSpinner className="py-20" />;
 
-  const backLink = isEdit ? `/bookings/${editId}` : '/bookings';
-  const title = isEdit ? 'Edit Booking' : 'New Booking';
+  const backLink = isEdit ? `/bookings/${editId}` : (CATEGORY_PATHS[productCategory] || '/bookings');
+  const title = isEdit ? 'Edit Booking' : `New ${PRODUCT_CATEGORY_LABELS[productCategory] || 'Booking'}`;
+  const fieldLabels = CATEGORY_LABELS[productCategory] || CATEGORY_LABELS.air;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -340,19 +355,19 @@ export default function BookingFormPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Airline / Carrier *</label>
-            <input className="input-field" placeholder="e.g. Emirates, Biman" {...form.register('airline')} />
+            <label className="mb-1 block text-sm font-medium">{fieldLabels.airline}</label>
+            <input className="input-field" placeholder={productCategory === 'air' ? 'e.g. Emirates, Biman' : ''} {...form.register('airline')} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Route *</label>
-            <input className="input-field uppercase" placeholder="e.g. DAC → DXB" {...form.register('route')} />
+            <label className="mb-1 block text-sm font-medium">{fieldLabels.route}</label>
+            <input className="input-field uppercase" placeholder={fieldLabels.routePh} {...form.register('route')} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Sector</label>
             <input className="input-field" {...form.register('sector')} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Departure Date *</label>
+            <label className="mb-1 block text-sm font-medium">{fieldLabels.date}</label>
             <input type="date" className="input-field" {...form.register('departureDate')} />
           </div>
           <div>

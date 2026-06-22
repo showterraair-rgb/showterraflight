@@ -70,6 +70,7 @@ function formatBooking(doc) {
     supplierPaymentStatus: doc.supplierPaymentStatus,
     status: doc.status,
     bookingType: doc.bookingType || 'standard',
+    productCategory: doc.productCategory || 'air',
     parentBooking: doc.parentBooking?._id?.toString() || doc.parentBooking?.toString() || null,
     parentBookingNumber: doc.parentBooking?.bookingNumber || null,
     rrvNote: doc.rrvNote || '',
@@ -128,7 +129,11 @@ async function resolveBookingCurrencyFields(data) {
 }
 
 function buildBookingFilter(query) {
-  const filter = { ...buildSearchFilter(query.search, ['bookingNumber', 'pnr', 'ticketNumber', 'airline', 'route']) };
+  const andParts = [];
+  const searchPart = buildSearchFilter(query.search, ['bookingNumber', 'pnr', 'ticketNumber', 'airline', 'route']);
+  if (Object.keys(searchPart).length) andParts.push(searchPart);
+
+  const filter = {};
 
   if (query.status) filter.status = query.status;
   if (query.approvalStatus) filter.approvalStatus = query.approvalStatus;
@@ -137,6 +142,20 @@ function buildBookingFilter(query) {
   if (query.orderId) filter.order = query.orderId;
 
   if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
+
+  if (query.productCategory) {
+    if (query.productCategory === 'air') {
+      andParts.push({
+        $or: [
+          { productCategory: 'air' },
+          { productCategory: { $exists: false } },
+          { productCategory: null },
+        ],
+      });
+    } else {
+      filter.productCategory = query.productCategory;
+    }
+  }
 
   if (query.bookingDateFrom || query.bookingDateTo) {
     filter.createdAt = {};
@@ -156,6 +175,10 @@ function buildBookingFilter(query) {
       end.setHours(23, 59, 59, 999);
       filter.departureDate.$lte = end;
     }
+  }
+
+  if (andParts.length) {
+    filter.$and = [...(filter.$and || []), ...andParts];
   }
 
   return filter;
@@ -431,6 +454,7 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     ticketCopyFileName: data.ticketCopyFileName,
     status: data.status || 'draft',
     bookingType: data.bookingType || 'standard',
+    productCategory: data.productCategory || 'air',
     parentBooking: data.parentBookingId || data.parentBooking,
     createdBy: userId,
     approvalStatus: orderDoc?.approvalStatus || 'pending',

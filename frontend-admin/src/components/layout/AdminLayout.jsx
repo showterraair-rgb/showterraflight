@@ -8,6 +8,9 @@ import Header from './Header';
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
   '/bookings': 'Booking History',
+  '/bookings/hotel': 'Hotel Booking',
+  '/bookings/esim': 'e-Sim',
+  '/bookings/insurance': 'Insurance',
   '/bookings/partial-payments': 'Partial Payments',
   '/reports/sales': 'Sales Report',
   '/bookings/new': 'New Booking',

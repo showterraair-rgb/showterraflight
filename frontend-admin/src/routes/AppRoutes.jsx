@@ -21,6 +21,9 @@ import CmsPage from '../pages/CmsPage';
 import BackupPage from '../pages/BackupPage';
 import SecurityPage from '../pages/SecurityPage';
 import PaymentAccountsPage from '../pages/PaymentAccountsPage';
+import HotelBookingsPage from '../pages/HotelBookingsPage';
+import EsimBookingsPage from '../pages/EsimBookingsPage';
+import InsuranceBookingsPage from '../pages/InsuranceBookingsPage';
 import PaymentSettingsHubPage from '../pages/PaymentSettingsHubPage';
 import BankListPage from '../pages/BankListPage';
 import MfsListPage from '../pages/MfsListPage';
@@ -57,6 +60,9 @@ export default function AppRoutes() {
             <Route path="orders" element={<Navigate to="/bookings" replace />} />
 
             <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/hotel" element={<ProtectedRoute permissions={['bookings:view']}><HotelBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/esim" element={<ProtectedRoute permissions={['bookings:view']}><EsimBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/insurance" element={<ProtectedRoute permissions={['bookings:view']}><InsuranceBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/partial-payments" element={<ProtectedRoute permissions={['bookings:view']}><PartialPaymentsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />

@@ -9,10 +9,12 @@ import { formatDate } from '../utils/date';
 import MoneyAmount from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
 import { usePermission } from '../hooks/usePermission';
+import { useFieldPermission } from '../hooks/useFieldPermission';
 import { BOOKING_STATUS_LABELS } from '../utils/constants';
 
 export default function SalesReportPage() {
   const { can } = usePermission();
+  const financeFields = useFieldPermission('finance');
   const [filters, setFilters] = useState({ from: '', to: '' });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,9 +52,12 @@ export default function SalesReportPage() {
     { key: 'journeyType', label: 'Type', render: (r) => r.journeyType === 'round_trip' ? 'Roundway' : 'Oneway' },
     { key: 'pnr', label: 'PNR', render: (r) => r.pnr || '—' },
     { key: 'bookingDate', label: 'Booking Time', render: (r) => formatDate(r.bookingDate) },
-    { key: 'salePrice', label: 'Sale', render: (r) => <MoneyAmount amount={r.salePrice} size="sm" /> },
-    { key: 'amountPaid', label: 'Paid', render: (r) => <MoneyAmount amount={r.amountPaid} size="sm" /> },
-    { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" /> },
+    ...(!financeFields.hidden ? [
+      { key: 'salePrice', label: 'Customer Price', render: (r) => <MoneyAmount amount={r.salePrice} size="sm" /> },
+      { key: 'purchasePrice', label: 'Agent Price', render: (r) => <MoneyAmount amount={r.purchasePrice} size="sm" /> },
+      { key: 'amountPaid', label: 'Paid', render: (r) => <MoneyAmount amount={r.amountPaid} size="sm" /> },
+      { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" /> },
+    ] : []),
     { key: 'passengerCount', label: 'PAX' },
     { key: 'airline', label: 'Airline' },
     { key: 'departureDate', label: 'Flight Date', render: (r) => formatDate(r.departureDate) },
@@ -73,12 +78,14 @@ export default function SalesReportPage() {
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <SummaryStatCard label="Total Paid" amount={cards.totalPaid} color="green" />
         <SummaryStatCard label="Total Due" amount={cards.totalDue} color="red" />
-        <SummaryStatCard label="Total Sale" amount={cards.totalSale} color="indigo" />
+        <SummaryStatCard label="Total Refund" amount={cards.refundedAmount} count={cards.refundedCount} color="teal" />
+        <SummaryStatCard label="Total Reissue" amount={cards.reissuedAmount} count={cards.reissuedCount} color="indigo" />
+        <SummaryStatCard label="Total Void" amount={cards.voidedAmount} count={cards.voidedCount} color="slate" />
         <SummaryStatCard label="Ticketed" amount={cards.ticketedAmount} count={cards.ticketedCount} color="teal" />
-        <SummaryStatCard label="Cancelled" amount={cards.cancelledAmount} count={cards.cancelledCount} color="slate" />
+        <SummaryStatCard label="Cancelled" amount={cards.cancelledAmount} count={cards.cancelledCount} color="amber" />
       </div>
 
       <div className="card flex flex-wrap gap-3">

@@ -57,6 +57,17 @@ export const BOOKING_STATUSES = [
 
 export const BOOKING_TYPES = ['standard', 'reissue', 'refund', 'void'];
 
+export const PRODUCT_CATEGORIES = ['air', 'hotel', 'esim', 'insurance', 'package', 'other'];
+
+export const PRODUCT_CATEGORY_LABELS = {
+  air: 'Flight',
+  hotel: 'Hotel',
+  esim: 'e-Sim',
+  insurance: 'Insurance',
+  package: 'Package',
+  other: 'Other',
+};
+
 export const PAYMENT_STATUSES = ['unpaid', 'partial', 'paid'];
 
 export const APPROVAL_STATUSES = ['pending', 'checking', 'processing', 'approved'];

@@ -317,6 +317,7 @@ export async function salesSummaryReport(query) {
     bookingDate: b.createdAt,
     departureDate: b.departureDate,
     salePrice: b.salePrice,
+    purchasePrice: b.purchasePrice,
     amountPaid: b.amountPaid,
     customerDue: b.customerDue,
     passengerCount: b.passengerCount,
@@ -336,7 +337,12 @@ export async function salesSummaryReport(query) {
   );
 
   const ticketed = rows.filter((r) => ['ticket_issued', 'delivered', 'completed'].includes(r.status));
+  const refunded = rows.filter((r) => r.status === 'refunded');
+  const voided = rows.filter((r) => r.status === 'voided');
+  const reissued = rows.filter((r) => r.status === 'reissued');
   const cancelled = rows.filter((r) => r.status === 'cancelled');
+
+  const sumSale = (list) => list.reduce((s, r) => s + (r.salePrice || 0), 0);
 
   return {
     ...exportMeta('sales-summary', rows, Object.keys(rows[0] || {})),
@@ -345,9 +351,15 @@ export async function salesSummaryReport(query) {
       totalPaid: totals.amountPaid,
       totalDue: totals.customerDue,
       totalSale: totals.salePrice,
-      ticketedAmount: ticketed.reduce((s, r) => s + r.salePrice, 0),
+      ticketedAmount: sumSale(ticketed),
       ticketedCount: ticketed.length,
-      cancelledAmount: cancelled.reduce((s, r) => s + r.salePrice, 0),
+      refundedAmount: sumSale(refunded),
+      refundedCount: refunded.length,
+      voidedAmount: sumSale(voided),
+      voidedCount: voided.length,
+      reissuedAmount: sumSale(reissued),
+      reissuedCount: reissued.length,
+      cancelledAmount: sumSale(cancelled),
       cancelledCount: cancelled.length,
     },
   };

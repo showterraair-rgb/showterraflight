@@ -11,7 +11,7 @@ import { useFieldPermission } from '../hooks/useFieldPermission';
 import { formatDate } from '../utils/date';
 import MoneyAmount, { getBookingMoney } from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
+import { BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 
 const STATUS_TABS = [
   { key: '', label: 'All' },
@@ -25,7 +25,12 @@ const STATUS_TABS = [
 
 const PAYMENT_LABELS = { paid: 'Paid', partial: 'Partial', unpaid: 'Due' };
 
-export default function BookingsPage() {
+export function BookingsListView({
+  productCategory,
+  title = 'Booking History',
+  description = 'Search by PNR, booking number, airline, or customer.',
+  newBookingPath = '/bookings/new',
+}) {
   const { can } = usePermission();
   const financeFields = useFieldPermission('finance');
   const [items, setItems] = useState([]);
@@ -39,6 +44,7 @@ export default function BookingsPage() {
     setLoading(true);
     try {
       const params = { page, limit: 20, ...filters };
+      if (productCategory) params.productCategory = productCategory;
       Object.keys(params).forEach((k) => !params[k] && delete params[k]);
       const [listRes, sumRes] = await Promise.all([
         bookingsApi.list(params),
@@ -50,7 +56,7 @@ export default function BookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, filters, productCategory]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -80,8 +86,8 @@ export default function BookingsPage() {
     { key: 'customerName', label: 'Customer' },
     { key: 'route', label: 'Route' },
     { key: 'pnr', label: 'PNR', render: (r) => r.pnr || '—' },
-    { key: 'airline', label: 'Airline' },
-    { key: 'departureDate', label: 'Flight Date', render: (r) => formatDate(r.departureDate) },
+    { key: 'airline', label: productCategory === 'hotel' ? 'Hotel' : productCategory === 'esim' ? 'Provider' : 'Airline' },
+    { key: 'departureDate', label: productCategory === 'hotel' ? 'Check-in' : 'Flight Date', render: (r) => formatDate(r.departureDate) },
     ...(!financeFields.hidden ? [
       {
         key: 'salePrice',
@@ -100,14 +106,6 @@ export default function BookingsPage() {
         },
       },
       { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" className={r.customerDue > 0 ? 'text-red-600' : ''} /> },
-      {
-        key: 'profit',
-        label: 'Profit',
-        render: (r) => {
-          const m = getBookingMoney(r);
-          return <MoneyAmount totalBRL={m.profitBRL} totalBDT={m.profitBDT} size="sm" className={m.profitBDT >= 0 ? 'text-green-700' : 'text-red-600'} />;
-        },
-      },
     ] : []),
     { key: 'passengerCount', label: 'PAX' },
     { key: 'paymentStatus', label: 'Payment', render: (r) => (
@@ -139,13 +137,15 @@ export default function BookingsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Booking History</h2>
-          <p className="text-sm text-slate-500">Search by PNR, booking number, airline, or customer.</p>
+          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          <p className="text-sm text-slate-500">{description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
+          {productCategory === 'air' && (
+            <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
+          )}
           {can('bookings:create') && (
-            <Link to="/bookings/new" className="btn-primary">New Booking</Link>
+            <Link to={newBookingPath} className="btn-primary">New Booking</Link>
           )}
         </div>
       </div>
@@ -195,5 +195,16 @@ export default function BookingsPage() {
         {pagination && <div className="border-t border-slate-200 p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
       </div>
     </div>
+  );
+}
+
+export default function BookingsPage() {
+  return (
+    <BookingsListView
+      productCategory="air"
+      title="Booking History"
+      description="Flight bookings — search by PNR, booking number, airline, or customer."
+      newBookingPath="/bookings/new"
+    />
   );
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BOOKING_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES, PRODUCT_CATEGORIES } from '../config/constants.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const optionalObjectId = z.preprocess(
@@ -30,12 +30,14 @@ export const listQuerySchema = z.object({
   paymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
   bookingDateFrom: z.string().optional(),
   bookingDateTo: z.string().optional(),
+  productCategory: z.enum(PRODUCT_CATEGORIES).optional(),
 });
 
 export const createBookingBaseSchema = z.object({
   orderId: objectId.optional(),
   customerId: objectId,
   supplierId: objectId.optional(),
+  productCategory: z.enum(PRODUCT_CATEGORIES).default('air'),
   journeyType: z.enum(JOURNEY_TYPES).default('one_way'),
   fromDestination: z.string().min(2).max(100).trim(),
   toDestination: z.string().min(2).max(100).trim(),

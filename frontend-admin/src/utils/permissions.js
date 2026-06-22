@@ -23,6 +23,27 @@ export const NAV_ITEMS = [
     section: 'Bookings',
   },
   {
+    label: 'Hotel Booking',
+    path: '/bookings/hotel',
+    icon: 'bookings',
+    permissions: ['bookings:view'],
+    section: 'Bookings',
+  },
+  {
+    label: 'e-Sim',
+    path: '/bookings/esim',
+    icon: 'bookings',
+    permissions: ['bookings:view'],
+    section: 'Bookings',
+  },
+  {
+    label: 'Insurance',
+    path: '/bookings/insurance',
+    icon: 'bookings',
+    permissions: ['bookings:view'],
+    section: 'Bookings',
+  },
+  {
     label: 'Partial Payments',
     path: '/bookings/partial-payments',
     icon: 'payments',
@@ -98,11 +119,19 @@ export const NAV_ITEMS = [
     section: 'Payments',
   },
   {
+    label: 'Payment Settings',
+    path: '/settings/payment',
+    icon: 'accounts',
+    permissions: ['accounts:view'],
+    section: 'Payments',
+  },
+  {
     label: 'Bank List',
     path: '/settings/payment/banks',
     icon: 'accounts',
     permissions: ['accounts:view'],
     section: 'Payments',
+    hiddenFromNav: true,
   },
   {
     label: 'MFS List',
@@ -110,6 +139,7 @@ export const NAV_ITEMS = [
     icon: 'payments',
     permissions: ['accounts:view'],
     section: 'Payments',
+    hiddenFromNav: true,
   },
   {
     label: 'Reminders',

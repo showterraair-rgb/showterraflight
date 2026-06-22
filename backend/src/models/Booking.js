@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { BOOKING_STATUSES, BOOKING_TYPES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, BOOKING_TYPES, PRODUCT_CATEGORIES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
 import { approvalTimelineSchema, passportFields } from '../schemas/approvalFields.js';
 
 const statusTimelineSchema = new mongoose.Schema(
@@ -89,6 +89,12 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       enum: BOOKING_TYPES,
       default: 'standard',
+      index: true,
+    },
+    productCategory: {
+      type: String,
+      enum: PRODUCT_CATEGORIES,
+      default: 'air',
       index: true,
     },
     parentBooking: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },

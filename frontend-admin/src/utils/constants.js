@@ -39,6 +39,17 @@ export const BOOKING_STATUS_LABELS = {
   reissued: 'Reissued',
 };
 
+export const PRODUCT_CATEGORIES = ['air', 'hotel', 'esim', 'insurance', 'package', 'other'];
+
+export const PRODUCT_CATEGORY_LABELS = {
+  air: 'Flight',
+  hotel: 'Hotel',
+  esim: 'e-Sim',
+  insurance: 'Insurance',
+  package: 'Package',
+  other: 'Other',
+};
+
 export const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
 export const JOURNEY_LABELS = { one_way: 'One Way', round_trip: 'Round Trip', multi_city: 'Multi City' };
 
