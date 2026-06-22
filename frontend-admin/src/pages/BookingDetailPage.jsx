@@ -11,11 +11,13 @@ import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 import ApprovalControls from '../components/bookings/ApprovalPanel';
 import PassportUpload from '../components/bookings/PassportUpload';
+import { useFieldPermission } from '../hooks/useFieldPermission';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { can } = usePermission();
+  const financeFields = useFieldPermission('finance');
   const [booking, setBooking] = useState(null);
   const [timeline, setTimeline] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,7 @@ export default function BookingDetailPage() {
   const [supplierPayments, setSupplierPayments] = useState([]);
   const [note, setNote] = useState('');
   const [newStatus, setNewStatus] = useState('');
+  const [voucherOpen, setVoucherOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,9 +109,26 @@ export default function BookingDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={handleDownloadPdf} className="btn-secondary text-sm">
-            Download PDF
-          </button>
+          <div className="relative">
+            <button type="button" onClick={() => setVoucherOpen((o) => !o)} className="btn-primary text-sm">
+              Voucher / Invoice ▾
+            </button>
+            {voucherOpen && (
+              <div className="absolute right-0 z-10 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <button type="button" className="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { handleDownloadPdf(); setVoucherOpen(false); }}>
+                  Customer Invoice (PDF)
+                </button>
+                {booking.ticketCopyUrl && (
+                  <a href={booking.ticketCopyUrl} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 text-sm hover:bg-slate-50" onClick={() => setVoucherOpen(false)}>
+                    E-Ticket / Ticket Copy
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+          {can('payments:customer') && booking.customerDue > 0 && (
+            <Link to={`/payments/customers?bookingId=${id}`} className="btn-secondary text-sm">Record Payment</Link>
+          )}
           {can('bookings:update') && (
             <Link to={`/bookings/${id}/edit`} className="btn-primary text-sm">Edit Booking</Link>
           )}
@@ -120,6 +140,7 @@ export default function BookingDetailPage() {
         </div>
       </div>
 
+      {!financeFields.hidden && (
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card border-l-4 border-l-green-500">
           <p className="text-xs font-medium uppercase text-slate-500">Profit</p>
@@ -149,6 +170,7 @@ export default function BookingDetailPage() {
           />
         </div>
       </div>
+      )}
 
       <div className="card space-y-4">
         <h3 className="font-semibold text-slate-900">Approval workflow</h3>

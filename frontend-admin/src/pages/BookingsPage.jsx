@@ -5,18 +5,31 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import StatusBadge from '../components/common/StatusBadge';
 import RowActions from '../components/common/RowActions';
+import SummaryStatCard from '../components/common/SummaryStatCard';
 import { usePermission } from '../hooks/usePermission';
+import { useFieldPermission } from '../hooks/useFieldPermission';
 import { formatDate } from '../utils/date';
 import MoneyAmount, { getBookingMoney } from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
 import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
 
+const STATUS_TABS = [
+  { key: '', label: 'All' },
+  { key: 'ticket_issued', label: 'Ticketed' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+const PAYMENT_LABELS = { paid: 'Paid', partial: 'Partial', unpaid: 'Due' };
+
 export default function BookingsPage() {
   const { can } = usePermission();
+  const financeFields = useFieldPermission('finance');
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ search: '', status: '' });
+  const [filters, setFilters] = useState({ search: '', status: '', paymentStatus: '', dateFrom: '', dateTo: '' });
   const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
@@ -24,9 +37,13 @@ export default function BookingsPage() {
     try {
       const params = { page, limit: 20, ...filters };
       Object.keys(params).forEach((k) => !params[k] && delete params[k]);
-      const { data } = await bookingsApi.list(params);
-      setItems(data.data);
-      setPagination(data.pagination);
+      const [listRes, sumRes] = await Promise.all([
+        bookingsApi.list(params),
+        bookingsApi.summary(params),
+      ]);
+      setItems(listRes.data.data);
+      setPagination(listRes.data.pagination);
+      setSummary(sumRes.data.data);
     } finally {
       setLoading(false);
     }
@@ -44,10 +61,9 @@ export default function BookingsPage() {
   };
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Delete booking ${row.bookingNumber}? This cannot be undone if payments are linked.`)) return;
+    if (!window.confirm(`Delete booking ${row.bookingNumber}?`)) return;
     try {
-      const { data } = await bookingsApi.delete(row.id);
-      alert(data.message || 'Booking deleted');
+      await bookingsApi.delete(row.id);
       load();
     } catch (err) {
       alert(err.response?.data?.message || 'Delete failed');
@@ -55,40 +71,37 @@ export default function BookingsPage() {
   };
 
   const columns = [
-    { key: 'bookingNumber', label: 'Booking #', render: (r) => <span className="font-mono text-xs font-medium">{r.bookingNumber}</span> },
+    { key: 'bookingNumber', label: 'Booking #', render: (r) => (
+      <Link to={`/bookings/${r.id}`} className="font-mono text-xs font-medium text-brand-600 hover:underline">{r.bookingNumber}</Link>
+    ) },
     { key: 'customerName', label: 'Customer' },
     { key: 'route', label: 'Route' },
+    { key: 'pnr', label: 'PNR', render: (r) => r.pnr || '—' },
     { key: 'airline', label: 'Airline' },
-    { key: 'departureDate', label: 'Departure', render: (r) => formatDate(r.departureDate) },
-    {
-      key: 'salePrice',
-      label: 'Sale (BRL / BDT)',
-      render: (r) => {
-        const m = getBookingMoney(r);
-        return (
-          <MoneyAmount
-            totalBRL={m.saleBRL}
-            totalBDT={m.saleBDT}
-            size="sm"
-          />
-        );
+    { key: 'departureDate', label: 'Flight Date', render: (r) => formatDate(r.departureDate) },
+    ...(!financeFields.hidden ? [
+      {
+        key: 'salePrice',
+        label: 'Sale',
+        render: (r) => {
+          const m = getBookingMoney(r);
+          return <MoneyAmount totalBRL={m.saleBRL} totalBDT={m.saleBDT} size="sm" />;
+        },
       },
-    },
-    {
-      key: 'profit',
-      label: 'Profit (BRL / BDT)',
-      render: (r) => {
-        const m = getBookingMoney(r);
-        return (
-          <MoneyAmount
-            totalBRL={m.profitBRL}
-            totalBDT={m.profitBDT}
-            size="sm"
-            className={m.profitBDT >= 0 ? 'text-green-700' : 'text-red-600'}
-          />
-        );
+      { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" className={r.customerDue > 0 ? 'text-red-600' : ''} /> },
+      {
+        key: 'profit',
+        label: 'Profit',
+        render: (r) => {
+          const m = getBookingMoney(r);
+          return <MoneyAmount totalBRL={m.profitBRL} totalBDT={m.profitBDT} size="sm" className={m.profitBDT >= 0 ? 'text-green-700' : 'text-red-600'} />;
+        },
       },
-    },
+    ] : []),
+    { key: 'passengerCount', label: 'PAX' },
+    { key: 'paymentStatus', label: 'Payment', render: (r) => (
+      <StatusBadge status={r.paymentStatus === 'paid' ? 'success' : r.paymentStatus === 'partial' ? 'pending' : 'cancelled'} label={PAYMENT_LABELS[r.paymentStatus] || r.paymentStatus} />
+    ) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={BOOKING_STATUS_LABELS[r.status]} /> },
     { key: 'approvalStatus', label: 'Approval', render: (r) => (
       <StatusBadge status={r.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[r.approvalStatus || 'pending']} />
@@ -103,7 +116,7 @@ export default function BookingsPage() {
           items={[
             can('bookings:view') && { type: 'link', label: 'View', to: `/bookings/${r.id}` },
             can('bookings:update') && { type: 'link', label: 'Edit', to: `/bookings/${r.id}/edit`, variant: 'muted' },
-            can('bookings:view') && { type: 'button', label: 'PDF', onClick: () => handlePdf(r), variant: 'muted' },
+            can('bookings:view') && { type: 'button', label: 'Invoice', onClick: () => handlePdf(r), variant: 'muted' },
             can('bookings:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
           ]}
         />
@@ -115,27 +128,58 @@ export default function BookingsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Bookings</h2>
-          <p className="text-sm text-slate-500">
-            Create tickets directly: add a customer, then New Booking, then record payments.
-          </p>
+          <h2 className="text-xl font-bold text-slate-900">Booking History</h2>
+          <p className="text-sm text-slate-500">Search by PNR, booking number, airline, or customer.</p>
         </div>
-        {can('bookings:create') && (
-          <Link to="/bookings/new" className="btn-primary">New Booking</Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
+          {can('bookings:create') && (
+            <Link to="/bookings/new" className="btn-primary">New Booking</Link>
+          )}
+        </div>
       </div>
 
-      <div className="card p-0">
-        <div className="flex flex-wrap gap-3 border-b border-slate-200 p-4">
-          <input type="search" placeholder="Search PNR, booking #, airline..." className="input-field max-w-xs"
-            value={filters.search} onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1); }} />
-          <select className="input-field w-auto" value={filters.status} onChange={(e) => { setFilters((f) => ({ ...f, status: e.target.value })); setPage(1); }}>
-            <option value="">All Statuses</option>
-            {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{BOOKING_STATUS_LABELS[s]}</option>)}
-          </select>
+      {summary && !financeFields.hidden && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryStatCard label="Ticketed" amount={summary.ticketed?.amount} count={summary.ticketed?.count} color="teal" />
+          <SummaryStatCard label="Cancelled" amount={summary.cancelled?.amount} count={summary.cancelled?.count} color="slate" />
+          <SummaryStatCard label="Total Due" amount={summary.totalDue} color="red" />
+          <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
         </div>
-        <DataTable columns={columns} data={items} loading={loading} emptyTitle="No bookings" emptyDescription="Create a booking from an order or directly." />
-        <Pagination pagination={pagination} onPageChange={setPage} />
+      )}
+
+      <div className="card p-0">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-4">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.key || 'all'}
+              type="button"
+              onClick={() => { setFilters((f) => ({ ...f, status: tab.key })); setPage(1); }}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${filters.status === tab.key ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-3 border-b border-slate-200 p-4">
+          <input
+            type="search"
+            placeholder="Booking #, PNR, airline..."
+            className="input-field max-w-[200px]"
+            value={filters.search}
+            onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1); }}
+          />
+          <select className="input-field w-auto" value={filters.paymentStatus} onChange={(e) => { setFilters((f) => ({ ...f, paymentStatus: e.target.value })); setPage(1); }}>
+            <option value="">All payments</option>
+            <option value="paid">Fully paid</option>
+            <option value="partial">Partial</option>
+            <option value="unpaid">Due</option>
+          </select>
+          <input type="date" className="input-field w-auto" value={filters.dateFrom} onChange={(e) => { setFilters((f) => ({ ...f, dateFrom: e.target.value })); setPage(1); }} title="Flight from" />
+          <input type="date" className="input-field w-auto" value={filters.dateTo} onChange={(e) => { setFilters((f) => ({ ...f, dateTo: e.target.value })); setPage(1); }} title="Flight to" />
+        </div>
+        <DataTable columns={columns} data={items} loading={loading} emptyTitle="No bookings" emptyDescription="Create a booking or adjust filters." />
+        {pagination && <div className="border-t border-slate-200 p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
       </div>
     </div>
   );

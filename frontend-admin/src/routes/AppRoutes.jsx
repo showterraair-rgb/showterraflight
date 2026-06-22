@@ -28,6 +28,8 @@ import NotificationsHubPage from '../pages/NotificationsHubPage';
 import NotificationTemplatesPage from '../pages/NotificationTemplatesPage';
 import NotificationLogsPage from '../pages/NotificationLogsPage';
 import UsersPage from '../pages/UsersPage';
+import PartialPaymentsPage from '../pages/PartialPaymentsPage';
+import SalesReportPage from '../pages/SalesReportPage';
 import RolesPermissionsPage from '../pages/RolesPermissionsPage';
 import AgentsPage from '../pages/AgentsPage';
 import AgentDetailPage from '../pages/AgentDetailPage';
@@ -52,6 +54,7 @@ export default function AppRoutes() {
             <Route path="orders" element={<Navigate to="/bookings" replace />} />
 
             <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/partial-payments" element={<ProtectedRoute permissions={['bookings:view']}><PartialPaymentsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id" element={<ProtectedRoute permissions={['bookings:view']}><BookingDetailPage /></ProtectedRoute>} />
@@ -64,6 +67,7 @@ export default function AppRoutes() {
             <Route path="transfers" element={<ProtectedRoute permissions={['transfers:create', 'accounts:view']}><TransfersPage /></ProtectedRoute>} />
             <Route path="reminders" element={<ProtectedRoute permissions={['reminders:view']}><RemindersPage /></ProtectedRoute>} />
             <Route path="reports" element={<ProtectedRoute permissions={['reports:view']}><ReportsPage /></ProtectedRoute>} />
+            <Route path="reports/sales" element={<ProtectedRoute permissions={['reports:view']}><SalesReportPage /></ProtectedRoute>} />
             <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />
             <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
             <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />

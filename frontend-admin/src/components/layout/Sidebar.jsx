@@ -97,9 +97,17 @@ export default function Sidebar({ items, isOpen, onClose }) {
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-1">
-            {items.map((item) => (
-              <li key={item.path}>
-                <NavLink
+            {items.map((item, idx) => {
+              const prevSection = idx > 0 ? items[idx - 1].section : null;
+              const showSection = item.section && item.section !== prevSection;
+              return (
+                <li key={item.path}>
+                  {showSection && (
+                    <p className="mb-1 mt-3 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 first:mt-0">
+                      {item.section}
+                    </p>
+                  )}
+                  <NavLink
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) =>
@@ -114,7 +122,8 @@ export default function Sidebar({ items, isOpen, onClose }) {
                   {item.label}
                 </NavLink>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </nav>
 

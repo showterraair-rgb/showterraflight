@@ -296,7 +296,65 @@ export async function monthlySummary(query) {
   return { ...exportMeta('monthly-summary', months, Object.keys(months[0] || {})), year };
 }
 
+export async function salesSummaryReport(query) {
+  const filter = {};
+  const dateRange = parseDateRange(query);
+  if (dateRange) filter.createdAt = dateRange;
+  if (query.status) filter.status = query.status;
+
+  const bookings = await Booking.find(filter)
+    .populate('customer', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const rows = bookings.map((b) => ({
+    id: b._id.toString(),
+    bookingNumber: b.bookingNumber,
+    customer: b.customer?.name || '',
+    route: b.route,
+    journeyType: b.journeyType,
+    pnr: b.pnr || '',
+    bookingDate: b.createdAt,
+    departureDate: b.departureDate,
+    salePrice: b.salePrice,
+    amountPaid: b.amountPaid,
+    customerDue: b.customerDue,
+    passengerCount: b.passengerCount,
+    airline: b.airline,
+    status: b.status,
+    paymentStatus: b.paymentStatus,
+  }));
+
+  const totals = rows.reduce(
+    (acc, r) => ({
+      salePrice: acc.salePrice + r.salePrice,
+      amountPaid: acc.amountPaid + r.amountPaid,
+      customerDue: acc.customerDue + r.customerDue,
+      count: acc.count + 1,
+    }),
+    { salePrice: 0, amountPaid: 0, customerDue: 0, count: 0 }
+  );
+
+  const ticketed = rows.filter((r) => ['ticket_issued', 'delivered', 'completed'].includes(r.status));
+  const cancelled = rows.filter((r) => r.status === 'cancelled');
+
+  return {
+    ...exportMeta('sales-summary', rows, Object.keys(rows[0] || {})),
+    totals,
+    cards: {
+      totalPaid: totals.amountPaid,
+      totalDue: totals.customerDue,
+      totalSale: totals.salePrice,
+      ticketedAmount: ticketed.reduce((s, r) => s + r.salePrice, 0),
+      ticketedCount: ticketed.length,
+      cancelledAmount: cancelled.reduce((s, r) => s + r.salePrice, 0),
+      cancelledCount: cancelled.length,
+    },
+  };
+}
+
 const REPORT_HANDLERS = {
+  'sales-summary': salesSummaryReport,
   'booking-profit': bookingProfitReport,
   'customer-due': customerDueReport,
   'supplier-payable': supplierPayableReport,

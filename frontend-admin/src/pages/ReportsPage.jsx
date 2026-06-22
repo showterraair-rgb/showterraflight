@@ -10,6 +10,7 @@ import { downloadBlob } from '../utils/download';
 import { usePermission } from '../hooks/usePermission';
 
 const REPORTS = [
+  { key: 'sales-summary', label: 'Sales report', filters: ['from', 'to'] },
   { key: 'booking-profit', label: 'Booking profit', filters: ['from', 'to', 'status', 'customer', 'supplier'] },
   { key: 'customer-due', label: 'Customer due', filters: ['customer', 'status'] },
   { key: 'supplier-payable', label: 'Supplier payable', filters: ['supplier', 'status'] },

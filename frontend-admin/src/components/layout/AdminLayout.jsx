@@ -7,7 +7,9 @@ import Header from './Header';
 
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
-  '/bookings': 'Bookings',
+  '/bookings': 'Booking History',
+  '/bookings/partial-payments': 'Partial Payments',
+  '/reports/sales': 'Sales Report',
   '/bookings/new': 'New Booking',
   '/customers': 'Customers',
   '/suppliers': 'Suppliers',

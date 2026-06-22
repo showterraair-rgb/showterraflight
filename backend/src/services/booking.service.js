@@ -129,6 +129,18 @@ function buildBookingFilter(query) {
   if (query.supplierId) filter.supplier = query.supplierId;
   if (query.orderId) filter.order = query.orderId;
 
+  if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
+
+  if (query.bookingDateFrom || query.bookingDateTo) {
+    filter.createdAt = {};
+    if (query.bookingDateFrom) filter.createdAt.$gte = new Date(query.bookingDateFrom);
+    if (query.bookingDateTo) {
+      const end = new Date(query.bookingDateTo);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
+
   if (query.dateFrom || query.dateTo) {
     filter.departureDate = {};
     if (query.dateFrom) filter.departureDate.$gte = new Date(query.dateFrom);
@@ -182,6 +194,77 @@ export async function listBookings(query) {
     items: items.map(formatBooking),
     pagination: buildPaginationResponse({ page, limit, total }),
   };
+}
+
+export async function getBookingsSummary(query = {}) {
+  const filter = buildBookingFilter(query);
+  const bookings = await Booking.find(filter).select(
+    'status salePrice amountPaid customerDue profit paymentStatus createdAt departureDate'
+  ).lean();
+
+  const ticketedStatuses = ['ticket_issued', 'delivered', 'completed'];
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const summary = {
+    total: bookings.length,
+    totalSale: 0,
+    totalPaid: 0,
+    totalDue: 0,
+    totalProfit: 0,
+    ticketed: { count: 0, amount: 0 },
+    cancelled: { count: 0, amount: 0 },
+    draft: { count: 0, amount: 0 },
+    partialDue: { count: 0, amount: 0 },
+    unpaidDue: { count: 0, amount: 0 },
+    todayDue: { count: 0, amount: 0 },
+    overdueDue: { count: 0, amount: 0 },
+  };
+
+  for (const b of bookings) {
+    const sale = b.salePrice || 0;
+    const paid = b.amountPaid || 0;
+    const due = b.customerDue || 0;
+
+    summary.totalSale += sale;
+    summary.totalPaid += paid;
+    summary.totalDue += due;
+    summary.totalProfit += b.profit || 0;
+
+    if (ticketedStatuses.includes(b.status)) {
+      summary.ticketed.count += 1;
+      summary.ticketed.amount += sale;
+    } else if (b.status === 'cancelled') {
+      summary.cancelled.count += 1;
+      summary.cancelled.amount += sale;
+    } else if (b.status === 'draft') {
+      summary.draft.count += 1;
+      summary.draft.amount += sale;
+    }
+
+    if (due > 0.01) {
+      if (b.paymentStatus === 'partial') {
+        summary.partialDue.count += 1;
+        summary.partialDue.amount += due;
+      }
+      if (b.paymentStatus === 'unpaid') {
+        summary.unpaidDue.count += 1;
+        summary.unpaidDue.amount += due;
+      }
+      const dep = b.departureDate ? new Date(b.departureDate) : null;
+      if (dep && dep >= todayStart && dep <= todayEnd) {
+        summary.todayDue.count += 1;
+        summary.todayDue.amount += due;
+      } else if (dep && dep < todayStart) {
+        summary.overdueDue.count += 1;
+        summary.overdueDue.amount += due;
+      }
+    }
+  }
+
+  return summary;
 }
 
 export async function getBookingById(id) {
@@ -685,6 +768,7 @@ export async function uploadBookingTicketCopy(id, file, userId, req) {
 
 export default {
   listBookings,
+  getBookingsSummary,
   getBookingById,
   createBooking,
   createBookingFromOrder,

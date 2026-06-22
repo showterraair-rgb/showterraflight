@@ -37,6 +37,7 @@ export const ordersApi = {
 
 export const bookingsApi = {
   list: (params) => api.get('/bookings', { params }),
+  summary: (params) => api.get('/bookings/summary', { params }),
   get: (id) => api.get(`/bookings/${id}`),
   create: (data) => api.post('/bookings', data),
   createFromOrder: (orderId, data) => api.post(`/bookings/from-order/${orderId}`, data),

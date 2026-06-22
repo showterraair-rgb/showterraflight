@@ -18,6 +18,7 @@ import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
 const router = Router();
 
 router.get('/', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.list);
+router.get('/summary', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.summary);
 router.post('/', authorize('bookings:create'), validate(createBookingSchema), bookingController.create);
 router.post('/from-order/:orderId', authorize('bookings:create'), validate(fromOrderParamSchema, 'params'), validate(createBookingFromOrderSchema), bookingController.createFromOrder);
 router.get('/:id', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getById);

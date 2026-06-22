@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { paymentsApi, accountsApi } from '../services/finance.api';
 import { customersApi, bookingsApi } from '../services/crm.api';
@@ -12,6 +13,9 @@ import { PAYMENT_METHODS } from '../utils/finance';
 
 export default function CustomerPaymentsPage() {
   const { can } = usePermission();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const bookingIdParam = searchParams.get('bookingId');
+  const [prefillBooking, setPrefillBooking] = useState(null);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -35,13 +39,15 @@ export default function CustomerPaymentsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await paymentsApi.listCustomer({ page, limit: 20 });
+      const params = { page, limit: 20 };
+      if (bookingIdParam) params.bookingId = bookingIdParam;
+      const { data } = await paymentsApi.listCustomer(params);
       setItems(data.data);
       setPagination(data.pagination);
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, bookingIdParam]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -63,6 +69,22 @@ export default function CustomerPaymentsPage() {
     }
   }, [selectedCustomer]);
 
+  useEffect(() => {
+    if (!bookingIdParam || !can('payments:customer')) return;
+    let cancelled = false;
+    bookingsApi.get(bookingIdParam).then(({ data }) => {
+      if (cancelled) return;
+      const b = data.data;
+      setPrefillBooking(b);
+      form.setValue('customerId', b.customer || '');
+      form.setValue('bookingId', b.id);
+      if (b.customerDue > 0) form.setValue('amount', b.customerDue);
+      setModalOpen(true);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingIdParam]);
+
   const onSubmit = async (values) => {
     setError('');
     try {
@@ -73,6 +95,8 @@ export default function CustomerPaymentsPage() {
         onAccount: Boolean(values.onAccount),
       });
       setModalOpen(false);
+      setPrefillBooking(null);
+      if (bookingIdParam) setSearchParams({});
       form.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Cash', amount: 0, onAccount: false });
       load();
     } catch (err) {
@@ -113,6 +137,16 @@ export default function CustomerPaymentsPage() {
 
   return (
     <div className="space-y-4">
+      {prefillBooking && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900">
+          <span>
+            Recording payment for booking <strong>{prefillBooking.bookingNumber}</strong>
+            {prefillBooking.customerDue > 0 && <> — due ৳{prefillBooking.customerDue.toLocaleString()}</>}
+          </span>
+          <Link to={`/bookings/${prefillBooking.id}`} className="text-brand-700 hover:underline">View booking</Link>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Customer Payments</h2>
@@ -130,7 +164,11 @@ export default function CustomerPaymentsPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setPrefillBooking(null);
+          if (bookingIdParam) setSearchParams({});
+        }}
         title="Record Customer Payment"
         wide
         footer={(

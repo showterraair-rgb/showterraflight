@@ -6,6 +6,11 @@ export const list = asyncHandler(async (req, res) => {
   res.json({ success: true, data: data.items, pagination: data.pagination });
 });
 
+export const summary = asyncHandler(async (req, res) => {
+  const data = await bookingService.getBookingsSummary(req.query);
+  res.json({ success: true, data });
+});
+
 export const getById = asyncHandler(async (req, res) => {
   const data = await bookingService.getBookingById(req.params.id);
   res.json({ success: true, data });

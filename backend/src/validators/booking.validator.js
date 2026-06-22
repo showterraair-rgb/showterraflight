@@ -27,6 +27,9 @@ export const listQuerySchema = z.object({
   orderId: objectId.optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
+  paymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
+  bookingDateFrom: z.string().optional(),
+  bookingDateTo: z.string().optional(),
 });
 
 export const createBookingBaseSchema = z.object({
