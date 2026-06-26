@@ -22,6 +22,8 @@ import {
 } from '../config/constants.js';
 import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
 import { sendMetaWhatsAppTemplate, sendMetaWhatsAppText } from './whatsapp/metaCloud.provider.js';
+import { sendWasenderMessage } from './whatsapp/wasender.provider.js';
+import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
 import { normalizeWaPhone } from '../utils/phoneUtils.js';
@@ -161,12 +163,7 @@ export async function sendEmailMessage({ to, subject, message, replyTo }) {
     return { success: true, channel: 'email', messageId: `email-mock-${Date.now()}`, mocked: true };
   }
 
-  try {
-    console.log('[NOTIFICATION:email:send]', subject, '→', recipient);
-    return { success: true, channel: 'email', messageId: `email-${Date.now()}` };
-  } catch (err) {
-    return { success: false, channel: 'email', error: err.message || 'Email send failed' };
-  }
+  return sendSmtpEmail({ to: recipient, subject, text: message, replyTo });
 }
 
 export async function sendWhatsAppMessage({
@@ -190,11 +187,14 @@ export async function sendWhatsAppMessage({
   }
 
   if (!settings.isConfigured) {
+    if (textFallback) {
+      return sendWasenderMessage({ to: recipient, message: textFallback });
+    }
     console.log('[NOTIFICATION:whatsapp:no-config]', recipient);
     return {
       success: false,
       channel: 'whatsapp',
-      error: 'WhatsApp Cloud API not configured (access token and phone number ID required)',
+      error: 'WhatsApp not configured (Meta Cloud or Wasender API)',
     };
   }
 

@@ -34,6 +34,12 @@ export function AuthProvider({ children }) {
     return data.data.user;
   };
 
+  const loginWithOtp = async (payload) => {
+    const { data } = await authApi.verifyOtp(payload);
+    setUser(data.data.user);
+    return data.data.user;
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
@@ -43,7 +49,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(
-    () => ({ user, loading, login, logout, refreshUser: fetchUser, isAuthenticated: !!user }),
+    () => ({ user, loading, login, loginWithOtp, logout, refreshUser: fetchUser, isAuthenticated: !!user }),
     [user, loading, fetchUser]
   );
 

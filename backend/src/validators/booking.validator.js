@@ -51,6 +51,12 @@ function roundTripRefine(schema) {
   });
 }
 
+const fareAmountSchema = z.object({
+  bdt: z.coerce.number().min(0).optional(),
+  usd: z.coerce.number().min(0).optional(),
+  brl: z.coerce.number().min(0).optional(),
+});
+
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -98,6 +104,12 @@ export const createBookingBaseSchema = z.object({
   status: z.enum(BOOKING_STATUSES).default('draft'),
   ticketCopyPath: z.string().max(500).optional(),
   ticketCopyFileName: z.string().max(255).optional(),
+  duePaymentAt: z.string().optional(),
+  usdRateAtBooking: z.coerce.number().positive().optional(),
+  fareSale: fareAmountSchema.optional(),
+  farePurchase: fareAmountSchema.optional(),
+  fareCosts: fareAmountSchema.optional(),
+  farePaid: fareAmountSchema.optional(),
   ...eTicketFields,
 });
 
@@ -197,6 +209,18 @@ export const fromOrderParamSchema = z.object({
 
 export const idParamSchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
+});
+
+export const scheduleChangeSchema = z.object({
+  departureDate: z.string().optional(),
+  route: z.string().max(200).optional(),
+  fromDestination: z.string().max(100).optional(),
+  toDestination: z.string().max(100).optional(),
+  airline: z.string().max(100).optional(),
+  pnr: z.string().max(50).optional(),
+  flightSegment: flightSegmentSchema.optional(),
+  note: z.string().max(1000).optional(),
+  notifyCustomer: z.boolean().optional().default(true),
 });
 
 export const voidBookingSchema = z.object({

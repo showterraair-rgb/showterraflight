@@ -98,8 +98,45 @@ export const uploadPassport = asyncHandler(async (req, res) => {
 });
 
 export const uploadTicketCopy = asyncHandler(async (req, res) => {
-  const data = await bookingService.uploadBookingTicketCopy(req.params.id, req.file, req.user.id, req);
+  const data = await bookingService.uploadBookingTicketCopyWithExtract(req.params.id, req.file, req.user.id, req);
   res.json({ success: true, data, message: 'Ticket copy uploaded' });
+});
+
+export const extractTicket = asyncHandler(async (req, res) => {
+  const data = await bookingService.extractTicketData(req.file);
+  res.json({ success: true, data, message: 'Ticket data extracted — verify before saving' });
+});
+
+export const upcoming = asyncHandler(async (req, res) => {
+  const data = await bookingService.listUpcomingFlights(req.query);
+  res.json({ success: true, data });
+});
+
+export const scheduleChange = asyncHandler(async (req, res) => {
+  const data = await bookingService.recordScheduleChange(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Schedule change recorded' });
+});
+
+export const scheduleChangeWithTicket = asyncHandler(async (req, res) => {
+  const ticketCopyPath = req.file ? `tickets/${req.file.filename}` : undefined;
+  const ticketCopyFileName = req.file?.originalname;
+  let extracted = null;
+  if (req.file) {
+    extracted = await bookingService.extractTicketData(req.file);
+  }
+  const data = await bookingService.recordScheduleChange(
+    req.params.id,
+    {
+      ...req.body,
+      ...extracted,
+      ticketCopyPath,
+      ticketCopyFileName,
+      note: req.body.note || 'Schedule changed with new ticket',
+    },
+    req.user.id,
+    req
+  );
+  res.json({ success: true, data, extracted, message: 'Schedule change recorded with new ticket' });
 });
 
 export default {
@@ -115,6 +152,10 @@ export default {
   updateApproval,
   uploadPassport,
   uploadTicketCopy,
+  extractTicket,
+  upcoming,
+  scheduleChange,
+  scheduleChangeWithTicket,
   addNote,
   getTimeline,
   remove,

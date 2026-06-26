@@ -27,6 +27,7 @@ function buildSchema(isEdit) {
     role: z.enum(USER_ROLES),
     department: z.string().optional().or(z.literal('')),
     designation: z.string().optional().or(z.literal('')),
+    jobRegistrationNumber: z.string().optional().or(z.literal('')),
     notes: z.string().optional().or(z.literal('')),
     password: isEdit ? passwordSchema.optional().or(z.literal('')) : passwordSchema,
     isActive: z.boolean().optional(),
@@ -40,10 +41,51 @@ const empty = {
   role: 'sales_executive',
   department: '',
   designation: '',
+  jobRegistrationNumber: '',
   notes: '',
   password: '',
   isActive: true,
 };
+
+function StaffDocuments({ userId, user, onUploaded }) {
+  const docs = [
+    { type: 'nid', label: 'NID', url: user?.nidUrl, name: user?.nidFileName },
+    { type: 'school_certificate', label: 'School Certificate', url: user?.schoolCertificateUrl, name: user?.schoolCertificateFileName },
+    { type: 'other', label: 'Other Document', url: user?.otherDocumentUrl, name: user?.otherDocumentFileName },
+  ];
+
+  const upload = async (docType, file) => {
+    if (!file) return;
+    try {
+      await usersApi.uploadDocument(userId, docType, file);
+      onUploaded?.();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Upload failed');
+    }
+  };
+
+  return (
+    <div className="space-y-3 border-t border-slate-100 pt-4">
+      <p className="text-sm font-semibold text-slate-900">Staff Documents</p>
+      {docs.map((d) => (
+        <div key={d.type} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+          <p className="mb-2 text-xs font-medium uppercase text-slate-500">{d.label}</p>
+          {d.url && (
+            <a href={d.url} target="_blank" rel="noopener noreferrer" className="mb-2 block text-sm text-brand-600 hover:underline">
+              {d.name || 'View uploaded file'}
+            </a>
+          )}
+          <input
+            type="file"
+            accept="application/pdf,image/*"
+            className="block w-full text-xs text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-white file:px-2 file:py-1"
+            onChange={(e) => upload(d.type, e.target.files?.[0])}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function UserFormModal({ editing, open, onClose, onSaved }) {
   const schema = useMemo(() => buildSchema(Boolean(editing)), [editing]);
@@ -64,6 +106,7 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
         role: editing.role,
         department: editing.department || '',
         designation: editing.designation || '',
+        jobRegistrationNumber: editing.jobRegistrationNumber || '',
         notes: editing.notes || '',
         password: '',
         isActive: editing.isActive,
@@ -83,6 +126,7 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
         role: form.role,
         department: form.department || undefined,
         designation: form.designation || undefined,
+        jobRegistrationNumber: form.jobRegistrationNumber || undefined,
         notes: form.notes || undefined,
       };
       if (form.password) payload.password = form.password;
@@ -143,10 +187,26 @@ function UserFormModal({ editing, open, onClose, onSaved }) {
           </div>
         </div>
 
+        {editing?.staffId && (
+          <div>
+            <label className="mb-1 block text-sm font-medium">Staff ID</label>
+            <input className="input-field bg-slate-50 font-mono" value={editing.staffId} readOnly />
+          </div>
+        )}
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Job Registration Number</label>
+          <input className="input-field" {...register('jobRegistrationNumber')} />
+        </div>
+
         <div>
           <label className="mb-1 block text-sm font-medium">Internal notes</label>
           <textarea rows={2} className="input-field" {...register('notes')} />
         </div>
+
+        {editing && (
+          <StaffDocuments userId={editing.id} user={editing} onUploaded={onSaved} />
+        )}
 
         <div>
           <label className="mb-1 block text-sm font-medium">
@@ -227,6 +287,7 @@ export default function UsersPage() {
   };
 
   const columns = [
+    { key: 'staffId', label: 'Staff ID', render: (r) => <span className="font-mono text-xs">{r.staffId || '—'}</span> },
     { key: 'name', label: 'Name', render: (r) => <span className="font-medium text-slate-900">{r.name}</span> },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },

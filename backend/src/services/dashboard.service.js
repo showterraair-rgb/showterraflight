@@ -13,6 +13,41 @@ function endOfToday() {
   return dayjs().endOf('day').toDate();
 }
 
+function paymentAlertColor(booking) {
+  if (booking.paymentStatus === 'paid' || (booking.customerDue || 0) <= 0) return 'green';
+  if (booking.duePaymentAt) {
+    const due = dayjs(booking.duePaymentAt);
+    if (due.isBefore(dayjs())) return 'red';
+    if (due.isBefore(dayjs().add(3, 'day'))) return 'yellow';
+  }
+  if (booking.paymentStatus === 'partial') return 'yellow';
+  return 'red';
+}
+
+export async function getPaymentAlerts(limit = 20) {
+  const bookings = await Booking.find({
+    customerDue: { $gt: 0 },
+    status: { $nin: ['cancelled', 'voided', 'refunded'] },
+  })
+    .sort({ duePaymentAt: 1, departureDate: 1 })
+    .limit(limit)
+    .populate('customer', 'name phone email')
+    .lean();
+
+  return bookings.map((b) => ({
+    id: b._id.toString(),
+    bookingNumber: b.bookingNumber,
+    customerName: b.customer?.name,
+    customerPhone: b.customer?.phone,
+    customerEmail: b.customer?.email,
+    customerDue: b.customerDue,
+    duePaymentAt: b.duePaymentAt,
+    departureDate: b.departureDate,
+    paymentStatus: b.paymentStatus,
+    alertColor: paymentAlertColor(b),
+  }));
+}
+
 export async function getDashboardSummary(user) {
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
@@ -111,11 +146,14 @@ export async function getRecentActivity() {
 }
 
 export async function getDashboardAlerts() {
-  const dueReminders = await Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
-    .sort({ dueDate: 1 })
-    .limit(5)
-    .select('title type dueDate priority')
-    .lean();
+  const [dueReminders, paymentAlerts] = await Promise.all([
+    Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
+      .sort({ dueDate: 1 })
+      .limit(5)
+      .select('title type dueDate priority')
+      .lean(),
+    getPaymentAlerts(10),
+  ]);
 
   return {
     reminders: dueReminders.map((r) => ({
@@ -125,7 +163,8 @@ export async function getDashboardAlerts() {
       dueDate: r.dueDate,
       priority: r.priority,
     })),
+    paymentAlerts,
   };
 }
 
-export default { getDashboardSummary, getRecentActivity, getDashboardAlerts };
+export default { getDashboardSummary, getRecentActivity, getDashboardAlerts, getPaymentAlerts };

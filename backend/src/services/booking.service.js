@@ -19,6 +19,8 @@ import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './appro
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 import { getCurrencyRatesMap } from './currency.service.js';
 import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing } from '../utils/currencyUtils.js';
+import { buildFareRates, computeFareTotals } from '../utils/fareCurrency.js';
+import { extractTicketFromFile } from './ticketExtract.service.js';
 import Account from '../models/Account.js';
 import { createCustomerPayment, createCustomerRefund, voidCustomerPayment } from './customerPayment.service.js';
 import { createSupplierPayment, voidSupplierPayment } from './supplierPayment.service.js';
@@ -32,6 +34,11 @@ function derivePaymentStatus(amount, total) {
 function formatBooking(doc) {
   const purchaseTotal = (doc.purchasePrice || 0) + (doc.directCosts || 0);
   const pricing = normalizeLegacyBookingPricing(doc);
+  const rates = buildFareRates({
+    bdtRate: doc.bdtRateAtBooking ?? doc.exchangeRateAtBooking,
+    usdRate: doc.usdRateAtBooking,
+  });
+  const fareTotals = computeFareTotals(doc, rates);
   return {
     id: doc._id.toString(),
     bookingNumber: doc.bookingNumber,
@@ -55,6 +62,15 @@ function formatBooking(doc) {
     passengers: doc.passengers || [],
     flightSegment: doc.flightSegment || null,
     fareBreakdown: doc.fareBreakdown || null,
+    fareSale: doc.fareSale || null,
+    farePurchase: doc.farePurchase || null,
+    fareCosts: doc.fareCosts || null,
+    farePaid: doc.farePaid || null,
+    fareTotals,
+    usdRateAtBooking: doc.usdRateAtBooking,
+    duePaymentAt: doc.duePaymentAt,
+    ocrExtractedAt: doc.ocrExtractedAt,
+    scheduleChangeHistory: doc.scheduleChangeHistory || [],
     pnr: doc.pnr || '',
     ticketNumber: doc.ticketNumber || '',
     purchasePrice: doc.purchasePrice,
@@ -447,6 +463,11 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     passengers: data.passengers?.length ? data.passengers : undefined,
     flightSegment: data.flightSegment || undefined,
     fareBreakdown: data.fareBreakdown || (data.salePrice ? { grandTotal: data.salePrice } : undefined),
+    fareSale: data.fareSale,
+    farePurchase: data.farePurchase,
+    fareCosts: data.fareCosts,
+    usdRateAtBooking: data.usdRateAtBooking,
+    duePaymentAt: data.duePaymentAt ? new Date(data.duePaymentAt) : undefined,
     pnr: data.pnr,
     ticketNumber: data.ticketNumber,
     purchasePrice: currencyFields.purchasePrice ?? data.purchasePrice ?? 0,
@@ -611,6 +632,12 @@ export async function updateBooking(id, data, userId, req) {
   }
   if (data.flightSegment !== undefined) booking.flightSegment = data.flightSegment;
   if (data.fareBreakdown !== undefined) booking.fareBreakdown = data.fareBreakdown;
+  if (data.fareSale !== undefined) booking.fareSale = data.fareSale;
+  if (data.farePurchase !== undefined) booking.farePurchase = data.farePurchase;
+  if (data.fareCosts !== undefined) booking.fareCosts = data.fareCosts;
+  if (data.farePaid !== undefined) booking.farePaid = data.farePaid;
+  if (data.usdRateAtBooking !== undefined) booking.usdRateAtBooking = data.usdRateAtBooking;
+  if (data.duePaymentAt !== undefined) booking.duePaymentAt = data.duePaymentAt ? new Date(data.duePaymentAt) : undefined;
 
   if (data.status && data.status !== booking.status) {
     pushTimeline(booking, data.status, 'Updated via edit form', userId);
@@ -998,6 +1025,146 @@ export async function uploadBookingTicketCopy(id, file, userId, req) {
   return getBookingById(id);
 }
 
+export async function listUpcomingFlights(query = {}) {
+  const limit = Math.min(Number(query.limit) || 50, 100);
+  const now = new Date();
+  const filter = {
+    productCategory: 'air',
+    departureDate: { $gte: now },
+    status: { $nin: ['cancelled', 'voided', 'refunded'] },
+  };
+  if (query.customerId) filter.customer = query.customerId;
+
+  const items = await Booking.find(filter)
+    .sort({ departureDate: 1 })
+    .limit(limit)
+    .populate('customer', 'name phone email')
+    .lean();
+
+  return items.map((b) => ({
+    id: b._id.toString(),
+    bookingNumber: b.bookingNumber,
+    customerName: b.customer?.name,
+    customerPhone: b.customer?.phone,
+    customerEmail: b.customer?.email,
+    airline: b.airline,
+    route: b.route,
+    fromDestination: b.fromDestination,
+    toDestination: b.toDestination,
+    departureDate: b.departureDate,
+    pnr: b.pnr,
+    status: b.status,
+    customerDue: b.customerDue,
+    duePaymentAt: b.duePaymentAt,
+    passengerCount: b.passengerCount,
+  }));
+}
+
+export async function extractTicketData(file) {
+  if (!file) throw ApiError.badRequest('No ticket file uploaded');
+  const filePath = file.path;
+  const extracted = await extractTicketFromFile(filePath, file.mimetype);
+  return extracted;
+}
+
+export async function recordScheduleChange(id, data, userId, req) {
+  const booking = await Booking.findById(id).populate('customer', 'name phone email');
+  if (!booking) throw ApiError.notFound('Booking not found');
+
+  const previousDepartureDate = booking.departureDate;
+  const previousRoute = booking.route;
+
+  if (data.departureDate) booking.departureDate = new Date(data.departureDate);
+  if (data.route) booking.route = data.route;
+  if (data.fromDestination) booking.fromDestination = data.fromDestination;
+  if (data.toDestination) booking.toDestination = data.toDestination;
+  if (data.airline) booking.airline = data.airline;
+  if (data.pnr !== undefined) booking.pnr = data.pnr;
+  if (data.flightSegment) booking.flightSegment = { ...booking.flightSegment?.toObject?.() || booking.flightSegment || {}, ...data.flightSegment };
+
+  let ticketPath = '';
+  let ticketName = '';
+  if (data.ticketCopyPath) {
+    ticketPath = data.ticketCopyPath;
+    ticketName = data.ticketCopyFileName || '';
+    booking.ticketCopyPath = ticketPath;
+    booking.ticketCopyFileName = ticketName;
+  }
+
+  booking.scheduleChangeHistory = booking.scheduleChangeHistory || [];
+  booking.scheduleChangeHistory.push({
+    previousDepartureDate,
+    newDepartureDate: booking.departureDate,
+    previousRoute,
+    newRoute: booking.route,
+    ticketCopyPath: ticketPath,
+    ticketCopyFileName: ticketName,
+    note: data.note || 'Schedule changed',
+    changedBy: userId,
+    changedAt: new Date(),
+  });
+
+  pushTimeline(booking, booking.status, data.note || 'Schedule changed', userId);
+  await booking.save();
+
+  const ctx = buildBookingNotificationContext(booking, booking.customer, {
+    vars: {
+      previousDate: previousDepartureDate?.toISOString?.()?.slice(0, 10) || '',
+      newDate: booking.departureDate?.toISOString?.()?.slice(0, 10) || '',
+      route: booking.route,
+    },
+  });
+  triggerNotificationEventSafe('schedule_change', ctx);
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Schedule change recorded for ${booking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return getBookingById(id);
+}
+
+export async function uploadBookingTicketCopyWithExtract(id, file, userId, req) {
+  const result = await uploadBookingTicketCopy(id, file, userId, req);
+  if (!file) return result;
+
+  try {
+    const extracted = await extractTicketFromFile(file.path, file.mimetype);
+    const booking = await Booking.findById(id);
+    if (booking && extracted.confidence > 0) {
+      if (extracted.pnr) booking.pnr = extracted.pnr;
+      if (extracted.airline) booking.airline = extracted.airline;
+      if (extracted.route) booking.route = extracted.route;
+      if (extracted.fromDestination) booking.fromDestination = extracted.fromDestination;
+      if (extracted.toDestination) booking.toDestination = extracted.toDestination;
+      if (extracted.departureDate) booking.departureDate = new Date(extracted.departureDate);
+      if (extracted.ticketNumber) booking.ticketNumber = extracted.ticketNumber;
+      if (extracted.passengers?.length) {
+        booking.passengers = extracted.passengers;
+        booking.passengerCount = extracted.passengers.length;
+      }
+      if (extracted.flightNumber) {
+        booking.flightSegment = {
+          ...(booking.flightSegment?.toObject?.() || booking.flightSegment || {}),
+          flightNumber: extracted.flightNumber,
+          airlinePnr: extracted.pnr || booking.pnr,
+        };
+      }
+      booking.ocrExtractedAt = new Date();
+      booking.ocrSource = file.originalname;
+      await booking.save();
+    }
+    return { ...result, extracted };
+  } catch {
+    return result;
+  }
+}
+
 export default {
   listBookings,
   getBookingsSummary,
@@ -1012,6 +1179,10 @@ export default {
   updateBookingApproval,
   uploadBookingPassport,
   uploadBookingTicketCopy,
+  uploadBookingTicketCopyWithExtract,
+  extractTicketData,
+  listUpcomingFlights,
+  recordScheduleChange,
   addBookingNote,
   getBookingTimeline,
   deleteBooking,

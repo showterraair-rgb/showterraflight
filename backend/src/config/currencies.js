@@ -14,8 +14,15 @@ export const DEFAULT_CURRENCIES = {
     isBase: false,
     rateToBase: 22.5,
   },
+  USD: {
+    name: 'US Dollar',
+    symbol: '$',
+    code: 'USD',
+    isBase: false,
+    rateToBase: 110,
+  },
 };
 
-export const SUPPORTED_CURRENCY_CODES = ['BDT', 'BRL'];
+export const SUPPORTED_CURRENCY_CODES = ['BDT', 'BRL', 'USD'];
 
 export default DEFAULT_CURRENCIES;

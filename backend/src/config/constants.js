@@ -116,6 +116,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   'ticket_issued',
   'payment_received',
   'payment_due_reminder',
+  'schedule_change',
   'booking_canceled',
   'daily_ledger_summary',
 ];

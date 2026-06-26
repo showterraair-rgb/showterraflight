@@ -35,4 +35,9 @@ export const setStatus = asyncHandler(async (req, res) => {
   });
 });
 
-export default { list, getById, create, update, remove, setStatus };
+export const uploadDocument = asyncHandler(async (req, res) => {
+  const data = await userService.uploadStaffDocument(req.params.id, req.params.docType, req.file, req.user.id, req);
+  res.json({ success: true, data, message: 'Document uploaded' });
+});
+
+export default { list, getById, create, update, remove, setStatus, uploadDocument };

@@ -35,6 +35,7 @@ export const createUserSchema = z.object({
   department: z.string().max(120).trim().optional(),
   designation: z.string().max(120).trim().optional(),
   notes: z.string().max(2000).trim().optional(),
+  jobRegistrationNumber: z.string().max(80).trim().optional(),
   permissionOverrides: permissionOverridesSchema,
 });
 
@@ -46,6 +47,7 @@ export const updateUserSchema = z.object({
   department: z.string().max(120).trim().optional(),
   designation: z.string().max(120).trim().optional(),
   notes: z.string().max(2000).trim().optional(),
+  jobRegistrationNumber: z.string().max(80).trim().optional(),
   permissionOverrides: permissionOverridesSchema,
   isActive: z.boolean().optional(),
   password: passwordBase.optional(),

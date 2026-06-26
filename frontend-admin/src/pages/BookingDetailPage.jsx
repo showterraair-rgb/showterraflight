@@ -13,6 +13,7 @@ import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, 
 import ApprovalControls from '../components/bookings/ApprovalPanel';
 import PassportUpload from '../components/bookings/PassportUpload';
 import BookingRrvPanel from '../components/bookings/BookingRrvPanel';
+import ScheduleChangePanel from '../components/bookings/ScheduleChangePanel';
 import { useFieldPermission } from '../hooks/useFieldPermission';
 
 export default function BookingDetailPage() {
@@ -297,8 +298,24 @@ export default function BookingDetailPage() {
             <dt className="text-slate-500">Supplier Paid</dt>
             <dd><MoneyAmount amount={booking.supplierPaid} size="sm" /></dd>
             <dt className="text-slate-500">Payment Status</dt><dd className="capitalize">{booking.paymentStatus}</dd>
+            {booking.duePaymentAt && (
+              <>
+                <dt className="text-slate-500">Due Payment</dt>
+                <dd>{formatDateTime(booking.duePaymentAt)}</dd>
+              </>
+            )}
             <dt className="text-slate-500">Supplier Payment</dt><dd className="capitalize">{booking.supplierPaymentStatus}</dd>
           </dl>
+          {booking.fareTotals && (
+            <dl className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 text-sm">
+              <dt className="text-slate-500">Sale (BDT/USD/BRL)</dt>
+              <dd>৳ {Number(booking.fareTotals.sale?.bdt || 0).toLocaleString()} / ${Number(booking.fareTotals.sale?.usd || 0).toFixed(2)} / R$ {Number(booking.fareTotals.sale?.brl || 0).toFixed(2)}</dd>
+              <dt className="text-slate-500">Full Due</dt>
+              <dd>৳ {Number(booking.fareTotals.fullDue?.bdt || booking.customerDue || 0).toLocaleString()}</dd>
+              <dt className="text-slate-500">Balance</dt>
+              <dd>৳ {Number(booking.fareTotals.balance?.bdt || booking.customerDue || 0).toLocaleString()}</dd>
+            </dl>
+          )}
           {rate && (
             <p className="text-xs text-slate-500">Rate at booking: 1 BRL = ৳ {Number(rate).toFixed(2)}</p>
           )}
@@ -348,6 +365,10 @@ export default function BookingDetailPage() {
             )}
           </div>
         </div>
+      )}
+
+      {can('bookings:update') && booking.productCategory === 'air' && (
+        <ScheduleChangePanel booking={booking} onDone={load} />
       )}
 
       {can('bookings:update') && (

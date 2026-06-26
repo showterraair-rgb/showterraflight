@@ -9,6 +9,12 @@ import {
 } from '../utils/pagination.js';
 import { logAudit } from './audit.service.js';
 import { PERMISSIONS } from '../config/permissions.js';
+import { generateStaffId } from './staffId.service.js';
+
+function docUrl(path) {
+  if (!path) return '';
+  return `/uploads/${String(path).replace(/^uploads\//, '')}`;
+}
 
 function formatUser(doc) {
   return {
@@ -16,6 +22,14 @@ function formatUser(doc) {
     name: doc.name,
     email: doc.email,
     phone: doc.phone || '',
+    staffId: doc.staffId || '',
+    jobRegistrationNumber: doc.jobRegistrationNumber || '',
+    nidUrl: docUrl(doc.nidFilePath),
+    nidFileName: doc.nidFileName || '',
+    schoolCertificateUrl: docUrl(doc.schoolCertificatePath),
+    schoolCertificateFileName: doc.schoolCertificateFileName || '',
+    otherDocumentUrl: docUrl(doc.otherDocumentPath),
+    otherDocumentFileName: doc.otherDocumentFileName || '',
     role: doc.role,
     department: doc.department || '',
     designation: doc.designation || '',
@@ -85,7 +99,7 @@ function validateOverrides(overrides) {
 
 export async function listUsers(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query);
-  const filter = { ...buildSearchFilter(query.search, ['name', 'email', 'phone', 'department', 'designation']) };
+  const filter = { ...buildSearchFilter(query.search, ['name', 'email', 'phone', 'department', 'designation', 'staffId', 'jobRegistrationNumber']) };
 
   if (query.role) filter.role = query.role;
   if (query.isActive === 'true') filter.isActive = true;
@@ -116,6 +130,8 @@ export async function createUser(data, userId, req) {
     name: data.name,
     email: data.email,
     phone: data.phone || undefined,
+    staffId: data.staffId || await generateStaffId(),
+    jobRegistrationNumber: data.jobRegistrationNumber || '',
     password: data.password,
     role: data.role || ROLES.SALES_EXECUTIVE,
     department: data.department || '',
@@ -153,6 +169,7 @@ export async function updateUser(id, data, userId, req) {
 
   if (data.name) user.name = data.name;
   if (data.phone !== undefined) user.phone = data.phone || undefined;
+  if (data.jobRegistrationNumber !== undefined) user.jobRegistrationNumber = data.jobRegistrationNumber || '';
   if (data.role) user.role = data.role;
   if (data.department !== undefined) user.department = data.department || '';
   if (data.designation !== undefined) user.designation = data.designation || '';
@@ -197,6 +214,37 @@ export async function setUserActive(id, isActive, userId, req) {
   return updateUser(id, { isActive }, userId, req);
 }
 
+const STAFF_DOC_FIELDS = {
+  nid: { path: 'nidFilePath', name: 'nidFileName' },
+  school_certificate: { path: 'schoolCertificatePath', name: 'schoolCertificateFileName' },
+  other: { path: 'otherDocumentPath', name: 'otherDocumentFileName' },
+};
+
+export async function uploadStaffDocument(id, docType, file, userId, req) {
+  const fields = STAFF_DOC_FIELDS[docType];
+  if (!fields) throw ApiError.badRequest('Invalid document type');
+
+  const user = await User.findById(id);
+  if (!user) throw ApiError.notFound('User not found');
+  if (!file) throw ApiError.badRequest('No file uploaded');
+
+  user[fields.path] = `staff-docs/${file.filename}`;
+  user[fields.name] = file.originalname;
+  await user.save();
+
+  await logAudit({
+    action: 'update',
+    module: 'users',
+    entityType: 'User',
+    entityId: user._id,
+    description: `Uploaded ${docType} for staff ${user.staffId || user.email}`,
+    userId,
+    req,
+  });
+
+  return formatUser(user.toObject());
+}
+
 export default {
   listUsers,
   getUserById,
@@ -204,4 +252,5 @@ export default {
   updateUser,
   deactivateUser,
   setUserActive,
+  uploadStaffDocument,
 };

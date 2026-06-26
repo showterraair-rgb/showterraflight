@@ -4,24 +4,37 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
+import { authApi } from '../services/auth.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
-const loginSchema = z.object({
+const passwordSchema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 });
 
+const otpRequestSchema = z.object({
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional(),
+}).refine((d) => d.email || d.phone, { message: 'Email or phone required' });
+
+const otpVerifySchema = z.object({
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional(),
+  code: z.string().length(6, 'Enter 6-digit code'),
+}).refine((d) => d.email || d.phone, { message: 'Email or phone required' });
+
 export default function LoginPage() {
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, loginWithOtp, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const [mode, setMode] = useState('password');
+  const [otpStep, setOtpStep] = useState('request');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({ resolver: zodResolver(loginSchema) });
+  const passwordForm = useForm({ resolver: zodResolver(passwordSchema) });
+  const otpRequestForm = useForm({ resolver: zodResolver(otpRequestSchema) });
+  const otpVerifyForm = useForm({ resolver: zodResolver(otpVerifySchema) });
 
   if (loading) {
     return (
@@ -35,13 +48,47 @@ export default function LoginPage() {
     return <Navigate to={location.state?.from?.pathname || '/dashboard'} replace />;
   }
 
-  const onSubmit = async (data) => {
+  const onPasswordLogin = async (data) => {
     setError('');
     setSubmitting(true);
     try {
       await login(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onRequestOtp = async (data) => {
+    setError('');
+    setInfo('');
+    setSubmitting(true);
+    try {
+      const payload = data.email ? { email: data.email } : { phone: data.phone };
+      const { data: res } = await authApi.requestOtp(payload);
+      setInfo(res.message || 'Code sent');
+      otpVerifyForm.setValue('email', data.email || '');
+      otpVerifyForm.setValue('phone', data.phone || '');
+      setOtpStep('verify');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not send code');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onVerifyOtp = async (data) => {
+    setError('');
+    setSubmitting(true);
+    try {
+      const payload = {
+        code: data.code,
+        ...(data.email ? { email: data.email } : { phone: data.phone }),
+      };
+      await loginWithOtp(payload);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid code');
     } finally {
       setSubmitting(false);
     }
@@ -51,44 +98,56 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
-            STA
-          </div>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">STA</div>
           <h1 className="text-2xl font-bold text-slate-900">Show Terra Air</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to the admin panel</p>
+          <p className="mt-1 text-sm text-slate-500">Staff sign in</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="card space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="mb-4 flex rounded-lg border border-slate-200 bg-white p-1">
+          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'password' ? 'bg-brand-600 text-white' : 'text-slate-600'}`} onClick={() => { setMode('password'); setError(''); setInfo(''); }}>Password</button>
+          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'otp' ? 'bg-brand-600 text-white' : 'text-slate-600'}`} onClick={() => { setMode('otp'); setError(''); setInfo(''); }}>OTP (Email/Phone)</button>
+        </div>
+
+        <div className="card space-y-4">
+          {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+          {info && <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">{info}</div>}
+
+          {mode === 'password' ? (
+            <form onSubmit={passwordForm.handleSubmit(onPasswordLogin)} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Email</label>
+                <input type="email" className="input-field" {...passwordForm.register('email')} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Password</label>
+                <input type="password" className="input-field" {...passwordForm.register('password')} />
+              </div>
+              <button type="submit" disabled={submitting} className="btn-primary w-full">{submitting ? 'Signing in…' : 'Sign In'}</button>
+            </form>
+          ) : otpStep === 'request' ? (
+            <form onSubmit={otpRequestForm.handleSubmit(onRequestOtp)} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Email</label>
+                <input type="email" className="input-field" {...otpRequestForm.register('email')} />
+              </div>
+              <p className="text-center text-xs text-slate-400">or</p>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Phone</label>
+                <input className="input-field" placeholder="01XXXXXXXXX" {...otpRequestForm.register('phone')} />
+              </div>
+              <button type="submit" disabled={submitting} className="btn-primary w-full">Send OTP Code</button>
+            </form>
+          ) : (
+            <form onSubmit={otpVerifyForm.handleSubmit(onVerifyOtp)} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium">6-digit code</label>
+                <input className="input-field text-center font-mono text-lg tracking-widest" maxLength={6} {...otpVerifyForm.register('code')} />
+              </div>
+              <button type="submit" disabled={submitting} className="btn-primary w-full">Verify & Sign In</button>
+              <button type="button" className="w-full text-sm text-brand-600 hover:underline" onClick={() => setOtpStep('request')}>Request new code</button>
+            </form>
           )}
-
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
-              Email
-            </label>
-            <input id="email" type="email" className="input-field" {...register('email')} />
-            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
-              Password
-            </label>
-            <input id="password" type="password" className="input-field" {...register('password')} />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-            )}
-          </div>
-
-          <button type="submit" disabled={submitting} className="btn-primary w-full">
-            {submitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Kanaighat, Sylhet — Show Terra Air Management System
-        </p>
+        </div>
       </div>
     </div>
   );

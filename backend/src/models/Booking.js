@@ -61,6 +61,32 @@ const fareBreakdownSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const fareCurrencySchema = new mongoose.Schema(
+  {
+    bdt: { type: Number, default: 0, min: 0 },
+    usd: { type: Number, default: 0, min: 0 },
+    brl: { type: Number, default: 0, min: 0 },
+  },
+  { _id: false }
+);
+
+const scheduleChangeSchema = new mongoose.Schema(
+  {
+    previousDepartureDate: { type: Date },
+    newDepartureDate: { type: Date },
+    previousRoute: { type: String, default: '' },
+    newRoute: { type: String, default: '' },
+    ticketCopyPath: { type: String, default: '' },
+    ticketCopyFileName: { type: String, default: '' },
+    note: { type: String, default: '' },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    changedAt: { type: Date, default: Date.now },
+    notifiedCustomer: { type: Boolean, default: false },
+    notifiedStaff: { type: Boolean, default: false },
+  },
+  { _id: true }
+);
+
 const bookingSchema = new mongoose.Schema(
   {
     bookingNumber: { type: String, unique: true, required: true },
@@ -96,13 +122,22 @@ const bookingSchema = new mongoose.Schema(
     passengers: [bookingPassengerSchema],
     flightSegment: flightSegmentSchema,
     fareBreakdown: fareBreakdownSchema,
+    fareSale: { type: fareCurrencySchema, default: () => ({}) },
+    farePurchase: { type: fareCurrencySchema, default: () => ({}) },
+    fareCosts: { type: fareCurrencySchema, default: () => ({}) },
+    farePaid: { type: fareCurrencySchema, default: () => ({}) },
+    usdRateAtBooking: { type: Number, min: 0 },
+    duePaymentAt: { type: Date, index: true },
+    ocrExtractedAt: { type: Date },
+    ocrSource: { type: String, trim: true },
+    scheduleChangeHistory: [scheduleChangeSchema],
     pnr: { type: String, trim: true, index: true },
     ticketNumber: { type: String, trim: true },
     purchasePrice: { type: Number, required: true, min: 0, default: 0 },
     salePrice: { type: Number, required: true, min: 0, default: 0 },
     directCosts: { type: Number, default: 0, min: 0 },
     profit: { type: Number, default: 0 },
-    originalCurrency: { type: String, enum: ['BDT', 'BRL'], default: 'BDT' },
+    originalCurrency: { type: String, enum: ['BDT', 'BRL', 'USD'], default: 'BDT' },
     originalSalePrice: { type: Number, default: 0, min: 0 },
     originalPurchasePrice: { type: Number, default: 0, min: 0 },
     originalDirectCosts: { type: Number, default: 0, min: 0 },

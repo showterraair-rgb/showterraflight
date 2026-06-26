@@ -14,12 +14,15 @@ import {
   voidBookingSchema,
   refundBookingSchema,
   reissueBookingSchema,
+  scheduleChangeSchema,
 } from '../validators/booking.validator.js';
 import { updateApprovalSchema } from '../validators/approval.validator.js';
 import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
 
 const router = Router();
 
+router.get('/upcoming', authorize('bookings:view'), bookingController.upcoming);
+router.post('/extract-ticket', authorize('bookings:create', 'bookings:update'), bookingTicketUpload.single('ticketFile'), bookingController.extractTicket);
 router.get('/', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.list);
 router.get('/summary', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.summary);
 router.post('/', authorize('bookings:create'), validate(createBookingSchema), bookingController.create);
@@ -33,6 +36,8 @@ router.post('/:id/reissue', authorize('bookings:update', 'bookings:create'), val
 router.patch('/:id/approval', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateApprovalSchema), bookingController.updateApproval);
 router.post('/:id/passport', authorize('bookings:update'), validate(idParamSchema, 'params'), passportUpload.single('passport'), bookingController.uploadPassport);
 router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.uploadTicketCopy);
+router.post('/:id/schedule-change', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(scheduleChangeSchema), bookingController.scheduleChange);
+router.post('/:id/schedule-change/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.scheduleChangeWithTicket);
 router.post('/:id/notes', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), bookingController.addNote);
 router.get('/:id/timeline', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getTimeline);
 router.get('/:id/invoice/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadInvoicePdf);

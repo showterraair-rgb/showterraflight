@@ -58,6 +58,13 @@ export const NAV_ITEMS = [
     section: 'Bookings',
   },
   {
+    label: 'Upcoming Flights',
+    path: '/bookings/upcoming',
+    icon: 'bookings',
+    permissions: ['bookings:view'],
+    section: 'Bookings',
+  },
+  {
     label: 'Suppliers',
     path: '/suppliers',
     icon: 'suppliers',

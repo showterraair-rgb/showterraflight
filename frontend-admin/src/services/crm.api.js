@@ -66,6 +66,23 @@ export const bookingsApi = {
   void: (id, data) => api.post(`/bookings/${id}/void`, data),
   refund: (id, data) => api.post(`/bookings/${id}/refund`, data),
   reissue: (id, data) => api.post(`/bookings/${id}/reissue`, data),
+  upcoming: (params) => api.get('/bookings/upcoming', { params }),
+  extractTicket: (file) => {
+    const form = new FormData();
+    form.append('ticketFile', file);
+    return api.post('/bookings/extract-ticket', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  scheduleChange: (id, data) => api.post(`/bookings/${id}/schedule-change`, data),
+  scheduleChangeWithTicket: (id, file, data = {}) => {
+    const form = new FormData();
+    if (file) form.append('ticketFile', file);
+    Object.entries(data).forEach(([k, v]) => { if (v != null) form.append(k, v); });
+    return api.post(`/bookings/${id}/schedule-change/ticket`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const usersApi = {
@@ -75,4 +92,11 @@ export const usersApi = {
   update: (id, data) => api.put(`/users/${id}`, data),
   setStatus: (id, isActive) => api.patch(`/users/${id}/status`, { isActive }),
   deactivate: (id) => api.delete(`/users/${id}`),
+  uploadDocument: (id, docType, file) => {
+    const form = new FormData();
+    form.append('document', file);
+    return api.post(`/users/${id}/documents/${docType}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

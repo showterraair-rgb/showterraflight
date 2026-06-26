@@ -18,4 +18,15 @@ export const changePasswordSchema = z.object({
   newPassword: passwordBase,
 });
 
-export default { loginSchema, changePasswordSchema };
+export const requestOtpSchema = z.object({
+  email: z.string().email().trim().toLowerCase().optional(),
+  phone: z.string().min(6).max(20).trim().optional(),
+}).refine((d) => d.email || d.phone, { message: 'Email or phone is required' });
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email().trim().toLowerCase().optional(),
+  phone: z.string().min(6).max(20).trim().optional(),
+  code: z.string().length(6).regex(/^\d{6}$/, 'Enter 6-digit code'),
+}).refine((d) => d.email || d.phone, { message: 'Email or phone is required' });
+
+export default { loginSchema, changePasswordSchema, requestOtpSchema, verifyOtpSchema };

@@ -117,20 +117,53 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="card">
-        <h3 className="mb-4 text-sm font-semibold text-slate-900">Reminders</h3>
-        {alerts?.reminders?.length ? (
-          <div className="space-y-3">
-            {alerts.reminders.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
-                <p className="text-sm font-medium text-blue-900">{r.title}</p>
-                <p className="text-xs text-blue-600">{dayjs(r.dueDate).format('MMM D')}</p>
-              </div>
-            ))}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-900">Payment Alerts</h3>
+            {can('bookings:view') && (
+              <Link to="/bookings/upcoming" className="text-xs font-semibold text-brand-600 hover:underline">Upcoming flights</Link>
+            )}
           </div>
-        ) : (
-          <EmptyState title="No reminders due" description="Upcoming reminders will show here." icon="✓" />
-        )}
+          {alerts?.paymentAlerts?.length ? (
+            <div className="space-y-2">
+              {alerts.paymentAlerts.map((a) => {
+                const styles = {
+                  green: 'border-green-200 bg-green-50 text-green-900',
+                  yellow: 'border-amber-200 bg-amber-50 text-amber-900',
+                  red: 'border-red-200 bg-red-50 text-red-900',
+                };
+                return (
+                  <div key={a.id} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${styles[a.alertColor] || styles.yellow}`}>
+                    <div>
+                      <Link to={`/bookings/${a.id}`} className="text-sm font-medium hover:underline">{a.bookingNumber}</Link>
+                      <p className="text-xs opacity-80">{a.customerName} · Due ৳ {Number(a.customerDue || 0).toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs">{a.duePaymentAt ? dayjs(a.duePaymentAt).format('MMM D, h:mm A') : 'No due date'}</p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState title="No payment alerts" description="Outstanding balances with due dates appear here." icon="✓" />
+          )}
+        </div>
+
+        <div className="card">
+          <h3 className="mb-4 text-sm font-semibold text-slate-900">Reminders</h3>
+          {alerts?.reminders?.length ? (
+            <div className="space-y-3">
+              {alerts.reminders.map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
+                  <p className="text-sm font-medium text-blue-900">{r.title}</p>
+                  <p className="text-xs text-blue-600">{dayjs(r.dueDate).format('MMM D')}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No reminders due" description="Upcoming reminders will show here." icon="✓" />
+          )}
+        </div>
       </div>
     </div>
   );

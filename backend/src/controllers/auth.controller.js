@@ -1,5 +1,6 @@
 import env from '../config/env.js';
 import * as authService from '../services/auth.service.js';
+import * as otpService from '../services/otp.service.js';
 import getClientIp from '../utils/getClientIp.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
@@ -61,4 +62,15 @@ export const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
-export default { login, logout, me, changePassword };
+export const requestOtp = asyncHandler(async (req, res) => {
+  const data = await otpService.requestStaffOtp(req.body, getClientIp(req), req.headers['user-agent']);
+  res.json({ success: true, data, message: data.message });
+});
+
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const result = await otpService.verifyStaffOtp(req.body, getClientIp(req), req.headers['user-agent']);
+  res.cookie(env.jwt.cookieName, result.token, result.cookieOptions);
+  res.json({ success: true, data: { user: result.user }, message: 'Login successful' });
+});
+
+export default { login, logout, me, changePassword, requestOtp, verifyOtp };

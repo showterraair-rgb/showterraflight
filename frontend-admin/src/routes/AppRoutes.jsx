@@ -48,6 +48,7 @@ import AgentBookingsPage from '../pages/AgentBookingsPage';
 import AgentBookingDetailPage from '../pages/AgentBookingDetailPage';
 import AgentAccountingPage from '../pages/AgentAccountingPage';
 import CurrencySettingsPage from '../pages/CurrencySettingsPage';
+import UpcomingFlightsPage from '../pages/UpcomingFlightsPage';
 
 export default function AppRoutes() {
   return (
@@ -70,6 +71,7 @@ export default function AppRoutes() {
             <Route path="bookings/insurance" element={<ProtectedRoute permissions={['bookings:view']}><InsuranceBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/partial-payments" element={<ProtectedRoute permissions={['bookings:view']}><PartialPaymentsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
+            <Route path="bookings/upcoming" element={<ProtectedRoute permissions={['bookings:view']}><UpcomingFlightsPage /></ProtectedRoute>} />
             <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id" element={<ProtectedRoute permissions={['bookings:view']}><BookingDetailPage /></ProtectedRoute>} />
 

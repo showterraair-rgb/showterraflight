@@ -13,6 +13,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     phone: { type: String, trim: true },
+    staffId: { type: String, unique: true, sparse: true, trim: true, match: /^\d{6}$/ },
+    jobRegistrationNumber: { type: String, trim: true, default: '' },
+    nidFilePath: { type: String, trim: true },
+    nidFileName: { type: String, trim: true },
+    schoolCertificatePath: { type: String, trim: true },
+    schoolCertificateFileName: { type: String, trim: true },
+    otherDocumentPath: { type: String, trim: true },
+    otherDocumentFileName: { type: String, trim: true },
     password: { type: String, required: true, select: false },
     role: {
       type: String,
@@ -40,6 +48,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ staffId: 1 });
 
 userSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) return next();

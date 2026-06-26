@@ -109,6 +109,31 @@ const EMPTY_FLIGHT_SEGMENT = {
   stops: 'Non Stop',
 };
 
+function convertFareAmount(amount, from, brlToBdt, usdToBdt) {
+  const val = Number(amount) || 0;
+  if (!val) return { bdt: 0, usd: 0, brl: 0 };
+  if (from === 'BDT') {
+    return { bdt: val, usd: usdToBdt > 0 ? val / usdToBdt : 0, brl: brlToBdt > 0 ? val / brlToBdt : 0 };
+  }
+  if (from === 'USD') {
+    const bdt = val * usdToBdt;
+    return { bdt, usd: val, brl: brlToBdt > 0 ? bdt / brlToBdt : 0 };
+  }
+  const bdt = val * brlToBdt;
+  return { bdt, usd: usdToBdt > 0 ? bdt / usdToBdt : 0, brl: val };
+}
+
+function fareRowFromStored(stored, brlToBdt, usdToBdt) {
+  const bdt = stored?.bdt ?? 0;
+  return {
+    bdt: bdt ? String(bdt) : '',
+    usd: stored?.usd ? String(stored.usd) : (usdToBdt > 0 && bdt ? String(bdt / usdToBdt) : ''),
+    brl: stored?.brl ? String(stored.brl) : (brlToBdt > 0 && bdt ? String(bdt / brlToBdt) : ''),
+  };
+}
+
+const EMPTY_FARE_ROW = { bdt: '', usd: '', brl: '' };
+
 const EMPTY_FARE_BREAKDOWN = {
   baseFare: '',
   taxes: '',
@@ -130,7 +155,7 @@ export default function BookingFormPage() {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || 'air';
   const isEdit = Boolean(editId);
-  const { brlRate } = useCurrency();
+  const { brlRate, usdRate } = useCurrency();
   const financeFields = useFieldPermission('finance');
   const paymentFields = useFieldPermission('payments');
   const statusFields = useFieldPermission('status');
@@ -145,7 +170,15 @@ export default function BookingFormPage() {
   const [error, setError] = useState('');
   const [rateError, setRateError] = useState('');
   const [ticketFile, setTicketFile] = useState(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractNote, setExtractNote] = useState('');
   const [existingTicket, setExistingTicket] = useState(null);
+  const [fareSale, setFareSale] = useState({ ...EMPTY_FARE_ROW });
+  const [farePurchase, setFarePurchase] = useState({ ...EMPTY_FARE_ROW });
+  const [fareCosts, setFareCosts] = useState({ ...EMPTY_FARE_ROW });
+  const [farePaidInput, setFarePaidInput] = useState({ ...EMPTY_FARE_ROW });
+  const [usdRateInput, setUsdRateInput] = useState(usdRate);
+  const [duePaymentAt, setDuePaymentAt] = useState('');
   const [accounts, setAccounts] = useState([]);
   const [productCategory, setProductCategory] = useState(categoryParam);
   const [passengers, setPassengers] = useState([{ ...EMPTY_PASSENGER }]);
@@ -169,6 +202,10 @@ export default function BookingFormPage() {
       supplierPaymentAccountId: '',
     },
   });
+
+  useEffect(() => {
+    if (usdRate) setUsdRateInput(usdRate);
+  }, [usdRate]);
 
   useEffect(() => {
     if (brlRate && !form.getValues('bdtRate')) {
@@ -262,11 +299,66 @@ export default function BookingFormPage() {
             customerDue: b.computed?.customerDue ?? b.customerDue ?? 0,
             supplierPayable: b.computed?.supplierPayable ?? b.supplierPayable ?? 0,
           });
+          const brlToBdt = rate;
+          const usdToBdt = b.usdRateAtBooking ?? usdRate;
+          setUsdRateInput(usdToBdt);
+          setFareSale(fareRowFromStored(b.fareSale || b.fareTotals?.sale, brlToBdt, usdToBdt));
+          setFarePurchase(fareRowFromStored(b.farePurchase || b.fareTotals?.purchase, brlToBdt, usdToBdt));
+          setFareCosts(fareRowFromStored(b.fareCosts || b.fareTotals?.costs, brlToBdt, usdToBdt));
+          setFarePaidInput(fareRowFromStored(b.farePaid || b.fareTotals?.paid, brlToBdt, usdToBdt));
+          if (b.duePaymentAt) {
+            const d = new Date(b.duePaymentAt);
+            const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+            setDuePaymentAt(local.toISOString().slice(0, 16));
+          }
         })
         .catch((err) => setLoadError(err.response?.data?.message || 'Failed to load booking'))
         .finally(() => setLoadingData(false));
     }
-  }, [editId, isEdit, form, brlRate]);
+  }, [editId, isEdit, form, brlRate, usdRate]);
+
+  const fareRowToPayload = (row) => ({
+    bdt: Number(row.bdt) || 0,
+    usd: Number(row.usd) || 0,
+    brl: Number(row.brl) || 0,
+  });
+
+  const handleTicketFileChange = async (file) => {
+    setTicketFile(file);
+    setExtractNote('');
+    if (!file) return;
+    setExtracting(true);
+    try {
+      const { data } = await bookingsApi.extractTicket(file);
+      const ex = data.data || data;
+      if (ex.pnr) form.setValue('pnr', ex.pnr);
+      if (ex.airline) form.setValue('airline', ex.airline);
+      if (ex.route) form.setValue('route', ex.route);
+      if (ex.departureDate) form.setValue('departureDate', ex.departureDate);
+      if (ex.ticketNumber) form.setValue('ticketNumber', ex.ticketNumber);
+      if (ex.passengerCount) form.setValue('passengerCount', ex.passengerCount);
+      if (ex.passengers?.length) {
+        setPassengers(ex.passengers.map((p) => ({
+          ...EMPTY_PASSENGER,
+          ...p,
+          title: p.title || 'MR',
+          passengerType: p.passengerType || 'ADULT',
+        })));
+      }
+      if (ex.flightNumber || ex.airlinePnr) {
+        setFlightSegment((prev) => ({
+          ...prev,
+          flightNumber: ex.flightNumber || prev.flightNumber,
+          airlinePnr: ex.airlinePnr || ex.pnr || prev.airlinePnr,
+        }));
+      }
+      if (ex.note) setExtractNote(ex.note);
+    } catch (err) {
+      setExtractNote(err.response?.data?.message || 'Could not extract ticket data — enter manually');
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   const watchPrices = form.watch(['purchasePriceBRL', 'salePriceBRL', 'directCostsBRL', 'bdtRate']);
   const customerPaymentStatus = form.watch('customerPaymentStatus');
@@ -277,6 +369,25 @@ export default function BookingFormPage() {
   const saleBRL = Number(watchPrices[1]) || 0;
   const costsBRL = Number(watchPrices[2]) || 0;
   const effectiveRate = Number(watchPrices[3] || brlRate) || 0;
+  const usdToBdt = Number(usdRateInput) || usdRate;
+
+  const updateFareRow = (setter, currency, value) => {
+    const converted = convertFareAmount(value, currency, effectiveRate, usdToBdt);
+    setter({
+      bdt: converted.bdt ? String(Number(converted.bdt.toFixed(2))) : '',
+      usd: converted.usd ? String(Number(converted.usd.toFixed(2))) : '',
+      brl: converted.brl ? String(Number(converted.brl.toFixed(2))) : '',
+    });
+    if (setter === setFareSale && converted.brl) {
+      form.setValue('salePriceBRL', Number(converted.brl.toFixed(2)));
+    }
+    if (setter === setFarePurchase && converted.brl) {
+      form.setValue('purchasePriceBRL', Number(converted.brl.toFixed(2)));
+    }
+    if (setter === setFareCosts && converted.brl) {
+      form.setValue('directCostsBRL', Number(converted.brl.toFixed(2)));
+    }
+  };
 
   useEffect(() => {
     if (isEdit) return;
@@ -311,6 +422,13 @@ export default function BookingFormPage() {
     ? Math.max(0, purchaseTotalBRL * effectiveRate - (paymentSummary?.supplierPaid || 0))
     : Math.max(0, purchaseTotalBRL * effectiveRate - supplierPaidAmountBRL * effectiveRate);
   const projectedPayableBRL = effectiveRate > 0 ? projectedPayableBDT / effectiveRate : projectedPayableBDT;
+
+  const saleBdtFromFare = Number(fareSale.bdt) || saleBDT;
+  const purchaseBdtFromFare = Number(farePurchase.bdt) || purchaseBRL * effectiveRate;
+  const costsBdtFromFare = Number(fareCosts.bdt) || costsBRL * effectiveRate;
+  const paidBdtFromFare = Number(farePaidInput.bdt) || (isEdit ? (paymentSummary?.amountPaid || 0) : customerPaidAmountBRL * effectiveRate);
+  const fullDueBdt = Math.max(0, saleBdtFromFare - paidBdtFromFare);
+  const balanceBdt = fullDueBdt;
 
   const passengerCount = Number(form.watch('passengerCount')) || 1;
 
@@ -368,6 +486,28 @@ export default function BookingFormPage() {
 
   const accountLabel = (a) => `${a.name} (${ACCOUNT_TYPE_LABELS[a.type] || a.type})`;
 
+  const renderFareInputs = (label, row, setter) => (
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <p className="mb-2 text-xs font-semibold uppercase text-slate-500">{label}</p>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {['bdt', 'usd', 'brl'].map((cur) => (
+          <div key={cur}>
+            <label className="mb-1 block text-xs text-slate-500">{cur.toUpperCase()}</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="input-field"
+              value={row[cur]}
+              disabled={financeFields.readOnly}
+              onChange={(e) => updateFareRow(setter, cur.toUpperCase(), e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const onSubmit = async (values) => {
     if (!effectiveRate || effectiveRate <= 0) {
       setRateError('BDT rate must be greater than 0');
@@ -389,6 +529,11 @@ export default function BookingFormPage() {
         toDestination,
         customerPaymentAccountId: values.customerPaymentAccountId || undefined,
         supplierPaymentAccountId: values.supplierPaymentAccountId || undefined,
+        fareSale: fareRowToPayload(fareSale),
+        farePurchase: fareRowToPayload(farePurchase),
+        fareCosts: fareRowToPayload(fareCosts),
+        usdRateAtBooking: usdToBdt,
+        duePaymentAt: duePaymentAt || undefined,
       };
       if (isEdit) {
         delete payload.customerPaymentStatus;
@@ -610,6 +755,62 @@ export default function BookingFormPage() {
         )}
 
         {!financeFields.hidden && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Multi-Currency Fare</h3>
+            <p className="mt-1 text-xs text-slate-500">Enter in any currency — BDT, USD, and BRL convert automatically. All fields remain editable.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium">BRL → BDT Rate</label>
+              <input type="number" min={0.01} step="0.01" className="input-field" value={effectiveRate} readOnly />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">USD → BDT Rate</label>
+              <input
+                type="number"
+                min={0.01}
+                step="0.01"
+                className="input-field"
+                value={usdRateInput}
+                onChange={(e) => setUsdRateInput(Number(e.target.value) || usdRate)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {renderFareInputs('Sale Price', fareSale, setFareSale)}
+            {renderFareInputs('Purchase Price', farePurchase, setFarePurchase)}
+            {renderFareInputs('Direct Costs', fareCosts, setFareCosts)}
+          </div>
+          {isEdit && renderFareInputs('Total Paid', farePaidInput, setFarePaidInput)}
+          <div className="grid gap-3 sm:grid-cols-3 rounded-lg border border-slate-200 bg-white p-3">
+            <div>
+              <p className="text-xs text-slate-500">Full Due (BDT)</p>
+              <p className="text-lg font-semibold text-red-700">৳ {fmt(fullDueBdt)}</p>
+              <p className="text-xs text-slate-400">${fmt(usdToBdt > 0 ? fullDueBdt / usdToBdt : 0)} · R$ {fmt(effectiveRate > 0 ? fullDueBdt / effectiveRate : 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Balance (BDT)</p>
+              <p className="text-lg font-semibold text-amber-700">৳ {fmt(balanceBdt)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Total Sale (BDT)</p>
+              <p className="text-lg font-semibold text-slate-900">৳ {fmt(saleBdtFromFare)}</p>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium">Due Payment Date & Time</label>
+            <input
+              type="datetime-local"
+              className="input-field max-w-xs"
+              value={duePaymentAt}
+              onChange={(e) => setDuePaymentAt(e.target.value)}
+            />
+          </div>
+        </div>
+        )}
+
+        {!financeFields.hidden && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Pricing (BRL)</h3>
           <p className="mt-1 text-xs text-slate-500">
@@ -791,7 +992,12 @@ export default function BookingFormPage() {
 
         <div>
           <label className="mb-1 block text-sm font-medium">Original Ticket</label>
-          <p className="mb-2 text-xs text-slate-500">Upload PDF or image of the issued ticket. Included as a download link on the invoice PDF.</p>
+          <p className="mb-2 text-xs text-slate-500">Upload PDF or image — OCR auto-fills PNR, airline, route, flight date, passenger, and ticket number. All fields stay editable.</p>
+          {extractNote && (
+            <p className={`mb-2 text-xs ${extractNote.includes('failed') || extractNote.includes('manual') ? 'text-amber-700' : 'text-green-700'}`}>
+              {extracting ? 'Extracting…' : extractNote}
+            </p>
+          )}
           {existingTicket?.url && (
             <a
               href={existingTicket.url}
@@ -806,7 +1012,7 @@ export default function BookingFormPage() {
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
             className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
-            onChange={(e) => setTicketFile(e.target.files?.[0] || null)}
+            onChange={(e) => handleTicketFileChange(e.target.files?.[0] || null)}
           />
           {ticketFile && (
             <p className="mt-1 text-xs text-slate-500">Selected: {ticketFile.name}</p>
