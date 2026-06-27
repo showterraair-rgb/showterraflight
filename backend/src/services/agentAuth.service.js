@@ -13,6 +13,7 @@ function sanitizeAgent(agent) {
     contactPerson: agent.contactPerson,
     email: agent.email,
     phone: agent.phone || '',
+    whatsapp: agent.whatsapp || '',
     address: agent.address || '',
     city: agent.city || '',
     country: agent.country || 'Bangladesh',
@@ -102,6 +103,7 @@ export async function updateAgentProfile(agentId, data) {
   if (data.companyName) agent.companyName = data.companyName;
   if (data.contactPerson) agent.contactPerson = data.contactPerson;
   if (data.phone !== undefined) agent.phone = data.phone;
+  if (data.whatsapp !== undefined) agent.whatsapp = data.whatsapp || '';
   if (data.address !== undefined) agent.address = data.address;
   if (data.city !== undefined) agent.city = data.city;
   if (data.country !== undefined) agent.country = data.country;

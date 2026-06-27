@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import {
   sendDailyLedgerNotifyToAdmin,
   syncDailyLedgerNotificationDefaults,
+  syncManualBookingNotificationDefaults,
 } from '../services/ledgerSummary.service.js';
 
 let started = false;
@@ -12,6 +13,10 @@ export function startLedgerJob() {
 
   syncDailyLedgerNotificationDefaults().catch((err) => {
     console.warn('[CRON] Daily ledger notification defaults sync failed:', err.message);
+  });
+
+  syncManualBookingNotificationDefaults().catch((err) => {
+    console.warn('[CRON] Manual booking notification defaults sync failed:', err.message);
   });
 
   // Daily 11:00 PM Asia/Dhaka — admin SMS + WhatsApp summary

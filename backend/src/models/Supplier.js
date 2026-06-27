@@ -5,6 +5,7 @@ const supplierSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     company: { type: String, trim: true },
     phone: { type: String, trim: true },
+    whatsapp: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     address: { type: String, trim: true },
     contactPerson: { type: String, trim: true },
@@ -23,7 +24,7 @@ const supplierSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-supplierSchema.index({ name: 'text', phone: 'text', company: 'text' });
+supplierSchema.index({ name: 'text', phone: 'text', company: 'text', whatsapp: 'text' });
 
 const Supplier = mongoose.model('Supplier', supplierSchema);
 

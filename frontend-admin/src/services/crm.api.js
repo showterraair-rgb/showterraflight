@@ -3,6 +3,8 @@ import api from './api';
 export const customersApi = {
   list: (params) => api.get('/customers', { params }),
   get: (id) => api.get(`/customers/${id}`),
+  getAccount: (id) => api.get(`/customers/${id}/account`),
+  remindBooking: (id, bookingId, body) => api.post(`/customers/${id}/bookings/${bookingId}/remind`, body),
   create: (data) => api.post('/customers', data),
   update: (id, data) => api.put(`/customers/${id}`, data),
   delete: (id) => api.delete(`/customers/${id}`),
@@ -11,6 +13,8 @@ export const customersApi = {
 export const suppliersApi = {
   list: (params) => api.get('/suppliers', { params }),
   get: (id) => api.get(`/suppliers/${id}`),
+  getAccount: (id) => api.get(`/suppliers/${id}/account`),
+  remindBooking: (id, bookingId, body) => api.post(`/suppliers/${id}/bookings/${bookingId}/remind`, body),
   create: (data) => api.post('/suppliers', data),
   update: (id, data) => api.put(`/suppliers/${id}`, data),
   delete: (id) => api.delete(`/suppliers/${id}`),

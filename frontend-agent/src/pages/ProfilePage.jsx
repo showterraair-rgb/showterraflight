@@ -49,8 +49,11 @@ export default function ProfilePage() {
       </div>
       <form onSubmit={saveProfile} className="card space-y-4">
         <h2 className="font-semibold">Company details</h2>
-        {['companyName', 'contactPerson', 'phone', 'address', 'city', 'country'].map((k) => (
-          <div key={k}><label className="mb-1 block text-sm capitalize">{k.replace(/([A-Z])/g, ' $1')}</label><input className="input-field" value={form[k] || ''} onChange={(e) => setForm({ ...form, [k]: e.target.value })} /></div>
+        {['companyName', 'contactPerson', 'phone', 'whatsapp', 'address', 'city', 'country'].map((k) => (
+          <div key={k}>
+            <label className="mb-1 block text-sm capitalize">{k === 'whatsapp' ? 'WhatsApp number' : k.replace(/([A-Z])/g, ' $1')}</label>
+            <input className="input-field" value={form[k] || ''} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+          </div>
         ))}
         <p className="text-sm text-slate-500">Email: {form.email} (contact admin to change)</p>
         <button type="submit" className="btn-primary">Save profile</button>

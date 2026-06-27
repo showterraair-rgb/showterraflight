@@ -103,6 +103,8 @@ export default function AgentsPage() {
           <input className="input-field" placeholder="Contact person *" {...register('contactPerson', { required: true })} />
           <input type="email" className="input-field" placeholder="Email *" {...register('email', { required: true })} />
           <input className="input-field" placeholder="Phone *" {...register('phone', { required: true })} />
+          <input className="input-field" placeholder="WhatsApp number" {...register('whatsapp')} />
+          <p className="text-xs text-slate-500 -mt-2">Optional. Used for WhatsApp contact if different from phone.</p>
           <select className="input-field" {...register('agentType')}><option value="regular">Regular</option><option value="corporate">Corporate</option><option value="franchise">Franchise</option></select>
           <input type="number" className="input-field" placeholder="Credit limit" {...register('creditLimit')} />
           <div>

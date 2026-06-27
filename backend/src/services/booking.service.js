@@ -524,7 +524,6 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
   });
   if (!orderDoc) {
     fireApprovalSms(booking, 'booking');
-    await fireBookingNotification('manual_order_created', booking);
   }
 
   const hasInitialPayment =
@@ -535,6 +534,11 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     await recordInitialBookingPayments(booking, data, userId, req);
   } else {
     await syncBookingFinancials(booking._id);
+  }
+
+  if (!orderDoc) {
+    const refreshed = await Booking.findById(booking._id).lean();
+    await fireBookingNotification('manual_order_created', refreshed);
   }
 
   return getBookingById(booking._id);

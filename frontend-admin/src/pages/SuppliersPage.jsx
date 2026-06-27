@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,12 +14,13 @@ import { SUPPLIER_TYPES } from '../utils/constants';
 const schema = z.object({
   company: z.string().min(2, 'Company name required'),
   phone: z.string().optional(),
+  whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits').optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
   type: z.enum(['agent', 'supplier', 'airline_office', 'other']),
   notes: z.string().optional(),
 });
 
-const empty = { company: '', phone: '', email: '', type: 'supplier', notes: '' };
+const empty = { company: '', phone: '', whatsapp: '', email: '', type: 'supplier', notes: '' };
 
 export default function SuppliersPage() {
   const { can } = usePermission();
@@ -56,6 +58,7 @@ export default function SuppliersPage() {
     reset({
       company: row.company || row.name || '',
       phone: row.phone || '',
+      whatsapp: row.whatsapp || '',
       email: row.email || '',
       type: row.type || 'supplier',
       notes: row.notes || '',
@@ -72,6 +75,7 @@ export default function SuppliersPage() {
         name: company,
         company,
         phone: form.phone || undefined,
+        whatsapp: form.whatsapp || undefined,
         email: form.email || undefined,
         type: form.type,
         notes: form.notes || undefined,
@@ -97,8 +101,11 @@ export default function SuppliersPage() {
   };
 
   const columns = [
-    { key: 'company', label: 'Company', render: (r) => <span className="font-medium">{r.company || r.name}</span> },
+    { key: 'company', label: 'Company', render: (r) => (
+      <Link to={`/suppliers/${r.id}/account`} className="font-medium hover:text-brand-600">{r.company || r.name}</Link>
+    ) },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
+    { key: 'whatsapp', label: 'WhatsApp', render: (r) => r.whatsapp || '—' },
     { key: 'email', label: 'Email', render: (r) => r.email || '—' },
     { key: 'type', label: 'Type', render: (r) => <span className="capitalize">{r.type?.replace('_', ' ')}</span> },
     {
@@ -109,7 +116,7 @@ export default function SuppliersPage() {
       render: (r) => (
         <RowActions
           items={[
-            can('suppliers:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
+            can('suppliers:view') && { type: 'link', label: 'Account', to: `/suppliers/${r.id}/account` },
             can('suppliers:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
             can('suppliers:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
           ]}
@@ -162,6 +169,11 @@ export default function SuppliersPage() {
             <div>
               <label className="mb-1 block text-sm font-medium">Phone</label>
               <input className="input-field" {...register('phone')} />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">WhatsApp Number</label>
+              <input className="input-field" placeholder="e.g. 88017XXXXXXXX" {...register('whatsapp')} />
+              {errors.whatsapp && <p className="mt-1 text-xs text-red-600">{errors.whatsapp.message}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Email</label>

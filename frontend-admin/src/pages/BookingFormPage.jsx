@@ -12,6 +12,12 @@ import { useFieldPermission } from '../hooks/useFieldPermission';
 import { PRODUCT_CATEGORY_LABELS } from '../utils/constants';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
+function defaultDueDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
+
 const baseSchema = z.object({
   customerId: z.string().min(1, 'Customer required'),
   supplierId: z.string().optional(),
@@ -21,6 +27,7 @@ const baseSchema = z.object({
   salePriceBRL: z.coerce.number().min(0),
   directCostsBRL: z.coerce.number().min(0),
   bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
+  duePaymentAt: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -47,6 +54,10 @@ const createSchema = baseSchema.extend({
   }
   if (data.supplierPaidAmountBRL > 0 && !data.supplierPaymentAccountId) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select a payment account', path: ['supplierPaymentAccountId'] });
+  }
+  const customerDueBRL = Math.max(0, data.salePriceBRL - data.customerPaidAmountBRL);
+  if (customerDueBRL > 0.001 && !data.duePaymentAt) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Due payment date required when customer owes a balance', path: ['duePaymentAt'] });
   }
 });
 
@@ -134,6 +145,7 @@ export default function BookingFormPage() {
       supplierPaymentStatus: 'due',
       supplierPaidAmountBRL: 0,
       supplierPaymentAccountId: '',
+      duePaymentAt: defaultDueDate(),
     },
   });
 
@@ -184,6 +196,7 @@ export default function BookingFormPage() {
             salePriceBRL: brlFromStored(b, 'sale', rate),
             directCostsBRL: brlFromStored(b, 'direct', rate),
             bdtRate: rate,
+            duePaymentAt: b.duePaymentAt?.slice(0, 10) || '',
             notes: b.notes || '',
           });
           setHiddenFields({
@@ -234,8 +247,12 @@ export default function BookingFormPage() {
     if (customerPaymentStatus === 'due') {
       form.setValue('customerPaidAmountBRL', 0);
       form.setValue('customerPaymentAccountId', '');
+      if (!form.getValues('duePaymentAt')) {
+        form.setValue('duePaymentAt', defaultDueDate());
+      }
     } else if (customerPaymentStatus === 'paid' && saleBRL > 0) {
       form.setValue('customerPaidAmountBRL', saleBRL);
+      form.setValue('duePaymentAt', '');
     }
   }, [customerPaymentStatus, saleBRL, isEdit, form]);
 
@@ -262,11 +279,20 @@ export default function BookingFormPage() {
     : Math.max(0, purchaseTotalBRL * effectiveRate - supplierPaidAmountBRL * effectiveRate);
   const projectedPayableBRL = effectiveRate > 0 ? projectedPayableBDT / effectiveRate : projectedPayableBDT;
 
+  const customerDueBRL = isEdit
+    ? projectedDueBRL
+    : Math.max(0, saleBRL - customerPaidAmountBRL);
+  const showDueDate = customerDueBRL > 0.001;
+
   const accountLabel = (a) => `${a.name} (${ACCOUNT_TYPE_LABELS[a.type] || a.type})`;
 
   const onSubmit = async (values) => {
     if (!effectiveRate || effectiveRate <= 0) {
       setRateError('BDT rate must be greater than 0');
+      return;
+    }
+    if (isEdit && customerDueBRL > 0.001 && !values.duePaymentAt) {
+      form.setError('duePaymentAt', { message: 'Due payment date required when customer owes a balance' });
       return;
     }
     setError('');
@@ -290,6 +316,7 @@ export default function BookingFormPage() {
         toDestination,
         customerPaymentAccountId: values.customerPaymentAccountId || undefined,
         supplierPaymentAccountId: values.supplierPaymentAccountId || undefined,
+        duePaymentAt: customerDueBRL > 0.001 ? values.duePaymentAt || undefined : undefined,
       };
       if (isEdit) {
         delete payload.customerPaymentStatus;
@@ -448,6 +475,19 @@ export default function BookingFormPage() {
             ) : null}
           </div>
           <p className="mt-3 text-xs text-slate-500">Rate used: 1 BRL = ৳ {fmt(effectiveRate)}</p>
+
+          {showDueDate && (
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <label className="mb-1 block text-xs font-medium text-amber-900">Payment Due Date *</label>
+              <input type="date" className="input-field max-w-xs" {...form.register('duePaymentAt')} />
+              {form.formState.errors.duePaymentAt && (
+                <p className="mt-1 text-xs text-red-600">{form.formState.errors.duePaymentAt.message}</p>
+              )}
+              <p className="mt-1 text-xs text-amber-800">
+                Customer owes ৳ {fmt(projectedDueBDT)} — this date is included in SMS, WhatsApp, and email notifications.
+              </p>
+            </div>
+          )}
         </div>
         )}
 

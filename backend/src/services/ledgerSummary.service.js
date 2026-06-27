@@ -28,6 +28,38 @@ function sumByType(accounts, types) {
     .reduce((s, a) => s + (a.currentBalance || 0), 0);
 }
 
+export async function syncManualBookingNotificationDefaults() {
+  const tpl = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === 'manual_order_created');
+  await NotificationAutomationRule.findOneAndUpdate(
+    { eventType: 'manual_order_created' },
+    {
+      eventType: 'manual_order_created',
+      notifyCustomer: true,
+      notifyAdmin: false,
+      smsEnabled: true,
+      emailEnabled: true,
+      whatsappEnabled: true,
+      isEnabled: true,
+    },
+    { upsert: true }
+  );
+  if (tpl) {
+    await NotificationTemplate.findOneAndUpdate(
+      { templateKey: 'manual_order_created' },
+      {
+        templateKey: tpl.templateKey,
+        name: tpl.name,
+        smsBody: tpl.smsBody,
+        whatsappBody: tpl.whatsappBody || tpl.smsBody,
+        emailSubject: tpl.emailSubject,
+        emailBody: tpl.emailBody,
+        isActive: true,
+      },
+      { upsert: true }
+    );
+  }
+}
+
 export async function syncDailyLedgerNotificationDefaults() {
   const tpl = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === 'daily_ledger_summary');
   await NotificationAutomationRule.findOneAndUpdate(

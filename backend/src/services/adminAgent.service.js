@@ -32,6 +32,7 @@ export async function createAgent(data, userId, req) {
     email: data.email,
     password: data.password,
     phone: data.phone,
+    whatsapp: data.whatsapp || undefined,
     address: data.address,
     city: data.city,
     country: data.country || 'Bangladesh',
@@ -70,7 +71,7 @@ export async function createAgent(data, userId, req) {
 
 export async function listAgents(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query);
-  const filter = { ...buildSearchFilter(query.search, ['agentId', 'companyName', 'contactPerson', 'email', 'phone']) };
+  const filter = { ...buildSearchFilter(query.search, ['agentId', 'companyName', 'contactPerson', 'email', 'phone', 'whatsapp']) };
 
   if (query.isActive === 'true') filter.isActive = true;
   if (query.isActive === 'false') filter.isActive = false;
@@ -117,6 +118,7 @@ export async function updateAgent(id, data, userId, req) {
   if (data.companyName) agent.companyName = data.companyName;
   if (data.contactPerson) agent.contactPerson = data.contactPerson;
   if (data.phone !== undefined) agent.phone = data.phone;
+  if (data.whatsapp !== undefined) agent.whatsapp = data.whatsapp || '';
   if (data.address !== undefined) agent.address = data.address;
   if (data.city !== undefined) agent.city = data.city;
   if (data.country !== undefined) agent.country = data.country;

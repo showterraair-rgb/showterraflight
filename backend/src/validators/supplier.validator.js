@@ -14,6 +14,7 @@ export const createSupplierSchema = z.object({
   name: z.string().min(2).max(100).trim(),
   company: z.string().max(100).optional(),
   phone: z.string().max(20).optional(),
+  whatsapp: z.string().max(20).optional().or(z.literal('')),
   email: z.string().email().trim().toLowerCase().optional().or(z.literal('')),
   address: z.string().max(500).optional(),
   contactPerson: z.string().max(100).optional(),
@@ -28,6 +29,15 @@ export const updateSupplierSchema = createSupplierSchema.partial().extend({
 
 export const idParamSchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
+});
+
+export const bookingRemindSchema = z.object({
+  channels: z.array(z.enum(['sms', 'email', 'whatsapp'])).min(1, 'Select at least one channel'),
+});
+
+export const supplierBookingParamSchema = z.object({
+  id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
+  bookingId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid booking ID'),
 });
 
 export default {

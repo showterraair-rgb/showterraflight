@@ -15,6 +15,7 @@ function formatSupplier(doc) {
     name: doc.name,
     company: doc.company || '',
     phone: doc.phone || '',
+    whatsapp: doc.whatsapp || '',
     email: doc.email || '',
     address: doc.address || '',
     contactPerson: doc.contactPerson || '',
@@ -32,7 +33,7 @@ function formatSupplier(doc) {
 
 export async function listSuppliers(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query);
-  const filter = { ...buildSearchFilter(query.search, ['name', 'phone', 'company', 'email']) };
+  const filter = { ...buildSearchFilter(query.search, ['name', 'phone', 'company', 'email', 'whatsapp']) };
 
   if (query.isActive === 'true') filter.isActive = true;
   if (query.isActive === 'false') filter.isActive = false;

@@ -11,6 +11,7 @@ const agentSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
     phone: { type: String, trim: true },
+    whatsapp: { type: String, trim: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true },
     country: { type: String, trim: true, default: 'Bangladesh' },

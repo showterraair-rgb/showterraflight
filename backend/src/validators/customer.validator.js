@@ -13,6 +13,7 @@ export const listQuerySchema = z.object({
 export const createCustomerSchema = z.object({
   name: z.string().min(2).max(100).trim(),
   phone: z.string().min(10).max(20).trim(),
+  whatsapp: z.string().min(10).max(20).trim().optional().or(z.literal('')),
   email: z.string().email().trim().toLowerCase().optional().or(z.literal('')),
   address: z.string().max(500).optional(),
   nid: z.string().max(50).optional(),
@@ -27,6 +28,15 @@ export const updateCustomerSchema = createCustomerSchema.partial().extend({
 
 export const idParamSchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
+});
+
+export const bookingRemindSchema = z.object({
+  channels: z.array(z.enum(['sms', 'email', 'whatsapp'])).min(1, 'Select at least one channel'),
+});
+
+export const customerBookingParamSchema = z.object({
+  id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID'),
+  bookingId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid booking ID'),
 });
 
 export default {

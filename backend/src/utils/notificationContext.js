@@ -35,6 +35,7 @@ export function buildBookingNotificationContext(booking, customer, extra = {}) {
     orderId: booking.order?._id?.toString?.() || booking.order?.toString?.() || null,
     customerId: booking.customer?._id?.toString?.() || booking.customer?.toString?.() || customer?._id?.toString?.(),
     customerPhone: customer?.phone || booking.customerPhone || '',
+    customerWhatsapp: customer?.whatsapp || customer?.phone || booking.customerPhone || '',
     customerEmail: customer?.email || '',
     vars: {
       customerName: customer?.name || booking.customerName || '',
@@ -44,6 +45,8 @@ export function buildBookingNotificationContext(booking, customer, extra = {}) {
       departureDate: formatDateValue(booking.departureDate),
       pnr: booking.pnr || '',
       dueAmount: booking.customerDue ?? extra.dueAmount ?? 0,
+      duePaymentDate: formatDateValue(booking.duePaymentAt) || 'N/A',
+      amountPaid: booking.amountPaid ?? 0,
       referenceNumber: booking.bookingNumber || extra.vars?.referenceNumber || '',
       ...extra.vars,
     },

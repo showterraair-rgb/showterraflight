@@ -4,6 +4,7 @@ const customerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true, index: true },
+    whatsapp: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     address: { type: String, trim: true },
     nid: { type: String, trim: true },
@@ -19,7 +20,7 @@ const customerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-customerSchema.index({ name: 'text', phone: 'text', email: 'text' });
+customerSchema.index({ name: 'text', phone: 'text', email: 'text', whatsapp: 'text' });
 
 const Customer = mongoose.model('Customer', customerSchema);
 

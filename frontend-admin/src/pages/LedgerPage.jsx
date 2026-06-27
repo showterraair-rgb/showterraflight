@@ -71,7 +71,7 @@ export default function LedgerPage() {
             <ul className="divide-y divide-slate-100">
               {customers.map((c) => (
                 <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                  <Link to={`/customers`} className="font-medium text-slate-800 hover:text-brand-600">{c.name}</Link>
+                  <Link to={`/customers/${c.id}/account`} className="font-medium text-slate-800 hover:text-brand-600">{c.name}</Link>
                   <MoneyAmount amount={c.totalDue || 0} size="sm" className={(c.totalDue || 0) > 0 ? 'text-red-600' : ''} />
                 </li>
               ))}
@@ -90,7 +90,7 @@ export default function LedgerPage() {
             <ul className="divide-y divide-slate-100">
               {suppliers.map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="font-medium text-slate-800">{s.name}</span>
+                  <Link to={`/suppliers/${s.id}/account`} className="font-medium text-slate-800 hover:text-brand-600">{s.company || s.name}</Link>
                   <MoneyAmount amount={s.totalPayable || 0} size="sm" className={(s.totalPayable || 0) > 0 ? 'text-amber-700' : ''} />
                 </li>
               ))}

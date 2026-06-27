@@ -116,6 +116,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   'ticket_issued',
   'payment_received',
   'payment_due_reminder',
+  'supplier_payable_reminder',
   'schedule_change',
   'booking_canceled',
   'daily_ledger_summary',
@@ -128,7 +129,7 @@ export const NOTIFICATION_CHANNELS = ['sms', 'email', 'whatsapp', 'console'];
 /** Default WhatsApp template variable order per event (Meta body params). */
 export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   website_order_created: ['customerName', 'orderNumber', 'companyName'],
-  manual_order_created: ['customerName', 'bookingNumber', 'salePrice', 'companyName'],
+  manual_order_created: ['customerName', 'bookingNumber', 'route', 'salePrice', 'dueAmount', 'duePaymentDate', 'companyName'],
   admin_new_booking_alert: ['orderNumber', 'customerName', 'customerPhone', 'route'],
   admin_manual_order_alert: ['orderNumber', 'customerName', 'customerPhone', 'route'],
   admin_manual_booking_alert: ['bookingNumber', 'customerName', 'customerPhone', 'route'],
@@ -140,6 +141,7 @@ export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   ticket_issued: ['bookingNumber', 'pnr', 'companyName'],
   payment_received: ['customerName', 'amount', 'bookingNumber', 'companyName'],
   payment_due_reminder: ['dueAmount', 'bookingNumber', 'companyName', 'supportNumber'],
+  supplier_payable_reminder: ['supplierName', 'bookingNumber', 'payableAmount', 'companyName'],
   booking_canceled: ['bookingNumber', 'companyName'],
   daily_ledger_summary: ['reportDate', 'totalBalance', 'bankBalance', 'cashBalance', 'mfsBalance', 'todayOrders', 'todayBookings', 'totalBookings', 'customerDue', 'supplierPayable', 'overdueDue', 'shortSummary'],
 };
@@ -155,9 +157,10 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
   {
     templateKey: 'manual_order_created',
     name: 'Manual booking created',
-    smsBody: 'Hello {{customerName}}, your booking {{bookingNumber}} has been created. Sale amount: ৳{{salePrice}}. — Show Terra Flight',
+    smsBody: 'Hello {{customerName}}, booking {{bookingNumber}} confirmed. Route: {{route}}. Total: ৳{{salePrice}}. Due: ৳{{dueAmount}} by {{duePaymentDate}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is confirmed.\nRoute: {{route}}\nTotal: ৳{{salePrice}}\nDue: ৳{{dueAmount}}\nPay before: {{duePaymentDate}}\n\n— Show Terra Flight',
     emailSubject: 'Your booking {{bookingNumber}} has been created',
-    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is recorded.\nRoute: {{route}}\nDeparture: {{departureDate}}\nAmount: ৳{{salePrice}}\n\n— Show Terra Flight',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is confirmed.\n\nRoute: {{route}}\nTotal: ৳{{salePrice}}\nAmount due: ৳{{dueAmount}}\nDue date: {{duePaymentDate}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'admin_new_booking_alert',
@@ -241,8 +244,17 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     templateKey: 'payment_due_reminder',
     name: 'Payment due reminder',
     smsBody: 'Reminder: ৳{{dueAmount}} is due for booking {{bookingNumber}}. Please pay to confirm. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nReminder: ৳{{dueAmount}} is due for booking {{bookingNumber}}.\nDue date: {{duePaymentDate}}\n\n— Show Terra Flight',
     emailSubject: 'Payment reminder — booking {{bookingNumber}}',
-    emailBody: 'Hello {{customerName}},\n\nThis is a reminder that ৳{{dueAmount}} is outstanding for booking {{bookingNumber}}.\n\n— Show Terra Flight',
+    emailBody: 'Hello {{customerName}},\n\nThis is a reminder that ৳{{dueAmount}} is outstanding for booking {{bookingNumber}}.\nDue date: {{duePaymentDate}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'supplier_payable_reminder',
+    name: 'Supplier payable reminder',
+    smsBody: 'Reminder: ৳{{payableAmount}} payable for booking {{bookingNumber}} ({{supplierName}}). — Show Terra Flight',
+    whatsappBody: 'Hello {{supplierName}},\n\nReminder: ৳{{payableAmount}} is payable for booking {{bookingNumber}}.\nRoute: {{route}}\n\n— Show Terra Flight',
+    emailSubject: 'Payment reminder — booking {{bookingNumber}}',
+    emailBody: 'Hello {{supplierName}},\n\nThis is a reminder that ৳{{payableAmount}} is outstanding for booking {{bookingNumber}}.\nRoute: {{route}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'booking_canceled',
@@ -262,11 +274,12 @@ export const DEFAULT_AUTOMATION_RULES = [
   { eventType: 'approval_checking', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'approval_processing', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'approval_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
-  { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'manual_order_created', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'booking_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'ticket_issued', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
-  { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'supplier_payable_reminder', notifyCustomer: false, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: true, isEnabled: true },
 ];

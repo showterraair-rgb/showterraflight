@@ -5,7 +5,9 @@ import AdminLayout from '../components/layout/AdminLayout';
 import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import CustomersPage from '../pages/CustomersPage';
+import { CustomerAccountPage } from '../pages/PartyAccountPage';
 import SuppliersPage from '../pages/SuppliersPage';
+import { SupplierAccountPage } from '../pages/PartyAccountPage';
 import BookingsPage from '../pages/BookingsPage';
 import BookingFormPage from '../pages/BookingFormPage';
 import BookingDetailPage from '../pages/BookingDetailPage';
@@ -66,7 +68,9 @@ export default function AppRoutes() {
             <Route path="dashboard" element={<ProtectedRoute permissions={['dashboard:view']}><DashboardPage /></ProtectedRoute>} />
 
             <Route path="customers" element={<ProtectedRoute permissions={['customers:view']}><CustomersPage /></ProtectedRoute>} />
+            <Route path="customers/:id/account" element={<ProtectedRoute permissions={['customers:view']}><CustomerAccountPage /></ProtectedRoute>} />
             <Route path="suppliers" element={<ProtectedRoute permissions={['suppliers:view']}><SuppliersPage /></ProtectedRoute>} />
+            <Route path="suppliers/:id/account" element={<ProtectedRoute permissions={['suppliers:view']}><SupplierAccountPage /></ProtectedRoute>} />
             <Route path="orders" element={<Navigate to="/bookings" replace />} />
 
             <Route path="bookings" element={<ProtectedRoute permissions={['bookings:view']}><BookingsPage /></ProtectedRoute>} />

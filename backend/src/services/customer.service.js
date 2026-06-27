@@ -15,6 +15,7 @@ function formatCustomer(doc) {
     id: doc._id.toString(),
     name: doc.name,
     phone: doc.phone,
+    whatsapp: doc.whatsapp || '',
     email: doc.email || '',
     address: doc.address || '',
     nid: doc.nid || '',
@@ -33,7 +34,7 @@ function formatCustomer(doc) {
 
 export async function listCustomers(query) {
   const { page, limit, skip, sort } = parsePaginationQuery(query);
-  const filter = { ...buildSearchFilter(query.search, ['name', 'phone', 'email']) };
+  const filter = { ...buildSearchFilter(query.search, ['name', 'phone', 'email', 'whatsapp']) };
 
   if (query.isActive === 'true') filter.isActive = true;
   else if (query.isActive === 'false') filter.isActive = false;

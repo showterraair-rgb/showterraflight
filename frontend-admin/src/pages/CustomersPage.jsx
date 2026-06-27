@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,15 +13,11 @@ import { usePermission } from '../hooks/usePermission';
 const schema = z.object({
   name: z.string().min(2, 'Name required'),
   phone: z.string().min(10, 'Phone required'),
+  whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits').optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
-  address: z.string().optional(),
-  nid: z.string().optional(),
-  passportNo: z.string().optional(),
-  notes: z.string().optional(),
-  tags: z.string().optional(),
 });
 
-const empty = { name: '', phone: '', email: '', address: '', nid: '', passportNo: '', notes: '', tags: '' };
+const empty = { name: '', phone: '', whatsapp: '', email: '' };
 
 export default function CustomersPage() {
   const { can } = usePermission();
@@ -71,12 +68,8 @@ export default function CustomersPage() {
     reset({
       name: row.name,
       phone: row.phone,
+      whatsapp: row.whatsapp || '',
       email: row.email || '',
-      address: row.address || '',
-      nid: row.nid || '',
-      passportNo: row.passportNo || '',
-      notes: row.notes || '',
-      tags: (row.tags || []).join(', '),
     });
     setError('');
     setModalOpen(true);
@@ -85,9 +78,10 @@ export default function CustomersPage() {
   const onSubmit = async (form) => {
     setError('');
     const payload = {
-      ...form,
+      name: form.name,
+      phone: form.phone,
+      whatsapp: form.whatsapp || undefined,
       email: form.email || undefined,
-      tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
     };
     try {
       if (editing) {
@@ -119,13 +113,14 @@ export default function CustomersPage() {
   const columns = [
     { key: 'name', label: 'Name', render: (r) => (
       <span className="font-medium text-slate-900">
-        {r.name}
+        <Link to={`/customers/${r.id}/account`} className="hover:text-brand-600">{r.name}</Link>
         {r.isActive === false && (
           <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-500">Archived</span>
         )}
       </span>
     ) },
     { key: 'phone', label: 'Phone' },
+    { key: 'whatsapp', label: 'WhatsApp', render: (r) => r.whatsapp || '—' },
     { key: 'email', label: 'Email', render: (r) => r.email || '—' },
     { key: 'totalDue', label: 'Due', render: (r) => `৳${(r.totalDue || 0).toLocaleString()}` },
     {
@@ -136,7 +131,7 @@ export default function CustomersPage() {
       render: (r) => (
         <RowActions
           items={[
-            can('customers:view') && { type: 'button', label: 'View', onClick: () => openEdit(r) },
+            can('customers:view') && { type: 'link', label: 'Account', to: `/customers/${r.id}/account` },
             can('customers:update') && { type: 'button', label: 'Edit', onClick: () => openEdit(r), variant: 'muted' },
             can('customers:delete') && { type: 'button', label: 'Delete', onClick: () => handleDelete(r), variant: 'danger' },
           ]}
@@ -213,28 +208,15 @@ export default function CustomersPage() {
               {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
             </div>
             <div>
+              <label className="mb-1 block text-sm font-medium">WhatsApp Number</label>
+              <input className="input-field" placeholder="e.g. 88017XXXXXXXX" {...register('whatsapp')} />
+              {errors.whatsapp && <p className="mt-1 text-xs text-red-600">{errors.whatsapp.message}</p>}
+              <p className="mt-1 text-xs text-slate-500">Used for WhatsApp notifications. Leave blank to use phone number.</p>
+            </div>
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Email</label>
-              <input className="input-field" {...register('email')} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">NID</label>
-              <input className="input-field" {...register('nid')} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Passport No</label>
-              <input className="input-field" {...register('passportNo')} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Tags (comma separated)</label>
-              <input className="input-field" {...register('tags')} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Address</label>
-              <input className="input-field" {...register('address')} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Notes</label>
-              <textarea rows={3} className="input-field" {...register('notes')} />
+              <input type="email" className="input-field" {...register('email')} />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
             </div>
           </div>
         </form>

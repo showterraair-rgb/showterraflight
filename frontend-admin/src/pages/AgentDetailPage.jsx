@@ -31,6 +31,7 @@ export default function AgentDetailPage() {
           <div><dt className="text-slate-500">Contact</dt><dd>{agent.contactPerson}</dd></div>
           <div><dt className="text-slate-500">Email</dt><dd>{agent.email}</dd></div>
           <div><dt className="text-slate-500">Phone</dt><dd>{agent.phone}</dd></div>
+          <div><dt className="text-slate-500">WhatsApp</dt><dd>{agent.whatsapp || '—'}</dd></div>
           <div><dt className="text-slate-500">Balance</dt><dd><MoneyAmount amount={agent.currentBalance} size="sm" /></dd></div>
           <div><dt className="text-slate-500">Credit limit</dt><dd><MoneyAmount amount={agent.creditLimit} size="sm" /></dd></div>
           <div><dt className="text-slate-500">Bookings</dt><dd>{agent.bookingsCount || 0}</dd></div>

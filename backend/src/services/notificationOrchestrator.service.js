@@ -320,32 +320,64 @@ async function resolveRule(eventType) {
  * Fire notification for an event — never throws to caller.
  */
 export async function triggerNotificationEvent(eventType, context = {}) {
+  return triggerNotificationEventWithChannels(eventType, context, ['sms', 'email', 'whatsapp'], { useAutomationRule: true });
+}
+
+/**
+ * Send notification on selected channels (manual admin reminders).
+ * @param {string[]} channels - 'sms' | 'email' | 'whatsapp'
+ */
+export async function triggerNotificationEventWithChannels(
+  eventType,
+  context = {},
+  channels = ['sms', 'email', 'whatsapp'],
+  { useAutomationRule = false } = {}
+) {
   try {
     const rule = await resolveRule(eventType);
-    if (!rule?.isEnabled) return { skipped: true, reason: 'rule disabled' };
+    if (useAutomationRule && !rule?.isEnabled) return { skipped: true, reason: 'rule disabled' };
 
     const template = await resolveTemplate(eventType);
-    if (!template?.isActive && template?.isActive !== undefined) {
+    if (useAutomationRule && template?.isActive === false) {
       return { skipped: true, reason: 'template inactive' };
     }
 
     const companyVars = await getCompanyNotificationVars();
     const vars = { ...companyVars, ...(context.vars || {}) };
     const admin = await getAdminContact();
+    const channelSet = new Set(channels || ['sms', 'email', 'whatsapp']);
+    const isSupplier = context.recipientType === 'supplier';
     const recipients = [];
 
-    if (rule.notifyCustomer && context.customerPhone) {
-      recipients.push({ channel: 'sms', to: context.customerPhone, audience: 'customer' });
-      recipients.push({ channel: 'whatsapp', to: context.customerPhone, audience: 'customer' });
+    if (!isSupplier) {
+      if ((!useAutomationRule || rule?.notifyCustomer) && context.customerPhone && channelSet.has('sms')) {
+        recipients.push({ channel: 'sms', to: context.customerPhone, audience: 'customer' });
+      }
+      const customerWhatsapp = context.customerWhatsapp || context.customerPhone;
+      if ((!useAutomationRule || rule?.notifyCustomer) && customerWhatsapp && channelSet.has('whatsapp')) {
+        recipients.push({ channel: 'whatsapp', to: customerWhatsapp, audience: 'customer' });
+      }
+      if ((!useAutomationRule || rule?.notifyCustomer) && context.customerEmail && channelSet.has('email')) {
+        recipients.push({ channel: 'email', to: context.customerEmail, audience: 'customer' });
+      }
+    } else {
+      if (context.supplierPhone && channelSet.has('sms')) {
+        recipients.push({ channel: 'sms', to: context.supplierPhone, audience: 'supplier' });
+      }
+      const supplierWhatsapp = context.supplierWhatsapp || context.supplierPhone;
+      if (supplierWhatsapp && channelSet.has('whatsapp')) {
+        recipients.push({ channel: 'whatsapp', to: supplierWhatsapp, audience: 'supplier' });
+      }
+      if (context.supplierEmail && channelSet.has('email')) {
+        recipients.push({ channel: 'email', to: context.supplierEmail, audience: 'supplier' });
+      }
     }
-    if (rule.notifyCustomer && context.customerEmail) {
-      recipients.push({ channel: 'email', to: context.customerEmail, audience: 'customer' });
-    }
-    if (rule.notifyAdmin && admin.adminPhone) {
+
+    if (useAutomationRule && rule?.notifyAdmin && admin.adminPhone) {
       recipients.push({ channel: 'sms', to: admin.adminPhone, audience: 'admin' });
       recipients.push({ channel: 'whatsapp', to: admin.adminWhatsapp || admin.adminPhone, audience: 'admin' });
     }
-    if (rule.notifyAdmin && admin.adminEmail) {
+    if (useAutomationRule && rule?.notifyAdmin && admin.adminEmail) {
       recipients.push({ channel: 'email', to: admin.adminEmail, audience: 'admin' });
     }
 
@@ -359,9 +391,11 @@ export async function triggerNotificationEvent(eventType, context = {}) {
 
     const results = [];
     for (const r of recipients) {
-      if (r.channel === 'sms' && !rule.smsEnabled) continue;
-      if (r.channel === 'email' && !rule.emailEnabled) continue;
-      if (r.channel === 'whatsapp' && !rule.whatsappEnabled) continue;
+      if (useAutomationRule) {
+        if (r.channel === 'sms' && !rule.smsEnabled) continue;
+        if (r.channel === 'email' && !rule.emailEnabled) continue;
+        if (r.channel === 'whatsapp' && !rule.whatsappEnabled) continue;
+      }
 
       if (r.channel === 'sms' && !smsBody) continue;
       if (r.channel === 'whatsapp' && !whatsappTemplateName && !whatsappTextFallback) continue;
@@ -392,10 +426,14 @@ export async function triggerNotificationEvent(eventType, context = {}) {
           whatsappTextFallback: r.channel === 'whatsapp' ? whatsappTextFallback : '',
         },
       });
-      results.push({ ...result, audience: r.audience });
+      results.push({ ...result, audience: r.audience, channel: r.channel });
     }
 
-    return { sent: results.length, results };
+    if (!results.length) {
+      return { skipped: true, reason: 'no recipients or channels available', results: [] };
+    }
+
+    return { sent: results.filter((r) => r.success).length, results };
   } catch (err) {
     console.error('[notification] trigger failed', eventType, err.message);
     return { error: err.message };
@@ -484,6 +522,7 @@ export async function listNotificationLogs(query) {
 
 export default {
   triggerNotificationEvent,
+  triggerNotificationEventWithChannels,
   triggerNotificationEventSafe,
   sendTestSms,
   sendTestEmail,
