@@ -24,7 +24,11 @@ function createUpload(subdir, maxMb, allowedMimes) {
     limits: { fileSize: maxMb * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       const mime = file.mimetype || '';
-      if (allowedMimes.some((m) => mime.startsWith(m) || mime === m)) cb(null, true);
+      const ext = path.extname(String(file.originalname || '')).toLowerCase();
+      const mimeOk = allowedMimes.some((m) => mime.startsWith(m) || mime === m);
+      const extOk = (ext === '.pdf' && allowedMimes.includes('application/pdf'))
+        || (['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext) && allowedMimes.includes('image/'));
+      if (mimeOk || extOk) cb(null, true);
       else cb(new Error('File type not allowed'));
     },
   });

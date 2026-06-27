@@ -26,9 +26,7 @@ export const ordersApi = {
   uploadPassport: (id, file) => {
     const form = new FormData();
     form.append('passport', file);
-    return api.post(`/orders/${id}/passport`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/orders/${id}/passport`, form);
   },
   addFollowUp: (id, data) => api.post(`/orders/${id}/follow-up`, data),
   linkCustomer: (id, data) => api.post(`/orders/${id}/link-customer`, data),
@@ -47,16 +45,12 @@ export const bookingsApi = {
   uploadPassport: (id, file) => {
     const form = new FormData();
     form.append('passport', file);
-    return api.post(`/bookings/${id}/passport`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/bookings/${id}/passport`, form);
   },
   uploadTicket: (id, file) => {
     const form = new FormData();
     form.append('ticketFile', file);
-    return api.post(`/bookings/${id}/ticket`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/bookings/${id}/ticket`, form);
   },
   addNote: (id, data) => api.post(`/bookings/${id}/notes`, data),
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
@@ -70,18 +64,14 @@ export const bookingsApi = {
   extractTicket: (file) => {
     const form = new FormData();
     form.append('ticketFile', file);
-    return api.post('/bookings/extract-ticket', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post('/bookings/extract-ticket', form);
   },
   scheduleChange: (id, data) => api.post(`/bookings/${id}/schedule-change`, data),
   scheduleChangeWithTicket: (id, file, data = {}) => {
     const form = new FormData();
     if (file) form.append('ticketFile', file);
     Object.entries(data).forEach(([k, v]) => { if (v != null) form.append(k, v); });
-    return api.post(`/bookings/${id}/schedule-change/ticket`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/bookings/${id}/schedule-change/ticket`, form);
   },
 };
 
@@ -95,8 +85,6 @@ export const usersApi = {
   uploadDocument: (id, docType, file) => {
     const form = new FormData();
     form.append('document', file);
-    return api.post(`/users/${id}/documents/${docType}`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/users/${id}/documents/${docType}`, form);
   },
 };

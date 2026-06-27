@@ -22,7 +22,7 @@ import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
 const router = Router();
 
 router.get('/upcoming', authorize('bookings:view'), bookingController.upcoming);
-router.post('/extract-ticket', authorize('bookings:create', 'bookings:update'), bookingTicketUpload.single('ticketFile'), bookingController.extractTicket);
+router.post('/extract-ticket', authorize('bookings:create', 'bookings:update', 'bookings:view'), bookingTicketUpload.single('ticketFile'), bookingController.extractTicket);
 router.get('/', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.list);
 router.get('/summary', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.summary);
 router.post('/', authorize('bookings:create'), validate(createBookingSchema), bookingController.create);

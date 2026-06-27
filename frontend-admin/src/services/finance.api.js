@@ -65,9 +65,7 @@ export const expensesApi = {
   uploadBill: (id, file) => {
     const form = new FormData();
     form.append('billFile', file);
-    return api.post(`/expenses/${id}/bill`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post(`/expenses/${id}/bill`, form);
   },
 
   void: (id, data) => api.post(`/expenses/${id}/void`, data),

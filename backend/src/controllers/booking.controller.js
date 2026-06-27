@@ -1,5 +1,6 @@
 import * as bookingService from '../services/booking.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import fs from 'fs';
 
 export const list = asyncHandler(async (req, res) => {
   const data = await bookingService.listBookings(req.query);
@@ -103,8 +104,14 @@ export const uploadTicketCopy = asyncHandler(async (req, res) => {
 });
 
 export const extractTicket = asyncHandler(async (req, res) => {
-  const data = await bookingService.extractTicketData(req.file);
-  res.json({ success: true, data, message: 'Ticket data extracted — verify before saving' });
+  try {
+    const data = await bookingService.extractTicketData(req.file);
+    res.json({ success: true, data, message: 'Ticket data extracted — verify before saving' });
+  } finally {
+    if (req.file?.path) {
+      fs.unlink(req.file.path, () => {});
+    }
+  }
 });
 
 export const upcoming = asyncHandler(async (req, res) => {

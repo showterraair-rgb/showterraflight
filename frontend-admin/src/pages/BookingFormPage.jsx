@@ -327,34 +327,95 @@ export default function BookingFormPage() {
     setTicketFile(file);
     setExtractNote('');
     if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isPdf) {
+      setExtractNote('Image tickets need manual entry — use a PDF for auto-fill.');
+      return;
+    }
+
+    const setField = (name, value) => {
+      if (value == null || value === '') return;
+      form.setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    };
+
     setExtracting(true);
     try {
-      const { data } = await bookingsApi.extractTicket(file);
-      const ex = data.data || data;
-      if (ex.pnr) form.setValue('pnr', ex.pnr);
-      if (ex.airline) form.setValue('airline', ex.airline);
-      if (ex.route) form.setValue('route', ex.route);
-      if (ex.departureDate) form.setValue('departureDate', ex.departureDate);
-      if (ex.ticketNumber) form.setValue('ticketNumber', ex.ticketNumber);
-      if (ex.passengerCount) form.setValue('passengerCount', ex.passengerCount);
-      if (ex.passengers?.length) {
-        setPassengers(ex.passengers.map((p) => ({
+      const res = await bookingsApi.extractTicket(file);
+      const ex = res.data?.data;
+      if (!ex || typeof ex !== 'object') {
+        throw new Error('Invalid OCR response');
+      }
+
+      const mappedPassengers = ex.passengers?.length
+        ? ex.passengers.map((p) => ({
           ...EMPTY_PASSENGER,
           ...p,
           title: p.title || 'MR',
           passengerType: p.passengerType || 'ADULT',
-        })));
+        }))
+        : null;
+      const count = mappedPassengers?.length || ex.passengerCount || 1;
+
+      if (mappedPassengers) {
+        setPassengers(mappedPassengers);
       }
-      if (ex.flightNumber || ex.airlinePnr) {
+      setField('passengerCount', count);
+      setField('pnr', ex.pnr);
+      setField('airline', ex.airline);
+      setField('route', ex.route);
+      setField('sector', ex.sector);
+      setField('departureDate', ex.departureDate);
+      setField('ticketNumber', ex.ticketNumber || ex.bookingId);
+
+      if (ex.flightSegment) {
+        setFlightSegment((prev) => ({
+          ...prev,
+          ...ex.flightSegment,
+          airlinePnr: ex.flightSegment.airlinePnr || ex.pnr || prev.airlinePnr,
+          flightNumber: ex.flightSegment.flightNumber || ex.flightNumber || prev.flightNumber,
+        }));
+      } else if (ex.flightNumber || ex.pnr) {
         setFlightSegment((prev) => ({
           ...prev,
           flightNumber: ex.flightNumber || prev.flightNumber,
-          airlinePnr: ex.airlinePnr || ex.pnr || prev.airlinePnr,
+          airlinePnr: ex.pnr || prev.airlinePnr,
         }));
       }
-      if (ex.note) setExtractNote(ex.note);
+
+      const bdtTotal = Number(ex.grandTotalBdt || ex.purchasePriceBdt || ex.salePriceBdt) || 0;
+      if (bdtTotal > 0) {
+        const rate = Number(form.getValues('bdtRate')) || brlRate || 22.5;
+        const brlAmount = rate > 0 ? Number((bdtTotal / rate).toFixed(2)) : bdtTotal;
+        setField('purchasePriceBRL', brlAmount);
+        setField('salePriceBRL', brlAmount);
+        const fareRow = { bdt: String(bdtTotal), usd: '', brl: String(brlAmount) };
+        setFarePurchase(fareRow);
+        setFareSale(fareRow);
+        setFareBreakdown((prev) => ({
+          ...prev,
+          baseFare: String(bdtTotal),
+          grandTotal: bdtTotal,
+        }));
+      }
+
+      if (ex.travelClass) {
+        setTravelMeta((prev) => ({
+          ...(prev || { journeyType: 'one_way', travelClass: 'economy', returnDate: '' }),
+          travelClass: ex.travelClass,
+        }));
+      }
+
+      const filled = [ex.airline, ex.route, ex.departureDate, ex.pnr, ex.ticketNumber].filter(Boolean).length;
+      setExtractNote(
+        ex.note
+        || (filled >= 3
+          ? `Auto-filled ${filled} fields from ticket — please verify before saving`
+          : 'Partial data extracted — complete remaining fields manually')
+      );
     } catch (err) {
-      setExtractNote(err.response?.data?.message || 'Could not extract ticket data — enter manually');
+      const msg = err.response?.data?.message || err.message || 'Could not extract ticket data';
+      setExtractNote(`${msg}. Enter details manually.`);
     } finally {
       setExtracting(false);
     }
@@ -578,6 +639,11 @@ export default function BookingFormPage() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="card space-y-4">
         {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {loadError && <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{loadError}</div>}
+        {(extractNote || extracting) && (
+          <div className={`rounded-lg px-3 py-2 text-sm ${extracting ? 'bg-blue-50 text-blue-800' : extractNote?.includes('manual') || extractNote?.includes('Could not') ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800'}`}>
+            {extracting ? 'Reading ticket PDF and filling fields…' : extractNote}
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -990,34 +1056,26 @@ export default function BookingFormPage() {
           </div>
         )}
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">Original Ticket</label>
-          <p className="mb-2 text-xs text-slate-500">Upload PDF or image — OCR auto-fills PNR, airline, route, flight date, passenger, and ticket number. All fields stay editable.</p>
-          {extractNote && (
-            <p className={`mb-2 text-xs ${extractNote.includes('failed') || extractNote.includes('manual') ? 'text-amber-700' : 'text-green-700'}`}>
-              {extracting ? 'Extracting…' : extractNote}
+        {productCategory === 'air' && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <label className="mb-1 block text-sm font-medium">Original Ticket</label>
+            <p className="mb-2 text-xs text-slate-500">
+              Upload PDF ticket — auto-fills airline, route, date, PNR, passengers, and price. Included as a download link on the invoice PDF.
             </p>
-          )}
-          {existingTicket?.url && (
-            <a
-              href={existingTicket.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mb-2 inline-block text-sm font-medium text-brand-600 hover:underline"
-            >
-              {existingTicket.name || 'View current ticket'}
-            </a>
-          )}
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
-            onChange={(e) => handleTicketFileChange(e.target.files?.[0] || null)}
-          />
-          {ticketFile && (
-            <p className="mt-1 text-xs text-slate-500">Selected: {ticketFile.name}</p>
-          )}
-        </div>
+            {existingTicket?.url && (
+              <a href={existingTicket.url} target="_blank" rel="noopener noreferrer" className="mb-2 inline-block text-sm font-medium text-brand-600 hover:underline">
+                {existingTicket.name || 'View current ticket'}
+              </a>
+            )}
+            <input
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700"
+              onChange={(e) => handleTicketFileChange(e.target.files?.[0] || null)}
+            />
+            {ticketFile && <p className="mt-1 text-xs text-slate-500">Selected: {ticketFile.name}</p>}
+          </div>
+        )}
 
         {!notesFields.hidden && (
         <div>
