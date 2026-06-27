@@ -25,6 +25,8 @@ const bookingPassengerSchema = new mongoose.Schema(
   {
     title: { type: String, default: 'MR', trim: true },
     fullName: { type: String, required: true, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    phone: { type: String, trim: true },
     passengerType: { type: String, enum: ['ADULT', 'CHILD', 'INFANT'], default: 'ADULT' },
     eTicketNumber: { type: String, trim: true },
     checkInBaggage: { type: String, default: '20kg', trim: true },

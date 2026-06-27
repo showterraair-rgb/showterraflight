@@ -10,6 +10,8 @@ const optionalObjectId = z.preprocess(
 const passengerSchema = z.object({
   title: z.string().max(10).optional(),
   fullName: z.string().min(1).max(120).trim(),
+  email: z.string().email().max(120).optional().or(z.literal('')),
+  phone: z.string().max(20).optional(),
   passengerType: z.enum(['ADULT', 'CHILD', 'INFANT']).optional(),
   eTicketNumber: z.string().max(50).optional(),
   checkInBaggage: z.string().max(20).optional(),
