@@ -547,27 +547,49 @@ export default function BookingFormPage() {
 
   const accountLabel = (a) => `${a.name} (${ACCOUNT_TYPE_LABELS[a.type] || a.type})`;
 
-  const renderFareInputs = (label, row, setter) => (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="mb-2 text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {['bdt', 'usd', 'brl'].map((cur) => (
-          <div key={cur}>
-            <label className="mb-1 block text-xs text-slate-500">{cur.toUpperCase()}</label>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className="input-field"
-              value={row[cur]}
-              disabled={financeFields.readOnly}
-              onChange={(e) => updateFareRow(setter, cur.toUpperCase(), e.target.value)}
-            />
-          </div>
-        ))}
+  const renderFareTable = () => {
+    const rows = [
+      { label: 'Sale Price', row: fareSale, setter: setFareSale },
+      { label: 'Purchase Price', row: farePurchase, setter: setFarePurchase },
+      { label: 'Direct Costs', row: fareCosts, setter: setFareCosts },
+    ];
+    if (isEdit) rows.push({ label: 'Total Paid', row: farePaidInput, setter: setFarePaidInput });
+
+    return (
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-[32rem] text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">Fare</th>
+              {['BDT', 'USD', 'BRL'].map((cur) => (
+                <th key={cur} className="px-3 py-2.5 text-left text-xs font-semibold uppercase text-slate-500">{cur}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ label, row, setter }) => (
+              <tr key={label} className="border-b border-slate-100 last:border-0">
+                <td className="px-3 py-2 text-xs font-medium text-slate-600 whitespace-nowrap">{label}</td>
+                {['bdt', 'usd', 'brl'].map((cur) => (
+                  <td key={cur} className="px-3 py-2">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="input-field min-w-[7rem]"
+                      value={row[cur]}
+                      disabled={financeFields.readOnly}
+                      onChange={(e) => updateFareRow(setter, cur.toUpperCase(), e.target.value)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
-  );
+    );
+  };
 
   const onSubmit = async (values) => {
     if (!effectiveRate || effectiveRate <= 0) {
@@ -843,12 +865,7 @@ export default function BookingFormPage() {
               />
             </div>
           </div>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {renderFareInputs('Sale Price', fareSale, setFareSale)}
-            {renderFareInputs('Purchase Price', farePurchase, setFarePurchase)}
-            {renderFareInputs('Direct Costs', fareCosts, setFareCosts)}
-          </div>
-          {isEdit && renderFareInputs('Total Paid', farePaidInput, setFarePaidInput)}
+          {renderFareTable()}
           <div className="grid gap-3 sm:grid-cols-3 rounded-lg border border-slate-200 bg-white p-3">
             <div>
               <p className="text-xs text-slate-500">Full Due (BDT)</p>
