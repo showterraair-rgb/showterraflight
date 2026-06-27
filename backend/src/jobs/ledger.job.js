@@ -1,5 +1,8 @@
 import cron from 'node-cron';
-import { sendDailyLedgerSmsToAdmin } from '../services/ledgerSummary.service.js';
+import {
+  sendDailyLedgerNotifyToAdmin,
+  syncDailyLedgerNotificationDefaults,
+} from '../services/ledgerSummary.service.js';
 
 let started = false;
 
@@ -7,22 +10,26 @@ export function startLedgerJob() {
   if (started) return;
   started = true;
 
-  // Daily 11:00 PM Asia/Dhaka — admin ledger SMS
+  syncDailyLedgerNotificationDefaults().catch((err) => {
+    console.warn('[CRON] Daily ledger notification defaults sync failed:', err.message);
+  });
+
+  // Daily 11:00 PM Asia/Dhaka — admin SMS + WhatsApp summary
   cron.schedule(
     '0 23 * * *',
     async () => {
-      console.log('[CRON] Sending daily ledger SMS...');
+      console.log('[CRON] Sending daily ledger summary (SMS + WhatsApp)...');
       try {
-        const result = await sendDailyLedgerSmsToAdmin();
-        console.log('[CRON] Daily ledger SMS done:', result);
+        const result = await sendDailyLedgerNotifyToAdmin();
+        console.log('[CRON] Daily ledger summary done:', result.skipped ? result.reason : 'sent');
       } catch (err) {
-        console.error('[CRON] Daily ledger SMS error:', err.message);
+        console.error('[CRON] Daily ledger summary error:', err.message);
       }
     },
     { timezone: 'Asia/Dhaka' }
   );
 
-  console.log('[CRON] Ledger job scheduled (23:00 Asia/Dhaka)');
+  console.log('[CRON] Daily ledger summary scheduled (23:00 Asia/Dhaka — SMS + WhatsApp)');
 }
 
 export default { startLedgerJob };

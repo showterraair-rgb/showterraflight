@@ -40,4 +40,7 @@ router.put('/automation/:eventType', authorize('notifications:manage', 'settings
 
 router.get('/logs', authorize('notifications:view', 'settings:manage'), validate(notificationLogQuerySchema, 'query'), notificationController.listLogs);
 
+router.get('/jobs/daily-ledger/preview', authorize('notifications:manage', 'settings:manage'), notificationController.previewDailyLedger);
+router.post('/jobs/daily-ledger', authorize('notifications:manage', 'settings:manage'), notificationController.triggerDailyLedger);
+
 export default router;

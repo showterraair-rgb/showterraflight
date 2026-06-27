@@ -141,7 +141,7 @@ export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   payment_received: ['customerName', 'amount', 'bookingNumber', 'companyName'],
   payment_due_reminder: ['dueAmount', 'bookingNumber', 'companyName', 'supportNumber'],
   booking_canceled: ['bookingNumber', 'companyName'],
-  daily_ledger_summary: ['reportDate', 'totalBalance', 'todayOrders', 'todayBookings'],
+  daily_ledger_summary: ['reportDate', 'totalBalance', 'bankBalance', 'cashBalance', 'mfsBalance', 'todayOrders', 'todayBookings', 'totalBookings', 'customerDue', 'supplierPayable', 'overdueDue', 'shortSummary'],
 };
 
 export const DEFAULT_NOTIFICATION_TEMPLATES = [
@@ -211,9 +211,10 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
   {
     templateKey: 'daily_ledger_summary',
     name: 'Daily ledger summary (admin)',
-    smsBody: 'STF Daily {{reportDate}}: Accounts ৳{{totalBalance}} | Orders {{todayOrders}} Bookings {{todayBookings}} | Cust due ৳{{customerDue}} Supp due ৳{{supplierPayable}}',
-    emailSubject: 'Daily ledger — {{reportDate}}',
-    emailBody: 'Daily summary for {{reportDate}}:\n\nTotal account balance: ৳{{totalBalance}}\nOrders today: {{todayOrders}}\nBookings today: {{todayBookings}}\nCustomer due: ৳{{customerDue}}\nSupplier payable: ৳{{supplierPayable}}',
+    smsBody: '{{shortSummary}}',
+    whatsappBody: '{{shortSummary}}',
+    emailSubject: 'Daily summary — {{reportDate}}',
+    emailBody: 'Show Terra Flight — {{reportDate}}\n\nAccount ledger: ৳{{totalBalance}}\n  Bank: ৳{{bankBalance}}\n  Cash: ৳{{cashBalance}}\n  MFS (bKash/Nagad): ৳{{mfsBalance}}\n\nOrders today: {{todayOrders}}\nBookings today: {{todayBookings}}\nActive bookings: {{totalBookings}}\n\nCustomer due: ৳{{customerDue}}\nSupplier payable: ৳{{supplierPayable}}\nOverdue due: ৳{{overdueDue}}\nEst. profit: ৳{{grossProfit}}',
   },
   {
     templateKey: 'booking_approved',
@@ -267,7 +268,7 @@ export const DEFAULT_AUTOMATION_RULES = [
   { eventType: 'payment_received', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
   { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
-  { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: true, isEnabled: true },
 ];
 
 export const TRANSACTION_TYPES = [

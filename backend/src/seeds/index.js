@@ -272,6 +272,7 @@ async function seedNotificationTemplates() {
         templateKey: tpl.templateKey,
         name: tpl.name,
         smsBody: tpl.smsBody,
+        whatsappBody: tpl.whatsappBody || tpl.smsBody || '',
         emailSubject: tpl.emailSubject,
         emailBody: tpl.emailBody,
         isActive: true,

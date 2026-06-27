@@ -7,6 +7,10 @@ import {
   listNotificationLogs,
   getSmsBalance,
 } from '../services/notificationOrchestrator.service.js';
+import {
+  buildDailyLedgerSummary,
+  sendDailyLedgerNotifyToAdmin,
+} from '../services/ledgerSummary.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -104,6 +108,20 @@ export const listLogs = asyncHandler(async (req, res) => {
   res.json({ success: true, data: data.items, pagination: data.pagination });
 });
 
+export const previewDailyLedger = asyncHandler(async (_req, res) => {
+  const summary = await buildDailyLedgerSummary();
+  res.json({ success: true, data: summary });
+});
+
+export const triggerDailyLedger = asyncHandler(async (_req, res) => {
+  const result = await sendDailyLedgerNotifyToAdmin();
+  res.json({
+    success: true,
+    data: result,
+    message: result.skipped ? `Skipped: ${result.reason}` : 'Daily summary sent to admin (SMS + WhatsApp)',
+  });
+});
+
 export default {
   getSmsSettings,
   updateSmsSettings,
@@ -121,4 +139,6 @@ export default {
   listAutomationRules,
   updateAutomationRule,
   listLogs,
+  previewDailyLedger,
+  triggerDailyLedger,
 };
