@@ -256,18 +256,18 @@ export default function BookingDetailPage() {
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
                     <th className="py-2 pr-3">Name</th>
-                    <th className="py-2 pr-3">Email</th>
-                    <th className="py-2 pr-3">Phone</th>
-                    <th className="py-2">Type</th>
+                    <th className="py-2 pr-3">Type</th>
+                    <th className="py-2 pr-3">E-Ticket</th>
+                    <th className="py-2">Baggage</th>
                   </tr>
                 </thead>
                 <tbody>
                   {booking.passengers.map((p, i) => (
                     <tr key={i} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{p.fullName}</td>
-                      <td className="py-2 pr-3">{p.email || '—'}</td>
-                      <td className="py-2 pr-3">{p.phone || '—'}</td>
-                      <td className="py-2">{p.passengerType}</td>
+                      <td className="py-2 pr-3">{p.title} {p.fullName}</td>
+                      <td className="py-2 pr-3">{p.passengerType}</td>
+                      <td className="py-2 pr-3 font-mono text-xs">{p.eTicketNumber || '—'}</td>
+                      <td className="py-2">{p.checkInBaggage} / {p.cabinBaggage}</td>
                     </tr>
                   ))}
                 </tbody>
