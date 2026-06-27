@@ -1,4 +1,5 @@
 import * as bookingService from '../services/booking.service.js';
+import * as bookingOperationService from '../services/bookingOperation.service.js';
 import * as bulkImportService from '../services/bulkImport.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import fs from 'fs';
@@ -66,6 +67,11 @@ export const addNote = asyncHandler(async (req, res) => {
 export const getTimeline = asyncHandler(async (req, res) => {
   const data = await bookingService.getBookingTimeline(req.params.id);
   res.json({ success: true, data });
+});
+
+export const getOperations = asyncHandler(async (req, res) => {
+  const result = await bookingOperationService.listBookingOperations(req.params.id);
+  res.json({ success: true, data: result.items, bookingNumber: result.bookingNumber });
 });
 
 export const remove = asyncHandler(async (req, res) => {
@@ -199,6 +205,7 @@ export default {
   scheduleChangeWithTicket,
   addNote,
   getTimeline,
+  getOperations,
   remove,
   downloadInvoicePdf,
   downloadETicketPdf,

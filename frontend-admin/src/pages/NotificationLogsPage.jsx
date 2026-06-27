@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { notificationsApi } from '../services/notifications.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { formatDate } from '../utils/date';
+import { usePermission } from '../hooks/usePermission';
 
 const STATUS_OPTIONS = ['', 'pending', 'sent', 'delivered', 'read', 'failed'];
 const CHANNEL_OPTIONS = ['', 'sms', 'email', 'whatsapp', 'console'];
 
 export default function NotificationLogsPage() {
+  const { can } = usePermission();
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retryingId, setRetryingId] = useState(null);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [channel, setChannel] = useState('');
@@ -35,6 +39,19 @@ export default function NotificationLogsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleRetry = async (row) => {
+    if (!window.confirm(`Retry ${row.channel} to ${row.recipient}?`)) return;
+    setRetryingId(row.id);
+    try {
+      await notificationsApi.retryLog(row.id);
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Retry failed');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   const columns = [
     { key: 'createdAt', label: 'When', render: (r) => formatDate(r.createdAt) },
     { key: 'eventType', label: 'Event', render: (r) => <code className="text-xs">{r.eventType}</code> },
@@ -43,7 +60,29 @@ export default function NotificationLogsPage() {
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} label={r.status} /> },
     { key: 'subject', label: 'Subject', render: (r) => r.subject || '—' },
     { key: 'errorMessage', label: 'Error', render: (r) => r.errorMessage || '—' },
-    { key: 'bookingId', label: 'Booking', render: (r) => r.bookingId || '—' },
+    {
+      key: 'bookingId',
+      label: 'Booking',
+      render: (r) => (r.bookingId ? (
+        <Link to={`/bookings/${r.bookingId}`} className="text-brand-600 hover:underline">{r.bookingId.slice(-6)}</Link>
+      ) : '—'),
+    },
+    {
+      key: 'actions',
+      label: '',
+      render: (r) => (
+        r.status === 'failed' && can('notifications:manage') ? (
+          <button
+            type="button"
+            className="text-xs font-semibold text-brand-600 hover:underline disabled:opacity-50"
+            disabled={retryingId === r.id}
+            onClick={() => handleRetry(r)}
+          >
+            {retryingId === r.id ? 'Retrying…' : 'Retry'}
+          </button>
+        ) : null
+      ),
+    },
   ];
 
   if (loading && !items.length) return <LoadingSpinner className="py-20" />;

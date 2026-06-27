@@ -318,6 +318,36 @@ export async function sendPendingReminders() {
       continue;
     }
 
+    if (reminder.type === 'booking_travel' && reminder.booking) {
+      reminder.attemptCount = (reminder.attemptCount || 0) + 1;
+      try {
+        const bookingDoc = reminder.booking?.bookingNumber
+          ? reminder.booking
+          : await Booking.findById(reminder.booking).lean();
+        const result = await triggerNotificationEvent(
+          'upcoming_flight',
+          buildBookingNotificationContext(bookingDoc, reminder.customer)
+        );
+        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
+          reminder.status = 'sent';
+          reminder.sentAt = new Date();
+          sent += 1;
+        } else {
+          reminder.status = 'failed';
+          reminder.failedAt = new Date();
+          reminder.failureReason = result?.error || 'No notification channels available';
+          failed += 1;
+        }
+      } catch (err) {
+        reminder.status = 'failed';
+        reminder.failedAt = new Date();
+        reminder.failureReason = err.message;
+        failed += 1;
+      }
+      await reminder.save();
+      continue;
+    }
+
     const channel = resolveReminderChannel(reminder.type);
     const to =
       reminder.customer?.phone ||

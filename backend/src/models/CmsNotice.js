@@ -6,7 +6,7 @@ const cmsNoticeSchema = new mongoose.Schema(
     content: { type: String, required: true },
     type: {
       type: String,
-      enum: ['notice', 'offer', 'faq', 'announcement'],
+      enum: ['notice', 'offer', 'faq', 'announcement', 'blog'],
       default: 'notice',
     },
     isPublished: { type: Boolean, default: true },

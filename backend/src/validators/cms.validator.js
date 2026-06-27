@@ -20,7 +20,7 @@ export const updatePageSchema = z.object({
 export const createNoticeSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
-  type: z.enum(['notice', 'offer', 'faq', 'announcement']).optional(),
+  type: z.enum(['notice', 'offer', 'faq', 'announcement', 'blog']).optional(),
   isPublished: z.boolean().optional(),
   isPinned: z.boolean().optional(),
   publishDate: z.string().optional(),

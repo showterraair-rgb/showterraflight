@@ -28,6 +28,7 @@ import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
 import { normalizeWaPhone } from '../utils/phoneUtils.js';
+import ApiError from '../utils/ApiError.js';
 
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
@@ -276,7 +277,13 @@ async function dispatchChannel({ channel, recipient, subject, body, meta }) {
     booking: meta.bookingId,
     customer: meta.customerId,
     customerPayment: meta.customerPaymentId,
-    metadata: meta.vars || {},
+    metadata: {
+      ...(meta.vars || {}),
+      whatsappTemplateName: meta.whatsappTemplateName || '',
+      whatsappTemplateLanguage: meta.whatsappTemplateLanguage || '',
+      whatsappBodyParams: meta.whatsappBodyParams || [],
+      whatsappTextFallback: meta.whatsappTextFallback || '',
+    },
   });
 
   let result;
@@ -481,6 +488,49 @@ export async function sendTestWhatsApp({ to, templateName, message }) {
   });
 }
 
+export async function retryNotificationLog(logId) {
+  const log = await NotificationLog.findById(logId);
+  if (!log) throw ApiError.notFound('Notification log not found');
+  if (log.status !== 'failed') throw ApiError.badRequest('Only failed notifications can be retried');
+
+  await NotificationLog.findByIdAndUpdate(logId, {
+    status: 'pending',
+    errorMessage: '',
+    providerMessageId: '',
+    sentAt: undefined,
+  });
+
+  const meta = log.metadata || {};
+  let result;
+  if (log.channel === 'sms') {
+    result = await sendSmsMessage({ to: log.recipient, message: log.body });
+  } else if (log.channel === 'email') {
+    result = await sendEmailMessage({ to: log.recipient, subject: log.subject, message: log.body });
+  } else if (log.channel === 'whatsapp') {
+    result = await sendWhatsAppMessage({
+      to: log.recipient,
+      templateName: meta.whatsappTemplateName || '',
+      languageCode: meta.whatsappTemplateLanguage,
+      bodyParams: meta.whatsappBodyParams || [],
+      textFallback: meta.whatsappTextFallback || log.body,
+    });
+  } else {
+    result = { success: true, channel: 'console', messageId: `console-retry-${Date.now()}` };
+  }
+
+  await finalizeLog(logId, result);
+
+  const updated = await NotificationLog.findById(logId).lean();
+  return {
+    id: updated._id.toString(),
+    status: updated.status,
+    errorMessage: updated.errorMessage,
+    providerMessageId: updated.providerMessageId || '',
+    sentAt: updated.sentAt,
+    success: result.success,
+  };
+}
+
 export async function listNotificationLogs(query) {
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
@@ -528,6 +578,7 @@ export default {
   sendTestEmail,
   sendTestWhatsApp,
   listNotificationLogs,
+  retryNotificationLog,
   sendSmsMessage,
   sendEmailMessage,
   sendWhatsAppMessage,

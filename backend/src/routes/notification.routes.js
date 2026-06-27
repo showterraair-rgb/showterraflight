@@ -14,6 +14,7 @@ import {
   templateKeyParamSchema,
   eventTypeParamSchema,
   notificationLogQuerySchema,
+  notificationLogIdParamSchema,
 } from '../validators/notification.validator.js';
 
 const router = Router();
@@ -39,6 +40,7 @@ router.get('/automation', authorize('notifications:view', 'settings:manage'), no
 router.put('/automation/:eventType', authorize('notifications:manage', 'settings:manage'), validate(eventTypeParamSchema, 'params'), validate(updateAutomationSchema), notificationController.updateAutomationRule);
 
 router.get('/logs', authorize('notifications:view', 'settings:manage'), validate(notificationLogQuerySchema, 'query'), notificationController.listLogs);
+router.post('/logs/:id/retry', authorize('notifications:manage', 'settings:manage'), validate(notificationLogIdParamSchema, 'params'), notificationController.retryLog);
 
 router.get('/jobs/daily-ledger/preview', authorize('notifications:manage', 'settings:manage'), notificationController.previewDailyLedger);
 router.post('/jobs/daily-ledger', authorize('notifications:manage', 'settings:manage'), notificationController.triggerDailyLedger);

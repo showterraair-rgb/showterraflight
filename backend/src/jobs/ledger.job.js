@@ -3,6 +3,7 @@ import {
   sendDailyLedgerNotifyToAdmin,
   syncDailyLedgerNotificationDefaults,
   syncManualBookingNotificationDefaults,
+  syncRrvNotificationDefaults,
 } from '../services/ledgerSummary.service.js';
 
 let started = false;
@@ -17,6 +18,10 @@ export function startLedgerJob() {
 
   syncManualBookingNotificationDefaults().catch((err) => {
     console.warn('[CRON] Manual booking notification defaults sync failed:', err.message);
+  });
+
+  syncRrvNotificationDefaults().catch((err) => {
+    console.warn('[CRON] RRV notification defaults sync failed:', err.message);
   });
 
   // Daily 11:00 PM Asia/Dhaka — admin SMS + WhatsApp summary

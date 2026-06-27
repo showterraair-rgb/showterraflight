@@ -6,6 +6,7 @@ export const reportQuerySchema = z.object({
   status: z.string().optional(),
   customerId: z.string().optional(),
   supplierId: z.string().optional(),
+  agentId: z.string().optional(),
   accountId: z.string().optional(),
   year: z.coerce.number().optional(),
 });

@@ -57,6 +57,12 @@ export const BOOKING_STATUSES = [
 
 export const BOOKING_TYPES = ['standard', 'reissue', 'refund', 'void'];
 
+export const BOOKING_OPERATION_TYPES = ['ISSUE', 'REISSUE', 'VOID', 'REFUND', 'CANCEL_REFUND'];
+
+export const BOOKING_OPERATION_STATUSES = ['draft', 'pending', 'approved', 'completed', 'cancelled'];
+
+export const SALE_TYPES = ['direct_customer', 'agent'];
+
 export const PRODUCT_CATEGORIES = ['air', 'hotel', 'esim', 'insurance', 'package', 'other'];
 
 export const PRODUCT_CATEGORY_LABELS = {
@@ -119,6 +125,10 @@ export const NOTIFICATION_EVENT_TYPES = [
   'supplier_payable_reminder',
   'schedule_change',
   'booking_canceled',
+  'void_done',
+  'reissue_done',
+  'refund_paid',
+  'upcoming_flight',
   'daily_ledger_summary',
 ];
 
@@ -143,6 +153,10 @@ export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   payment_due_reminder: ['dueAmount', 'bookingNumber', 'companyName', 'supportNumber'],
   supplier_payable_reminder: ['supplierName', 'bookingNumber', 'payableAmount', 'companyName'],
   booking_canceled: ['bookingNumber', 'companyName'],
+  void_done: ['customerName', 'bookingNumber', 'route', 'companyName'],
+  reissue_done: ['customerName', 'bookingNumber', 'newBookingNumber', 'route', 'companyName'],
+  refund_paid: ['customerName', 'bookingNumber', 'refundAmount', 'penalty', 'companyName'],
+  upcoming_flight: ['customerName', 'bookingNumber', 'route', 'departureDate', 'pnr', 'companyName'],
   daily_ledger_summary: ['reportDate', 'totalBalance', 'bankBalance', 'cashBalance', 'mfsBalance', 'todayOrders', 'todayBookings', 'totalBookings', 'customerDue', 'supplierPayable', 'overdueDue', 'shortSummary'],
 };
 
@@ -263,6 +277,38 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     emailSubject: 'Booking {{bookingNumber}} canceled',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been canceled.\n\n— Show Terra Flight',
   },
+  {
+    templateKey: 'void_done',
+    name: 'Booking voided',
+    smsBody: 'Hello {{customerName}}, booking {{bookingNumber}} ({{route}}) has been voided. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nBooking {{bookingNumber}} for {{route}} has been voided.\n\n— Show Terra Flight',
+    emailSubject: 'Booking {{bookingNumber}} voided',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} ({{route}}) has been voided.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'reissue_done',
+    name: 'Ticket reissued',
+    smsBody: 'Hello {{customerName}}, booking {{bookingNumber}} has been reissued as {{newBookingNumber}}. Route: {{route}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nYour ticket {{bookingNumber}} has been reissued.\nNew booking: {{newBookingNumber}}\nRoute: {{route}}\n\n— Show Terra Flight',
+    emailSubject: 'Ticket reissued — {{newBookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been reissued as {{newBookingNumber}}.\nRoute: {{route}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'refund_paid',
+    name: 'Refund processed',
+    smsBody: 'Hello {{customerName}}, refund of ৳{{refundAmount}} for booking {{bookingNumber}} has been processed. Penalty: ৳{{penalty}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nRefund of ৳{{refundAmount}} for booking {{bookingNumber}} has been processed.\nPenalty: ৳{{penalty}}\n\n— Show Terra Flight',
+    emailSubject: 'Refund processed — {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nA refund of ৳{{refundAmount}} for booking {{bookingNumber}} has been processed.\nPenalty deducted: ৳{{penalty}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'upcoming_flight',
+    name: 'Upcoming flight reminder',
+    smsBody: 'Hello {{customerName}}, reminder: your flight {{bookingNumber}} ({{route}}) departs {{departureDate}}. PNR: {{pnr}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nYour flight is coming up.\nBooking: {{bookingNumber}}\nRoute: {{route}}\nDeparture: {{departureDate}}\nPNR: {{pnr}}\n\n— Show Terra Flight',
+    emailSubject: 'Upcoming flight — {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nThis is a reminder that your flight is approaching.\n\nBooking: {{bookingNumber}}\nRoute: {{route}}\nDeparture: {{departureDate}}\nPNR: {{pnr}}\n\n— Show Terra Flight',
+  },
 ];
 
 export const DEFAULT_AUTOMATION_RULES = [
@@ -281,6 +327,10 @@ export const DEFAULT_AUTOMATION_RULES = [
   { eventType: 'payment_due_reminder', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'supplier_payable_reminder', notifyCustomer: false, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'booking_canceled', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: false, isEnabled: true },
+  { eventType: 'void_done', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'reissue_done', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'refund_paid', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'upcoming_flight', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: true, isEnabled: true },
 ];
 

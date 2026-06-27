@@ -365,6 +365,203 @@ export async function salesSummaryReport(query) {
   };
 }
 
+export async function voidReport(query) {
+  const filter = { status: 'voided' };
+  const dateRange = parseDateRange(query);
+  if (dateRange) filter.rrvProcessedAt = dateRange;
+
+  const bookings = await Booking.find(filter)
+    .populate('customer', 'name phone')
+    .sort({ rrvProcessedAt: -1 })
+    .lean();
+
+  const rows = bookings.map((b) => ({
+    bookingNumber: b.bookingNumber,
+    customer: b.customer?.name || '',
+    phone: b.customer?.phone || '',
+    route: b.route,
+    voidDate: b.rrvProcessedAt,
+    salePrice: b.salePrice,
+    amountPaid: b.amountPaid,
+    note: b.rrvNote || '',
+  }));
+
+  const totals = {
+    count: rows.length,
+    salePrice: rows.reduce((s, r) => s + (r.salePrice || 0), 0),
+    amountPaid: rows.reduce((s, r) => s + (r.amountPaid || 0), 0),
+  };
+
+  return { ...exportMeta('void-report', rows, Object.keys(rows[0] || {})), totals };
+}
+
+export async function refundReport(query) {
+  const filter = { status: 'refunded' };
+  const dateRange = parseDateRange(query);
+  if (dateRange) filter.rrvProcessedAt = dateRange;
+
+  const bookings = await Booking.find(filter)
+    .populate('customer', 'name phone')
+    .sort({ rrvProcessedAt: -1 })
+    .lean();
+
+  const rows = bookings.map((b) => ({
+    bookingNumber: b.bookingNumber,
+    customer: b.customer?.name || '',
+    route: b.route,
+    refundDate: b.rrvProcessedAt,
+    salePrice: b.salePrice,
+    amountPaid: b.amountPaid,
+    penalty: b.rrvPenalty || 0,
+    refundAmount: b.rrvRefundAmount || 0,
+    note: b.rrvNote || '',
+  }));
+
+  const totals = {
+    count: rows.length,
+    refundAmount: rows.reduce((s, r) => s + (r.refundAmount || 0), 0),
+    penalty: rows.reduce((s, r) => s + (r.penalty || 0), 0),
+  };
+
+  return { ...exportMeta('refund-report', rows, Object.keys(rows[0] || {})), totals };
+}
+
+export async function reissueReport(query) {
+  const filter = { status: 'reissued' };
+  const dateRange = parseDateRange(query);
+  if (dateRange) filter.rrvProcessedAt = dateRange;
+
+  const bookings = await Booking.find(filter)
+    .populate('customer', 'name')
+    .sort({ rrvProcessedAt: -1 })
+    .lean();
+
+  const parentIds = bookings.map((b) => b._id);
+  const children = parentIds.length
+    ? await Booking.find({ parentBooking: { $in: parentIds } }).select('parentBooking bookingNumber ticketNumber departureDate route').lean()
+    : [];
+  const childByParent = new Map(children.map((c) => [c.parentBooking.toString(), c]));
+
+  const rows = bookings.map((b) => {
+    const child = childByParent.get(b._id.toString());
+    return {
+      bookingNumber: b.bookingNumber,
+      customer: b.customer?.name || '',
+      route: b.route,
+      reissueDate: b.rrvProcessedAt,
+      oldTicket: b.ticketNumber || '',
+      newBookingNumber: child?.bookingNumber || '',
+      newTicket: child?.ticketNumber || '',
+      newRoute: child?.route || '',
+      note: b.rrvNote || '',
+    };
+  });
+
+  return { ...exportMeta('reissue-report', rows, Object.keys(rows[0] || {})), totals: { count: rows.length } };
+}
+
+export async function agentDueReport(query) {
+  const filter = {
+    saleType: 'agent',
+    customerDue: { $gt: 0 },
+    status: { $nin: ['cancelled', 'voided', 'refunded'] },
+  };
+  if (query.agentId) filter.agent = query.agentId;
+
+  const bookings = await Booking.find(filter)
+    .populate('agent', 'agentId companyName contactPerson phone')
+    .populate('customer', 'name')
+    .sort({ customerDue: -1 })
+    .lean();
+
+  const rows = bookings.map((b) => ({
+    bookingNumber: b.bookingNumber,
+    agentCode: b.agent?.agentId || '',
+    agentCompany: b.agent?.companyName || '',
+    customer: b.customer?.name || '',
+    route: b.route,
+    departureDate: b.departureDate,
+    salePrice: b.salePrice,
+    amountPaid: b.amountPaid,
+    customerDue: b.customerDue,
+    duePaymentAt: b.duePaymentAt,
+    status: b.status,
+  }));
+
+  const totalDue = rows.reduce((s, r) => s + (r.customerDue || 0), 0);
+
+  return { ...exportMeta('agent-due', rows, Object.keys(rows[0] || {})), totalDue };
+}
+
+export async function brlBdtDailyReport(query) {
+  const filter = { status: { $nin: ['cancelled'] } };
+  const dateRange = parseDateRange(query);
+  if (dateRange) filter.createdAt = dateRange;
+
+  const bookings = await Booking.find(filter)
+    .select('createdAt salePrice salePriceBRL purchasePrice purchasePriceBRL profit bdtRateAtBooking exchangeRateAtBooking')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const byDay = {};
+  for (const b of bookings) {
+    const day = b.createdAt ? new Date(b.createdAt).toISOString().slice(0, 10) : 'unknown';
+    if (!byDay[day]) {
+      byDay[day] = {
+        date: day,
+        bookingCount: 0,
+        totalSaleBDT: 0,
+        totalSaleBRL: 0,
+        totalPurchaseBDT: 0,
+        totalPurchaseBRL: 0,
+        totalProfitBDT: 0,
+        rateSum: 0,
+        rateCount: 0,
+      };
+    }
+    const row = byDay[day];
+    const rate = b.bdtRateAtBooking || b.exchangeRateAtBooking || 0;
+    const saleBrl = b.salePriceBRL || (rate > 0 ? (b.salePrice || 0) / rate : 0);
+    const purchaseBrl = b.purchasePriceBRL || (rate > 0 ? (b.purchasePrice || 0) / rate : 0);
+
+    row.bookingCount += 1;
+    row.totalSaleBDT += b.salePrice || 0;
+    row.totalSaleBRL += saleBrl;
+    row.totalPurchaseBDT += b.purchasePrice || 0;
+    row.totalPurchaseBRL += purchaseBrl;
+    row.totalProfitBDT += b.profit || 0;
+    if (rate > 0) {
+      row.rateSum += rate;
+      row.rateCount += 1;
+    }
+  }
+
+  const rows = Object.values(byDay)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((r) => ({
+      date: r.date,
+      bookingCount: r.bookingCount,
+      totalSaleBDT: Math.round(r.totalSaleBDT * 100) / 100,
+      totalSaleBRL: Math.round(r.totalSaleBRL * 100) / 100,
+      totalPurchaseBDT: Math.round(r.totalPurchaseBDT * 100) / 100,
+      totalPurchaseBRL: Math.round(r.totalPurchaseBRL * 100) / 100,
+      totalProfitBDT: Math.round(r.totalProfitBDT * 100) / 100,
+      avgRateBrlToBdt: r.rateCount ? Math.round((r.rateSum / r.rateCount) * 100) / 100 : 0,
+    }));
+
+  const totals = rows.reduce(
+    (acc, r) => ({
+      bookingCount: acc.bookingCount + r.bookingCount,
+      totalSaleBDT: acc.totalSaleBDT + r.totalSaleBDT,
+      totalSaleBRL: acc.totalSaleBRL + r.totalSaleBRL,
+      totalProfitBDT: acc.totalProfitBDT + r.totalProfitBDT,
+    }),
+    { bookingCount: 0, totalSaleBDT: 0, totalSaleBRL: 0, totalProfitBDT: 0 }
+  );
+
+  return { ...exportMeta('brl-bdt-daily', rows, Object.keys(rows[0] || {})), totals };
+}
+
 const REPORT_HANDLERS = {
   'sales-summary': salesSummaryReport,
   'booking-profit': bookingProfitReport,
@@ -375,6 +572,11 @@ const REPORT_HANDLERS = {
   'income-vs-expense': incomeVsExpenseSummary,
   'account-balance': accountBalanceSummary,
   'monthly-summary': monthlySummary,
+  'void-report': voidReport,
+  'refund-report': refundReport,
+  'reissue-report': reissueReport,
+  'agent-due': agentDueReport,
+  'brl-bdt-daily': brlBdtDailyReport,
 };
 
 export async function runReport(reportKey, query) {

@@ -5,6 +5,7 @@ import {
   sendTestEmail,
   sendTestWhatsApp,
   listNotificationLogs,
+  retryNotificationLog,
   getSmsBalance,
 } from '../services/notificationOrchestrator.service.js';
 import {
@@ -108,6 +109,12 @@ export const listLogs = asyncHandler(async (req, res) => {
   res.json({ success: true, data: data.items, pagination: data.pagination });
 });
 
+export const retryLog = asyncHandler(async (req, res) => {
+  const data = await retryNotificationLog(req.params.id);
+  if (!data.success) throw ApiError.badRequest(data.errorMessage || 'Retry failed');
+  res.json({ success: true, data, message: 'Notification resent' });
+});
+
 export const previewDailyLedger = asyncHandler(async (_req, res) => {
   const summary = await buildDailyLedgerSummary();
   res.json({ success: true, data: summary });
@@ -139,6 +146,7 @@ export default {
   listAutomationRules,
   updateAutomationRule,
   listLogs,
+  retryLog,
   previewDailyLedger,
   triggerDailyLedger,
 };

@@ -1,6 +1,6 @@
 /**
- * Sidebar navigation — grouped menus with permission checks.
- * Items with `children` render as collapsible sub-groups.
+ * Sidebar navigation — travel ERP v2 information architecture.
+ * Maps to existing routes; no URL changes in phase 1.
  */
 
 export const NAV_GROUPS = [
@@ -12,39 +12,52 @@ export const NAV_GROUPS = [
     permissions: ['dashboard:view'],
   },
   {
-    id: 'customers',
-    label: 'Customers',
-    path: '/customers',
-    icon: 'customers',
-    permissions: ['customers:view'],
-  },
-  {
     id: 'bookings',
     label: 'Bookings',
     icon: 'bookings',
     children: [
-      { label: 'Booking History', path: '/bookings', permissions: ['bookings:view'] },
+      { label: 'Booking Ledger', path: '/bookings', permissions: ['bookings:view'] },
       { label: 'New Booking', path: '/bookings/new', permissions: ['bookings:create'] },
       { label: 'Bulk Import', path: '/bookings/bulk-import', permissions: ['bookings:create'] },
       { label: 'Upcoming Flights', path: '/bookings/upcoming', permissions: ['bookings:view'] },
       { label: 'Partial Payments', path: '/bookings/partial-payments', permissions: ['bookings:view', 'payments:customer'] },
-      {
-        id: 'ticketing',
-        label: 'Ticketing',
-        children: [
-          { label: 'Voids', path: '/bookings/voids', permissions: ['bookings:view'] },
-          { label: 'Refunds', path: '/bookings/refunds', permissions: ['bookings:view'] },
-          { label: 'Reissues', path: '/bookings/reissues', permissions: ['bookings:view'] },
-          { label: 'Invoices', path: '/bookings/invoices', permissions: ['bookings:view'] },
-        ],
-      },
     ],
   },
   {
-    id: 'partners',
-    label: 'Partners',
-    icon: 'suppliers',
+    id: 'ticket-operations',
+    label: 'Ticket Operations',
+    icon: 'ticketOps',
     children: [
+      { label: 'Voids', path: '/bookings/voids', permissions: ['bookings:view'] },
+      { label: 'Refunds', path: '/bookings/refunds', permissions: ['bookings:view'] },
+      { label: 'Reissues', path: '/bookings/reissues', permissions: ['bookings:view'] },
+      { label: 'Invoices', path: '/bookings/invoices', permissions: ['bookings:view'] },
+    ],
+  },
+  {
+    id: 'receipts',
+    label: 'Receipts',
+    icon: 'receipts',
+    children: [
+      { label: 'Record Receipt', path: '/payments/customers', permissions: ['payments:customer'] },
+      { label: 'Payment History', path: '/payments/history', permissions: ['payments:customer'] },
+      { label: 'Instant Payment', path: '/payments/instant', permissions: ['payments:customer'] },
+      { label: 'Payment Request', path: '/payments/requests', permissions: ['payments:customer'] },
+    ],
+  },
+  {
+    id: 'supplier-payments',
+    label: 'Supplier Payments',
+    path: '/payments/suppliers',
+    icon: 'payments',
+    permissions: ['payments:supplier'],
+  },
+  {
+    id: 'parties',
+    label: 'Parties',
+    icon: 'parties',
+    children: [
+      { label: 'Customers', path: '/customers', permissions: ['customers:view'] },
       { label: 'Suppliers', path: '/suppliers', permissions: ['suppliers:view'] },
       { label: 'B2B Agents', path: '/agents', permissions: ['agents:view'] },
       { label: 'Agent Bookings', path: '/agent-bookings', permissions: ['agent-bookings:view'] },
@@ -52,88 +65,74 @@ export const NAV_GROUPS = [
     ],
   },
   {
-    id: 'finance',
-    label: 'Finance',
-    icon: 'accounts',
-    children: [
-      { label: 'Accounts', path: '/accounts', permissions: ['accounts:view'] },
-      { label: 'Ledger', path: '/finance/ledger', permissions: ['accounts:view'] },
-      { label: 'Expenses', path: '/expenses', permissions: ['expenses:view'] },
-      { label: 'Transfers', path: '/transfers', permissions: ['transfers:create'] },
-    ],
-  },
-  {
-    id: 'payments',
-    label: 'Payments',
-    icon: 'payments',
-    children: [
-      { label: 'Customer Payments', path: '/payments/customers', permissions: ['payments:customer'] },
-      { label: 'Supplier Payments', path: '/payments/suppliers', permissions: ['payments:supplier'] },
-      { label: 'Payment History', path: '/payments/history', permissions: ['payments:customer'] },
-      {
-        id: 'payment-tools',
-        label: 'Quick Actions',
-        children: [
-          { label: 'Instant Payment', path: '/payments/instant', permissions: ['payments:customer'] },
-          { label: 'Payment Request', path: '/payments/requests', permissions: ['payments:customer'] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'reminders',
-    label: 'Reminders',
-    path: '/reminders',
-    icon: 'reminders',
-    permissions: ['reminders:view'],
-  },
-  {
     id: 'reports',
     label: 'Reports',
     icon: 'reports',
     children: [
       { label: 'Business Summary', path: '/reports/business-summary', permissions: ['reports:view', 'dashboard:view'] },
-      { label: 'Business Reports', path: '/reports', permissions: ['reports:view'] },
-      { label: 'Sales Report', path: '/reports/sales', permissions: ['reports:view'] },
+      { label: 'All Reports', path: '/reports', permissions: ['reports:view'] },
+      { label: 'Sales & RRV', path: '/reports/sales', permissions: ['reports:view'] },
+      { label: 'Ledger', path: '/finance/ledger', permissions: ['accounts:view'] },
     ],
   },
   {
-    id: 'settings',
-    label: 'Settings',
-    icon: 'users',
+    id: 'notifications',
+    label: 'Notifications',
+    icon: 'notifications',
     children: [
+      { label: 'Hub & Rules', path: '/settings/notifications', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+      { label: 'Templates', path: '/settings/notification-templates', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+      { label: 'Reminders', path: '/reminders', permissions: ['reminders:view'] },
+      { label: 'SMS', path: '/settings/sms', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+      { label: 'Email', path: '/settings/email', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+      { label: 'WhatsApp', path: '/settings/whatsapp', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+    ],
+  },
+  {
+    id: 'cms',
+    label: 'Frontend CMS',
+    path: '/cms',
+    icon: 'cms',
+    permissions: ['cms:view'],
+  },
+  {
+    id: 'administration',
+    label: 'Administration',
+    icon: 'administration',
+    children: [
+      { label: 'Users', path: '/users', permissions: ['users:view'] },
+      { label: 'Roles & Permissions', path: '/roles', permissions: ['roles:manage'] },
       { label: 'Currency', path: '/settings/currency', permissions: ['settings:manage', 'cms:manage'] },
       { label: 'Payment Accounts', path: '/settings/payment-accounts', permissions: ['accounts:view', 'settings:manage', 'notifications:view'] },
       { label: 'Payment Settings', path: '/settings/payment', permissions: ['accounts:view'] },
-      {
-        id: 'notifications',
-        label: 'Notifications',
-        children: [
-          { label: 'Notification Hub', path: '/settings/notifications', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
-          { label: 'SMS', path: '/settings/sms', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
-          { label: 'Email', path: '/settings/email', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
-          { label: 'WhatsApp', path: '/settings/whatsapp', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
-        ],
-      },
-      { label: 'Users', path: '/users', permissions: ['users:view'] },
-      { label: 'Roles & Permissions', path: '/roles', permissions: ['roles:manage'] },
+      { label: 'Accounts', path: '/accounts', permissions: ['accounts:view'] },
+      { label: 'Expenses', path: '/expenses', permissions: ['expenses:view'] },
+      { label: 'Transfers', path: '/transfers', permissions: ['transfers:create'] },
       { label: 'Security & Audit', path: '/security', permissions: ['audit:view'] },
+    ],
+  },
+  {
+    id: 'backup-logs',
+    label: 'Backup & Logs',
+    icon: 'backup',
+    children: [
+      { label: 'Database Backup', path: '/backup', permissions: ['backup:manage'] },
+      { label: 'Notification Logs', path: '/notifications/logs', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+      { label: 'Audit & Login History', path: '/security', permissions: ['audit:view'] },
     ],
   },
 ];
 
-/** Routes only — hidden from sidebar */
+/** Routes only — hidden from sidebar (deep links, legacy product categories) */
 export const NAV_ITEMS = [
   { label: 'Hotel Booking', path: '/bookings/hotel', permissions: ['bookings:view'], hiddenFromNav: true },
   { label: 'e-Sim', path: '/bookings/esim', permissions: ['bookings:view'], hiddenFromNav: true },
   { label: 'Insurance', path: '/bookings/insurance', permissions: ['bookings:view'], hiddenFromNav: true },
   { label: 'Bank List', path: '/settings/payment/banks', permissions: ['accounts:view'], hiddenFromNav: true },
   { label: 'MFS List', path: '/settings/payment/mfs', permissions: ['accounts:view'], hiddenFromNav: true },
-  { label: 'Notification Templates', path: '/settings/notification-templates', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
-  { label: 'Notification Logs', path: '/notifications/logs', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
   { label: 'Gateway Settings', path: '/settings/payment/gateway', permissions: ['accounts:view', 'settings:manage', 'notifications:view'], hiddenFromNav: true },
-  { label: 'CMS', path: '/cms', permissions: ['cms:view'], hiddenFromNav: true },
-  { label: 'Backup', path: '/backup', permissions: ['backup:manage'], hiddenFromNav: true },
+  { label: 'Customer Account', path: '/customers/:id/account', permissions: ['customers:view'], hiddenFromNav: true },
+  { label: 'Supplier Account', path: '/suppliers/:id/account', permissions: ['suppliers:view'], hiddenFromNav: true },
 ];
 
 export function hasPermission(userPermissions, role, required) {

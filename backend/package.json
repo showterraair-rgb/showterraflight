@@ -11,6 +11,7 @@
     "seed": "node src/seeds/index.js",
     "seed:home": "node src/seeds/seedHomeContent.js",
     "recalculate-financials": "node src/scripts/recalculateFinancials.js",
+    "backfill-booking-operations": "node src/scripts/backfillBookingOperations.js",
     "configure-sms": "node src/scripts/configureSms.js",
     "configure-notifications": "node src/scripts/configureNotifications.js",
     "create-demo-user": "node src/scripts/createDemoUser.js",

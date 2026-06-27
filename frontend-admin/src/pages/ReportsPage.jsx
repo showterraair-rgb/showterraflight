@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { reportsApi } from '../services/phase5.api';
 import { accountsApi } from '../services/finance.api';
 import { customersApi, suppliersApi } from '../services/crm.api';
+import { agentsApi } from '../services/agents.api';
 import DataTable from '../components/common/DataTable';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import MoneyAmount from '../components/common/MoneyAmount';
@@ -19,6 +20,11 @@ const REPORTS = [
   { key: 'income-vs-expense', label: 'Cash flow', filters: ['from', 'to'] },
   { key: 'account-balance', label: 'Account balance', filters: [] },
   { key: 'monthly-summary', label: 'Monthly summary', filters: ['year'] },
+  { key: 'void-report', label: 'Void report', filters: ['from', 'to'] },
+  { key: 'refund-report', label: 'Refund report', filters: ['from', 'to'] },
+  { key: 'reissue-report', label: 'Reissue report', filters: ['from', 'to'] },
+  { key: 'agent-due', label: 'Agent due', filters: ['agent'] },
+  { key: 'brl-bdt-daily', label: 'BRL/BDT daily', filters: ['from', 'to'] },
 ];
 
 function buildColumns(rows) {
@@ -48,6 +54,7 @@ export default function ReportsPage() {
   const [accounts, setAccounts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [agents, setAgents] = useState([]);
 
   const reportMeta = REPORTS.find((r) => r.key === selected);
 
@@ -56,10 +63,12 @@ export default function ReportsPage() {
       accountsApi.list(),
       customersApi.list({ limit: 100 }),
       suppliersApi.list({ limit: 100 }),
-    ]).then(([acc, cust, sup]) => {
+      agentsApi.list({ limit: 100 }),
+    ]).then(([acc, cust, sup, agt]) => {
       setAccounts(acc.data.data);
       setCustomers(cust.data.data);
       setSuppliers(sup.data.data);
+      setAgents(agt.data.data);
     }).catch(() => {});
   }, []);
 
@@ -72,6 +81,7 @@ export default function ReportsPage() {
       if (filters.status) params.status = filters.status;
       if (filters.customerId) params.customerId = filters.customerId;
       if (filters.supplierId) params.supplierId = filters.supplierId;
+      if (filters.agentId) params.agentId = filters.agentId;
       if (filters.accountId) params.accountId = filters.accountId;
       if (filters.year) params.year = filters.year;
 
@@ -105,6 +115,11 @@ export default function ReportsPage() {
     summaryCards.push({ label: 'Total profit', value: <MoneyAmount amount={result.totals.profit} size="lg" /> });
     summaryCards.push({ label: 'Customer due', value: <MoneyAmount amount={result.totals.customerDue} size="lg" /> });
   }
+  if (result?.totals?.count != null) summaryCards.push({ label: 'Records', value: result.totals.count });
+  if (result?.totals?.refundAmount != null) summaryCards.push({ label: 'Total refund', value: <MoneyAmount amount={result.totals.refundAmount} size="lg" /> });
+  if (result?.totals?.bookingCount != null) summaryCards.push({ label: 'Bookings', value: result.totals.bookingCount });
+  if (result?.totals?.totalSaleBDT != null) summaryCards.push({ label: 'Total sale (BDT)', value: <MoneyAmount amount={result.totals.totalSaleBDT} size="lg" /> });
+  if (result?.totals?.totalSaleBRL != null) summaryCards.push({ label: 'Total sale (BRL)', value: `R$ ${Number(result.totals.totalSaleBRL).toFixed(2)}` });
   if (result?.totalDue != null) summaryCards.push({ label: 'Total due', value: <MoneyAmount amount={result.totalDue} size="lg" /> });
   if (result?.totalPayable != null) summaryCards.push({ label: 'Total payable', value: <MoneyAmount amount={result.totalPayable} size="lg" /> });
   if (result?.net != null) summaryCards.push({ label: 'Net', value: <MoneyAmount amount={result.net} size="lg" /> });
@@ -150,6 +165,12 @@ export default function ReportsPage() {
             <select className="rounded-lg border border-slate-300 px-3 py-2 text-sm" value={filters.supplierId || ''} onChange={(e) => setFilters((f) => ({ ...f, supplierId: e.target.value }))}>
               <option value="">All suppliers</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          )}
+          {reportMeta?.filters.includes('agent') && (
+            <select className="rounded-lg border border-slate-300 px-3 py-2 text-sm" value={filters.agentId || ''} onChange={(e) => setFilters((f) => ({ ...f, agentId: e.target.value }))}>
+              <option value="">All agents</option>
+              {agents.map((a) => <option key={a.id} value={a.id}>{a.companyName || a.agentId}</option>)}
             </select>
           )}
           {reportMeta?.filters.includes('account') && (

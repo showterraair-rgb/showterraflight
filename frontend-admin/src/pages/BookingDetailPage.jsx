@@ -13,6 +13,7 @@ import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, JOURNEY_LABELS, CLASS_LABELS, 
 import ApprovalControls from '../components/bookings/ApprovalPanel';
 import PassportUpload from '../components/bookings/PassportUpload';
 import BookingRrvPanel from '../components/bookings/BookingRrvPanel';
+import BookingOperationTimeline from '../components/bookings/BookingOperationTimeline';
 import ScheduleChangePanel from '../components/bookings/ScheduleChangePanel';
 import { useFieldPermission } from '../hooks/useFieldPermission';
 
@@ -23,6 +24,7 @@ export default function BookingDetailPage() {
   const financeFields = useFieldPermission('finance');
   const [booking, setBooking] = useState(null);
   const [timeline, setTimeline] = useState(null);
+  const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [customerPayments, setCustomerPayments] = useState([]);
   const [supplierPayments, setSupplierPayments] = useState([]);
@@ -33,14 +35,16 @@ export default function BookingDetailPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [bRes, tRes, cpRes, spRes] = await Promise.all([
+      const [bRes, tRes, opRes, cpRes, spRes] = await Promise.all([
         bookingsApi.get(id),
         bookingsApi.getTimeline(id),
+        bookingsApi.getOperations(id).catch(() => ({ data: { data: [] } })),
         paymentsApi.listCustomer({ bookingId: id, limit: 10 }).catch(() => ({ data: { data: [] } })),
         paymentsApi.listSupplier({ bookingId: id, limit: 10 }).catch(() => ({ data: { data: [] } })),
       ]);
       setBooking(bRes.data.data);
       setTimeline(tRes.data.data);
+      setOperations(Array.isArray(opRes.data.data) ? opRes.data.data : opRes.data.data?.items || []);
       setNewStatus(bRes.data.data.status);
       setCustomerPayments(cpRes.data.data || []);
       setSupplierPayments(spRes.data.data || []);
@@ -203,6 +207,11 @@ export default function BookingDetailPage() {
       )}
 
       <BookingRrvPanel booking={booking} onDone={load} />
+
+      <div className="card">
+        <h3 className="mb-3 font-semibold text-slate-900">Ticket Operations</h3>
+        <BookingOperationTimeline operations={operations} loading={loading} />
+      </div>
 
       <div className="card space-y-4">
         <h3 className="font-semibold text-slate-900">Approval workflow</h3>

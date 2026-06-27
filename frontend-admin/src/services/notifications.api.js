@@ -22,6 +22,7 @@ export const notificationsApi = {
   updateAutomation: (eventType, data) => api.put(`/notifications/automation/${eventType}`, data),
 
   listLogs: (params) => api.get('/notifications/logs', { params }),
+  retryLog: (id) => api.post(`/notifications/logs/${id}/retry`),
 };
 
 export default notificationsApi;

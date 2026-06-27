@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { cmsApi } from '../services/phase5.api';
 import HomeCmsEditor from '../components/cms/HomeCmsEditor';
+import PageSectionsEditor from '../components/cms/PageSectionsEditor';
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
@@ -12,6 +13,7 @@ const PAGE_TABS = [
   { key: 'about', label: 'About' },
   { key: 'services', label: 'Services' },
   { key: 'faq', label: 'FAQ' },
+  { key: 'blog', label: 'Blog' },
   { key: 'contact', label: 'Contact' },
   { key: 'notices', label: 'Notices & offers' },
   { key: 'settings', label: 'Contact & logo' },
@@ -22,6 +24,8 @@ export default function CmsPage() {
   const [tab, setTab] = useState('home');
   const [page, setPage] = useState(null);
   const [notices, setNotices] = useState([]);
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [pageSections, setPageSections] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -41,11 +45,13 @@ export default function CmsPage() {
         title: data.data.title,
         slug: data.data.slug,
         isPublished: data.data.isPublished,
+        contentHeading: data.data.content?.heading || '',
+        contentBody: data.data.content?.body || data.data.content?.note || '',
         contentJson: JSON.stringify(data.data.content || {}, null, 2),
-        sectionsJson: JSON.stringify(data.data.sections || [], null, 2),
         metaTitle: data.data.seo?.metaTitle || '',
         metaDescription: data.data.seo?.metaDescription || '',
       });
+      setPageSections(Array.isArray(data.data.sections) ? data.data.sections : []);
     } finally {
       setLoading(false);
     }
@@ -54,6 +60,11 @@ export default function CmsPage() {
   const loadNotices = useCallback(async () => {
     const { data } = await cmsApi.listNotices({ limit: 50 });
     setNotices(data.data);
+  }, []);
+
+  const loadBlog = useCallback(async () => {
+    const { data } = await cmsApi.listNotices({ limit: 50, type: 'blog' });
+    setBlogPosts(data.data);
   }, []);
 
   const loadSettings = useCallback(async () => {
@@ -81,24 +92,33 @@ export default function CmsPage() {
     if (tab === 'home') loadPage('home');
     if (['about', 'services', 'faq', 'contact'].includes(tab)) loadPage(tab);
     if (tab === 'notices') loadNotices();
+    if (tab === 'blog') loadBlog();
     if (tab === 'settings') loadSettings();
-  }, [tab, loadPage, loadNotices, loadSettings]);
+  }, [tab, loadPage, loadNotices, loadBlog, loadSettings]);
 
   const savePage = async (values) => {
     if (!can('cms:manage')) return;
     setMsg('');
     try {
       let content = {};
-      let sections = [];
-      try { content = JSON.parse(values.contentJson || '{}'); } catch { setMsg('Invalid content JSON'); return; }
-      try { sections = JSON.parse(values.sectionsJson || '[]'); } catch { setMsg('Invalid sections JSON'); return; }
+      if (tab === 'about') {
+        content = { heading: values.contentHeading, body: values.contentBody };
+      } else if (tab === 'contact') {
+        content = { heading: values.contentHeading, note: values.contentBody };
+      } else if (tab === 'services') {
+        content = { heading: values.contentHeading || 'What We Offer' };
+      } else if (tab === 'faq') {
+        content = { heading: values.contentHeading || 'Frequently Asked Questions' };
+      } else {
+        try { content = JSON.parse(values.contentJson || '{}'); } catch { setMsg('Invalid content JSON'); return; }
+      }
 
       await cmsApi.updatePage(tab, {
         title: values.title,
         slug: values.slug,
         isPublished: values.isPublished,
         content,
-        sections,
+        sections: ['services', 'faq'].includes(tab) ? pageSections : [],
         seo: { metaTitle: values.metaTitle, metaDescription: values.metaDescription },
       });
       setMsg('Page saved');
@@ -119,7 +139,8 @@ export default function CmsPage() {
       setNoticeModal(false);
       setEditingNotice(null);
       noticeForm.reset({ type: 'notice', isPublished: true });
-      loadNotices();
+      if (tab === 'blog') loadBlog();
+      else loadNotices();
     } catch (err) {
       setMsg(err.response?.data?.message || 'Notice save failed');
     }
@@ -226,12 +247,37 @@ export default function CmsPage() {
                 <div><label className="mb-1 block text-sm font-medium">SEO meta description</label><input className="input-field" {...pageForm.register('metaDescription')} disabled={!can('cms:manage')} /></div>
               </div>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" {...pageForm.register('isPublished')} disabled={!can('cms:manage')} /> Published</label>
-              <div><label className="mb-1 block text-sm font-medium">Content (JSON)</label><textarea className="input-field font-mono text-xs" rows={6} {...pageForm.register('contentJson')} disabled={!can('cms:manage')} /></div>
-              <div><label className="mb-1 block text-sm font-medium">Sections (JSON array — homepage hero, services blocks, etc.)</label><textarea className="input-field font-mono text-xs" rows={6} {...pageForm.register('sectionsJson')} disabled={!can('cms:manage')} /></div>
+              <div><label className="mb-1 block text-sm font-medium">Page heading</label><input className="input-field" {...pageForm.register('contentHeading')} disabled={!can('cms:manage')} /></div>
+              {['about', 'contact'].includes(tab) && (
+                <div><label className="mb-1 block text-sm font-medium">{tab === 'contact' ? 'Intro note' : 'Body text'}</label><textarea className="input-field" rows={6} {...pageForm.register('contentBody')} disabled={!can('cms:manage')} /></div>
+              )}
+              {['services', 'faq'].includes(tab) && (
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-slate-900">{tab === 'faq' ? 'FAQ items' : 'Service blocks'}</h3>
+                  <PageSectionsEditor
+                    sections={pageSections}
+                    onChange={setPageSections}
+                    disabled={!can('cms:manage')}
+                    sectionType={tab === 'faq' ? 'faq' : 'service'}
+                    addLabel={tab === 'faq' ? 'Add FAQ item' : 'Add service'}
+                  />
+                </div>
+              )}
               {can('cms:manage') && <button type="submit" className="btn-primary">Save page</button>}
             </>
           )}
         </form>
+      )}
+
+      {tab === 'blog' && (
+        <div className="space-y-3">
+          {can('cms:manage') && (
+            <button type="button" className="btn-primary" onClick={() => { setEditingNotice(null); noticeForm.reset({ type: 'blog', isPublished: true }); setNoticeModal(true); }}>
+              Add blog post
+            </button>
+          )}
+          <DataTable columns={noticeColumns} rows={blogPosts} emptyMessage="No blog posts yet" />
+        </div>
       )}
 
       {tab === 'notices' && (
@@ -291,6 +337,7 @@ export default function CmsPage() {
             <option value="offer">Offer</option>
             <option value="faq">FAQ</option>
             <option value="announcement">Announcement</option>
+            <option value="blog">Blog</option>
           </select>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" {...noticeForm.register('isPublished')} /> Published</label>
         </form>

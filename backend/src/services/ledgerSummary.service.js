@@ -6,7 +6,7 @@ import Order from '../models/Order.js';
 import Booking from '../models/Booking.js';
 import NotificationAutomationRule from '../models/NotificationAutomationRule.js';
 import NotificationTemplate from '../models/NotificationTemplate.js';
-import { DEFAULT_NOTIFICATION_TEMPLATES } from '../config/constants.js';
+import { DEFAULT_NOTIFICATION_TEMPLATES, DEFAULT_AUTOMATION_RULES } from '../config/constants.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 import { getAdminContact } from './notificationSettings.service.js';
 
@@ -57,6 +57,36 @@ export async function syncManualBookingNotificationDefaults() {
       },
       { upsert: true }
     );
+  }
+}
+
+export async function syncRrvNotificationDefaults() {
+  const eventTypes = ['void_done', 'reissue_done', 'refund_paid', 'upcoming_flight'];
+  for (const eventType of eventTypes) {
+    const tpl = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === eventType);
+    const rule = DEFAULT_AUTOMATION_RULES.find((r) => r.eventType === eventType);
+    if (rule) {
+      await NotificationAutomationRule.findOneAndUpdate(
+        { eventType },
+        { eventType, ...rule },
+        { upsert: true }
+      );
+    }
+    if (tpl) {
+      await NotificationTemplate.findOneAndUpdate(
+        { templateKey: eventType },
+        {
+          templateKey: tpl.templateKey,
+          name: tpl.name,
+          smsBody: tpl.smsBody,
+          whatsappBody: tpl.whatsappBody || tpl.smsBody,
+          emailSubject: tpl.emailSubject,
+          emailBody: tpl.emailBody,
+          isActive: true,
+        },
+        { upsert: true }
+      );
+    }
   }
 }
 

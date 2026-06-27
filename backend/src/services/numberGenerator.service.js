@@ -9,6 +9,7 @@ import PaymentRequest from '../models/PaymentRequest.js';
 import Transfer from '../models/Transfer.js';
 import Agent from '../models/Agent.js';
 import AgentBooking from '../models/AgentBooking.js';
+import BookingOperation from '../models/BookingOperation.js';
 
 /**
  * Generate sequential document numbers: PREFIX-YYYYMM-0001
@@ -124,6 +125,10 @@ export async function generateAgentBookingRef() {
     seq = parseInt(last.bookingRef.replace('STA-BK-', ''), 10) + 1;
   }
   return `STA-BK-${String(seq).padStart(6, '0')}`;
+}
+
+export async function generateOperationNumber() {
+  return generateSequentialNumber(BookingOperation, 'operationNumber', 'OP');
 }
 
 export default generateOrderNumber;

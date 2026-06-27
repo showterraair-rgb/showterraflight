@@ -59,6 +59,7 @@ router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema,
 router.post('/:id/schedule-change', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(scheduleChangeSchema), bookingController.scheduleChange);
 router.post('/:id/schedule-change/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.scheduleChangeWithTicket);
 router.post('/:id/notes', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), bookingController.addNote);
+router.get('/:id/operations', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getOperations);
 router.get('/:id/timeline', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getTimeline);
 router.get('/:id/invoice/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadInvoicePdf);
 router.get('/:id/e-ticket/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadETicketPdf);

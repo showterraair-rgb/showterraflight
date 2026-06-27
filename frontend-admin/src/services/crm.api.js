@@ -58,6 +58,7 @@ export const bookingsApi = {
   },
   addNote: (id, data) => api.post(`/bookings/${id}/notes`, data),
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
+  getOperations: (id) => api.get(`/bookings/${id}/operations`),
   delete: (id) => api.delete(`/bookings/${id}`),
   downloadInvoicePdf: (id) => api.get(`/bookings/${id}/invoice/pdf`, { responseType: 'blob' }),
   downloadETicketPdf: (id) => api.get(`/bookings/${id}/e-ticket/pdf`, { responseType: 'blob' }),

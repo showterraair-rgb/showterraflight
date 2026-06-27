@@ -3,7 +3,11 @@ import Booking from '../models/Booking.js';
 import Account from '../models/Account.js';
 import Expense from '../models/Expense.js';
 import Reminder from '../models/Reminder.js';
+import NotificationLog from '../models/NotificationLog.js';
+import BackupLog from '../models/BackupLog.js';
 import { hasPermission } from '../config/permissions.js';
+
+const ACTIVE_BOOKING_STATUSES = { $nin: ['voided', 'cancelled', 'refunded'] };
 
 function startOfToday() {
   return dayjs().startOf('day').toDate();
@@ -56,15 +60,30 @@ export async function getDashboardSummary(user) {
     todayBookings,
     pendingBookings,
     issuedTickets,
+    totalActiveBookings,
+    voidedCount,
+    refundedCount,
+    reissuedCount,
+    dueCollectionCount,
+    dueSupplierCount,
     bookingAggregates,
     expenseTotal,
     accounts,
     pendingReminders,
+    failedNotifications24h,
+    lastBackup,
   ] = await Promise.all([
     Booking.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
     Booking.countDocuments({ status: { $in: ['draft', 'confirmed'] } }),
     Booking.countDocuments({ status: { $in: ['ticket_issued', 'delivered', 'completed'] } }),
+    Booking.countDocuments({ status: ACTIVE_BOOKING_STATUSES }),
+    Booking.countDocuments({ status: 'voided' }),
+    Booking.countDocuments({ status: 'refunded' }),
+    Booking.countDocuments({ status: 'reissued' }),
+    Booking.countDocuments({ customerDue: { $gt: 0 }, status: ACTIVE_BOOKING_STATUSES }),
+    Booking.countDocuments({ supplierPayable: { $gt: 0 }, status: ACTIVE_BOOKING_STATUSES }),
     Booking.aggregate([
+      { $match: { status: ACTIVE_BOOKING_STATUSES } },
       {
         $group: {
           _id: null,
@@ -80,6 +99,11 @@ export async function getDashboardSummary(user) {
     Expense.aggregate([{ $match: { isVoided: false } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     Account.find({ isActive: true }).select('name type currentBalance').sort({ type: 1 }).lean(),
     Reminder.countDocuments({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } }),
+    NotificationLog.countDocuments({
+      status: 'failed',
+      createdAt: { $gte: dayjs().subtract(24, 'hour').toDate() },
+    }),
+    BackupLog.findOne().sort({ createdAt: -1 }).select('status fileName completedAt errorMessage createdAt').lean(),
   ]);
 
   const agg = bookingAggregates[0] || {
@@ -98,6 +122,12 @@ export async function getDashboardSummary(user) {
     todayBookings,
     pendingBookings,
     issuedTickets,
+    totalActiveBookings,
+    voidedCount,
+    refundedCount,
+    reissuedCount,
+    dueCollectionCount,
+    dueSupplierCount,
     customerDue: agg.customerDue,
     supplierPayable: agg.supplierPayable,
     totalSales: agg.totalSales,
@@ -106,6 +136,9 @@ export async function getDashboardSummary(user) {
     expenseTotal: expenses,
     netPosition: totalAccountBalance,
     pendingReminders,
+    failedNotifications24h,
+    lastBackupStatus: lastBackup?.status || 'unknown',
+    lastBackupAt: lastBackup?.completedAt || lastBackup?.createdAt || null,
   };
 
   const result = { summary };
@@ -146,13 +179,31 @@ export async function getRecentActivity() {
 }
 
 export async function getDashboardAlerts() {
-  const [dueReminders, paymentAlerts] = await Promise.all([
+  const todayStart = dayjs().startOf('day').toDate();
+
+  const [dueReminders, paymentAlerts, supplierAlerts, failedNotifications, lastFailedBackup] = await Promise.all([
     Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
       .sort({ dueDate: 1 })
       .limit(5)
       .select('title type dueDate priority')
       .lean(),
     getPaymentAlerts(10),
+    Booking.find({
+      supplierPayable: { $gt: 0 },
+      status: ACTIVE_BOOKING_STATUSES,
+      departureDate: { $lt: todayStart },
+    })
+      .sort({ departureDate: 1 })
+      .limit(8)
+      .populate('supplier', 'name company phone')
+      .select('bookingNumber supplierPayable departureDate route supplierName')
+      .lean(),
+    NotificationLog.find({ status: 'failed' })
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .select('eventType channel recipient errorMessage createdAt')
+      .lean(),
+    BackupLog.findOne({ status: 'failed' }).sort({ createdAt: -1 }).lean(),
   ]);
 
   return {
@@ -164,6 +215,28 @@ export async function getDashboardAlerts() {
       priority: r.priority,
     })),
     paymentAlerts,
+    supplierAlerts: supplierAlerts.map((b) => ({
+      id: b._id.toString(),
+      bookingNumber: b.bookingNumber,
+      supplierName: b.supplier?.company || b.supplier?.name || '',
+      supplierPayable: b.supplierPayable,
+      departureDate: b.departureDate,
+      route: b.route,
+    })),
+    failedNotifications: failedNotifications.map((n) => ({
+      id: n._id.toString(),
+      eventType: n.eventType,
+      channel: n.channel,
+      recipient: n.recipient,
+      errorMessage: n.errorMessage,
+      createdAt: n.createdAt,
+    })),
+    backupFailure: lastFailedBackup ? {
+      id: lastFailedBackup._id.toString(),
+      fileName: lastFailedBackup.fileName,
+      errorMessage: lastFailedBackup.errorMessage,
+      createdAt: lastFailedBackup.createdAt,
+    } : null,
   };
 }
 

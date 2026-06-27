@@ -24,6 +24,12 @@ import { extractTicketFromFile } from './ticketExtract.service.js';
 import Account from '../models/Account.js';
 import { createCustomerPayment, createCustomerRefund, voidCustomerPayment } from './customerPayment.service.js';
 import { createSupplierPayment, voidSupplierPayment } from './supplierPayment.service.js';
+import {
+  recordIssueOperation,
+  recordVoidOperation,
+  recordRefundOperation,
+  recordReissueOperation,
+} from './bookingOperation.service.js';
 
 function derivePaymentStatus(amount, total) {
   if (amount <= 0) return 'unpaid';
@@ -541,6 +547,12 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     await fireBookingNotification('manual_order_created', refreshed);
   }
 
+  try {
+    await recordIssueOperation(await Booking.findById(booking._id), userId);
+  } catch (err) {
+    console.error('[booking] issue operation record failed', err.message);
+  }
+
   return getBookingById(booking._id);
 }
 
@@ -754,7 +766,6 @@ export async function voidBooking(id, { reason, voidPayments = false } = {}, use
   await booking.save();
 
   await syncLinkedOrderStatus(booking, 'voided');
-  await fireBookingNotification('booking_canceled', booking);
 
   await logAudit({
     action: 'update',
@@ -765,6 +776,13 @@ export async function voidBooking(id, { reason, voidPayments = false } = {}, use
     userId,
     req,
   });
+
+  try {
+    await recordVoidOperation(booking, reason, userId);
+    await fireBookingNotification('void_done', booking);
+  } catch (err) {
+    console.error('[booking] void operation record failed', err.message);
+  }
 
   return getBookingById(id);
 }
@@ -811,7 +829,6 @@ export async function refundBooking(id, data, userId, req) {
   await booking.save();
 
   await syncLinkedOrderStatus(booking, 'refunded');
-  await fireBookingNotification('booking_canceled', booking);
 
   await logAudit({
     action: 'update',
@@ -822,6 +839,15 @@ export async function refundBooking(id, data, userId, req) {
     userId,
     req,
   });
+
+  try {
+    await recordRefundOperation(booking, { penalty, refundAmount, reason: data.reason }, userId);
+    await fireBookingNotification('refund_paid', booking, null, {
+      vars: { refundAmount, penalty },
+    });
+  } catch (err) {
+    console.error('[booking] refund operation record failed', err.message);
+  }
 
   return getBookingById(id);
 }
@@ -881,6 +907,16 @@ export async function reissueBooking(id, data, userId, req) {
     userId,
     req,
   });
+
+  try {
+    const newDoc = await Booking.findById(newBooking.id || newBooking._id);
+    await recordReissueOperation(original, newDoc || { ...newBooking, _id: newBooking.id }, data.reason, userId);
+    await fireBookingNotification('reissue_done', original, null, {
+      vars: { newBookingNumber: newBooking.bookingNumber },
+    });
+  } catch (err) {
+    console.error('[booking] reissue operation record failed', err.message);
+  }
 
   return { original: await getBookingById(id), newBooking };
 }

@@ -8,6 +8,7 @@ export { default as Customer } from './Customer.js';
 export { default as Supplier } from './Supplier.js';
 export { default as Order } from './Order.js';
 export { default as Booking } from './Booking.js';
+export { default as BookingOperation } from './BookingOperation.js';
 export { default as Ticket } from './Ticket.js';
 export { default as Account } from './Account.js';
 export { default as AccountTransaction } from './AccountTransaction.js';

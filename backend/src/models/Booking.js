@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { BOOKING_STATUSES, BOOKING_TYPES, PRODUCT_CATEGORIES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES } from '../config/constants.js';
+import { BOOKING_STATUSES, BOOKING_TYPES, PRODUCT_CATEGORIES, PAYMENT_STATUSES, JOURNEY_TYPES, TRAVEL_CLASSES, APPROVAL_STATUSES, SALE_TYPES } from '../config/constants.js';
 import { approvalTimelineSchema, passportFields } from '../schemas/approvalFields.js';
 
 const statusTimelineSchema = new mongoose.Schema(
@@ -94,6 +94,9 @@ const bookingSchema = new mongoose.Schema(
     bookingNumber: { type: String, unique: true, required: true },
     order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    saleType: { type: String, enum: SALE_TYPES, default: 'direct_customer', index: true },
+    agent: { type: mongoose.Schema.Types.ObjectId, ref: 'Agent' },
+    passengerName: { type: String, trim: true, default: '' },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
     journeyType: {
       type: String,

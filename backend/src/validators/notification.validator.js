@@ -115,6 +115,10 @@ export const notificationLogQuerySchema = z.object({
   orderId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
 });
 
+export const notificationLogIdParamSchema = z.object({
+  id: z.string().regex(/^[a-f\d]{24}$/i),
+});
+
 export default {
   createAccountSchema,
   updateAccountSchema,
@@ -130,4 +134,5 @@ export default {
   templateKeyParamSchema,
   eventTypeParamSchema,
   notificationLogQuerySchema,
+  notificationLogIdParamSchema,
 };
