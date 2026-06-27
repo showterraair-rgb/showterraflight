@@ -52,6 +52,7 @@ import UpcomingFlightsPage from '../pages/UpcomingFlightsPage';
 import { VoidBookingsPage, RefundBookingsPage, ReissueBookingsPage, InvoicesPage } from '../pages/TicketingListPages';
 import LedgerPage from '../pages/LedgerPage';
 import BusinessSummaryPage from '../pages/BusinessSummaryPage';
+import BulkImportPage from '../pages/BulkImportPage';
 
 export default function AppRoutes() {
   return (
@@ -74,6 +75,7 @@ export default function AppRoutes() {
             <Route path="bookings/insurance" element={<ProtectedRoute permissions={['bookings:view']}><InsuranceBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/partial-payments" element={<ProtectedRoute permissions={['bookings:view']}><PartialPaymentsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
+            <Route path="bookings/bulk-import" element={<ProtectedRoute permissions={['bookings:create']}><BulkImportPage /></ProtectedRoute>} />
             <Route path="bookings/upcoming" element={<ProtectedRoute permissions={['bookings:view']}><UpcomingFlightsPage /></ProtectedRoute>} />
             <Route path="bookings/voids" element={<ProtectedRoute permissions={['bookings:view']}><VoidBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/refunds" element={<ProtectedRoute permissions={['bookings:view']}><RefundBookingsPage /></ProtectedRoute>} />

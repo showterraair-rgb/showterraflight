@@ -52,3 +52,8 @@ export const securityApi = {
   updateSettings: (body) => api.put('/security/settings', body),
   prepareMfa: () => api.post('/security/mfa/prepare'),
 };
+
+export const notificationsJobsApi = {
+  previewDailyLedger: () => api.get('/notifications/jobs/daily-ledger/preview'),
+  triggerDailyLedger: () => api.post('/notifications/jobs/daily-ledger'),
+};

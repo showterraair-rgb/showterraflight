@@ -73,6 +73,18 @@ export const bookingsApi = {
     Object.entries(data).forEach(([k, v]) => { if (v != null) form.append(k, v); });
     return api.post(`/bookings/${id}/schedule-change/ticket`, form);
   },
+  bulkImportTemplate: () => api.get('/bookings/bulk-import/template', { responseType: 'blob' }),
+  bulkImportPreview: (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/bookings/bulk-import/preview', form);
+  },
+  bulkImportExecute: (rows) => api.post('/bookings/bulk-import', { rows }),
+  bulkImportTickets: (files) => {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    return api.post('/bookings/bulk-import/tickets', form);
+  },
 };
 
 export const usersApi = {

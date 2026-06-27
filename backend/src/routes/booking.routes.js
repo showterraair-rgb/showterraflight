@@ -15,13 +15,33 @@ import {
   refundBookingSchema,
   reissueBookingSchema,
   scheduleChangeSchema,
+  bulkImportExecuteSchema,
 } from '../validators/booking.validator.js';
 import { updateApprovalSchema } from '../validators/approval.validator.js';
-import { passportUpload, bookingTicketUpload } from '../middlewares/upload.js';
+import { passportUpload, bookingTicketUpload, csvImportUpload } from '../middlewares/upload.js';
 
 const router = Router();
 
 router.get('/upcoming', authorize('bookings:view'), bookingController.upcoming);
+router.get('/bulk-import/template', authorize('bookings:create'), bookingController.bulkImportCsvTemplate);
+router.post(
+  '/bulk-import/preview',
+  authorize('bookings:create'),
+  csvImportUpload.single('file'),
+  bookingController.bulkImportCsvPreview
+);
+router.post(
+  '/bulk-import',
+  authorize('bookings:create'),
+  validate(bulkImportExecuteSchema),
+  bookingController.bulkImportExecute
+);
+router.post(
+  '/bulk-import/tickets',
+  authorize('bookings:create'),
+  bookingTicketUpload.array('files', 25),
+  bookingController.bulkImportTickets
+);
 router.post('/extract-ticket', authorize('bookings:create', 'bookings:update', 'bookings:view'), bookingTicketUpload.single('ticketFile'), bookingController.extractTicket);
 router.get('/', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.list);
 router.get('/summary', authorize('bookings:view'), validate(listQuerySchema, 'query'), bookingController.summary);

@@ -71,4 +71,15 @@ export function toPublicUploadPath(absolutePath) {
   return `/uploads/${rel}`;
 }
 
+/** CSV bulk import — up to 2MB */
+export const csvImportUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(String(file.originalname || '')).toLowerCase();
+    if (file.mimetype === 'text/csv' || ext === '.csv') cb(null, true);
+    else cb(new Error('CSV file required'));
+  },
+});
+
 export default cmsUpload;

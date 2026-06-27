@@ -23,6 +23,14 @@ const otpVerifySchema = z.object({
   code: z.string().length(6, 'Enter 6-digit code'),
 }).refine((d) => d.email || d.phone, { message: 'Email or phone required' });
 
+function authErrorMessage(err) {
+  const status = err.response?.status;
+  const msg = err.response?.data?.message;
+  if (status === 429) return msg || 'Too many attempts. Wait 15 minutes, then try again.';
+  if (status === 401) return msg || 'Invalid email or password.';
+  return msg || 'Login failed. Please try again.';
+}
+
 export default function LoginPage() {
   const { login, loginWithOtp, isAuthenticated, loading } = useAuth();
   const location = useLocation();
@@ -54,7 +62,7 @@ export default function LoginPage() {
     try {
       await login(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(authErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +80,7 @@ export default function LoginPage() {
       otpVerifyForm.setValue('phone', data.phone || '');
       setOtpStep('verify');
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not send code');
+      setError(authErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -88,7 +96,7 @@ export default function LoginPage() {
       };
       await loginWithOtp(payload);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid code');
+      setError(authErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -148,6 +156,10 @@ export default function LoginPage() {
             </form>
           )}
         </div>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          Kanaighat, Sylhet — Show Terra Air Management System
+        </p>
       </div>
     </div>
   );

@@ -257,6 +257,40 @@ export const reissueBookingSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
+const bulkImportRowSchema = z.object({
+  row: z.coerce.number().optional(),
+  fileName: z.string().optional(),
+  customerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
+  customerPhone: z.string().min(10).optional(),
+  airline: z.string().min(2),
+  route: z.string().min(2),
+  sector: z.string().optional(),
+  fromDestination: z.string().optional(),
+  toDestination: z.string().optional(),
+  departureDate: z.string().min(1),
+  pnr: z.string().optional(),
+  ticketNumber: z.string().optional(),
+  passengerCount: z.coerce.number().int().min(1).max(20).optional(),
+  passengers: z.array(z.object({
+    title: z.string().optional(),
+    fullName: z.string().optional(),
+    passengerType: z.string().optional(),
+    eTicketNumber: z.string().optional(),
+  })).optional(),
+  purchasePriceBRL: z.coerce.number().min(0).optional(),
+  salePriceBRL: z.coerce.number().min(0).optional(),
+  bdtRate: z.coerce.number().positive().optional(),
+  notes: z.string().max(2000).optional(),
+  status: z.enum(['draft', 'confirmed', 'ticket_issued']).optional(),
+  flightSegment: z.record(z.any()).optional(),
+}).refine((row) => row.customerId || row.customerPhone, {
+  message: 'customerId or customerPhone required',
+});
+
+export const bulkImportExecuteSchema = z.object({
+  rows: z.array(bulkImportRowSchema).min(1).max(100),
+});
+
 export default {
   listQuerySchema,
   createBookingSchema,
@@ -269,4 +303,5 @@ export default {
   voidBookingSchema,
   refundBookingSchema,
   reissueBookingSchema,
+  bulkImportExecuteSchema,
 };

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import env from './config/env.js';
 import apiRoutes from './routes/index.js';
 import errorHandler from './middlewares/errorHandler.js';
+import { isAuthApiRoute, rateLimitKey } from './utils/rateLimitKey.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,9 @@ app.use(
     max: env.rateLimit.max,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: rateLimitKey,
+    skip: (req) => isAuthApiRoute(req),
+    message: { success: false, message: 'Too many requests. Please try again shortly.' },
   })
 );
 

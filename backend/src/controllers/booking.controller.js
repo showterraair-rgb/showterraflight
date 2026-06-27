@@ -1,4 +1,5 @@
 import * as bookingService from '../services/booking.service.js';
+import * as bulkImportService from '../services/bulkImport.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import fs from 'fs';
 
@@ -119,6 +120,35 @@ export const upcoming = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+export const bulkImportCsvTemplate = asyncHandler(async (_req, res) => {
+  const csv = bulkImportService.csvTemplateContent();
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="booking-import-template.csv"');
+  res.send(csv);
+});
+
+export const bulkImportCsvPreview = asyncHandler(async (req, res) => {
+  if (!req.file?.buffer) {
+    return res.status(400).json({ success: false, message: 'CSV file required' });
+  }
+  const data = await bulkImportService.previewCsvImport(req.file.buffer);
+  res.json({ success: true, data });
+});
+
+export const bulkImportExecute = asyncHandler(async (req, res) => {
+  const data = await bulkImportService.executeBulkImport(req.body.rows, req.user.id, req);
+  res.json({
+    success: true,
+    data,
+    message: `Imported ${data.created} booking(s)${data.failed ? `, ${data.failed} failed` : ''}`,
+  });
+});
+
+export const bulkImportTickets = asyncHandler(async (req, res) => {
+  const data = await bulkImportService.bulkExtractTickets(req.files);
+  res.json({ success: true, data, message: `Processed ${data.total} ticket PDF(s)` });
+});
+
 export const scheduleChange = asyncHandler(async (req, res) => {
   const data = await bookingService.recordScheduleChange(req.params.id, req.body, req.user.id, req);
   res.json({ success: true, data, message: 'Schedule change recorded' });
@@ -161,6 +191,10 @@ export default {
   uploadTicketCopy,
   extractTicket,
   upcoming,
+  bulkImportCsvTemplate,
+  bulkImportCsvPreview,
+  bulkImportExecute,
+  bulkImportTickets,
   scheduleChange,
   scheduleChangeWithTicket,
   addNote,
