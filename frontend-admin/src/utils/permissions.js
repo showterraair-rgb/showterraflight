@@ -1,5 +1,6 @@
 /**
  * Sidebar navigation — grouped menus with permission checks.
+ * Items with `children` render as collapsible sub-groups.
  */
 
 export const NAV_GROUPS = [
@@ -25,14 +26,17 @@ export const NAV_GROUPS = [
       { label: 'Booking History', path: '/bookings', permissions: ['bookings:view'] },
       { label: 'New Booking', path: '/bookings/new', permissions: ['bookings:create'] },
       { label: 'Upcoming Flights', path: '/bookings/upcoming', permissions: ['bookings:view'] },
-      { label: 'Voids', path: '/bookings/voids', permissions: ['bookings:view'] },
-      { label: 'Refunds', path: '/bookings/refunds', permissions: ['bookings:view'] },
-      { label: 'Reissues', path: '/bookings/reissues', permissions: ['bookings:view'] },
-      { label: 'Invoices', path: '/bookings/invoices', permissions: ['bookings:view'] },
       { label: 'Partial Payments', path: '/bookings/partial-payments', permissions: ['bookings:view', 'payments:customer'] },
-      { label: 'Hotel Booking', path: '/bookings/hotel', permissions: ['bookings:view'] },
-      { label: 'e-Sim', path: '/bookings/esim', permissions: ['bookings:view'] },
-      { label: 'Insurance', path: '/bookings/insurance', permissions: ['bookings:view'] },
+      {
+        id: 'ticketing',
+        label: 'Ticketing',
+        children: [
+          { label: 'Voids', path: '/bookings/voids', permissions: ['bookings:view'] },
+          { label: 'Refunds', path: '/bookings/refunds', permissions: ['bookings:view'] },
+          { label: 'Reissues', path: '/bookings/reissues', permissions: ['bookings:view'] },
+          { label: 'Invoices', path: '/bookings/invoices', permissions: ['bookings:view'] },
+        ],
+      },
     ],
   },
   {
@@ -62,12 +66,17 @@ export const NAV_GROUPS = [
     label: 'Payments',
     icon: 'payments',
     children: [
-      { label: 'Instant Payment', path: '/payments/instant', permissions: ['payments:customer'] },
-      { label: 'Send Payment Request', path: '/payments/requests', permissions: ['payments:customer'] },
       { label: 'Customer Payments', path: '/payments/customers', permissions: ['payments:customer'] },
-      { label: 'Payment History', path: '/payments/history', permissions: ['payments:customer'] },
       { label: 'Supplier Payments', path: '/payments/suppliers', permissions: ['payments:supplier'] },
-      { label: 'Payment Settings', path: '/settings/payment', permissions: ['accounts:view'] },
+      { label: 'Payment History', path: '/payments/history', permissions: ['payments:customer'] },
+      {
+        id: 'payment-tools',
+        label: 'Quick Actions',
+        children: [
+          { label: 'Instant Payment', path: '/payments/instant', permissions: ['payments:customer'] },
+          { label: 'Payment Request', path: '/payments/requests', permissions: ['payments:customer'] },
+        ],
+      },
     ],
   },
   {
@@ -93,8 +102,18 @@ export const NAV_GROUPS = [
     icon: 'users',
     children: [
       { label: 'Currency', path: '/settings/currency', permissions: ['settings:manage', 'cms:manage'] },
-      { label: 'Notifications', path: '/settings/notifications', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
       { label: 'Payment Accounts', path: '/settings/payment-accounts', permissions: ['accounts:view', 'settings:manage', 'notifications:view'] },
+      { label: 'Payment Settings', path: '/settings/payment', permissions: ['accounts:view'] },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        children: [
+          { label: 'Notification Hub', path: '/settings/notifications', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+          { label: 'SMS', path: '/settings/sms', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+          { label: 'Email', path: '/settings/email', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+          { label: 'WhatsApp', path: '/settings/whatsapp', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'] },
+        ],
+      },
       { label: 'Users', path: '/users', permissions: ['users:view'] },
       { label: 'Roles & Permissions', path: '/roles', permissions: ['roles:manage'] },
       { label: 'Security & Audit', path: '/security', permissions: ['audit:view'] },
@@ -102,13 +121,13 @@ export const NAV_GROUPS = [
   },
 ];
 
-/** Legacy flat list — routes only, not shown in sidebar */
+/** Routes only — hidden from sidebar */
 export const NAV_ITEMS = [
+  { label: 'Hotel Booking', path: '/bookings/hotel', permissions: ['bookings:view'], hiddenFromNav: true },
+  { label: 'e-Sim', path: '/bookings/esim', permissions: ['bookings:view'], hiddenFromNav: true },
+  { label: 'Insurance', path: '/bookings/insurance', permissions: ['bookings:view'], hiddenFromNav: true },
   { label: 'Bank List', path: '/settings/payment/banks', permissions: ['accounts:view'], hiddenFromNav: true },
   { label: 'MFS List', path: '/settings/payment/mfs', permissions: ['accounts:view'], hiddenFromNav: true },
-  { label: 'SMS Settings', path: '/settings/sms', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
-  { label: 'Email Settings', path: '/settings/email', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
-  { label: 'WhatsApp Settings', path: '/settings/whatsapp', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
   { label: 'Notification Templates', path: '/settings/notification-templates', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
   { label: 'Notification Logs', path: '/notifications/logs', permissions: ['notifications:view', 'notifications:manage', 'settings:manage'], hiddenFromNav: true },
   { label: 'Gateway Settings', path: '/settings/payment/gateway', permissions: ['accounts:view', 'settings:manage', 'notifications:view'], hiddenFromNav: true },
@@ -131,26 +150,37 @@ export function isReadOnlyUser(user) {
   return user?.role === 'demo' || user?.role === 'viewer';
 }
 
-function filterNavChildren(children, user) {
-  return (children || []).filter((item) =>
-    hasPermission(user.permissions, user.role, item.permissions)
-  );
+function filterNavNode(node, user) {
+  if (node.children?.length) {
+    const children = node.children
+      .map((child) => filterNavNode(child, user))
+      .filter(Boolean);
+    if (!children.length) return null;
+    return { ...node, children };
+  }
+  if (node.path && hasPermission(user.permissions, user.role, node.permissions)) {
+    return node;
+  }
+  return null;
 }
 
 export function getVisibleNavGroups(user) {
   if (!user) return [];
+  return NAV_GROUPS.map((group) => filterNavNode(group, user)).filter(Boolean);
+}
 
-  return NAV_GROUPS.reduce((acc, group) => {
-    if (group.children?.length) {
-      const children = filterNavChildren(group.children, user);
-      if (children.length) acc.push({ ...group, children });
-      return acc;
+/** Flatten all nav paths for active-route detection */
+export function flattenNavPaths(nodes, prefix = '') {
+  const paths = [];
+  for (const node of nodes || []) {
+    const key = node.id || node.path || node.label;
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (node.path) paths.push({ path: node.path, key: fullKey });
+    if (node.children?.length) {
+      paths.push(...flattenNavPaths(node.children, fullKey));
     }
-    if (group.path && hasPermission(user.permissions, user.role, group.permissions)) {
-      acc.push(group);
-    }
-    return acc;
-  }, []);
+  }
+  return paths;
 }
 
 /** @deprecated use getVisibleNavGroups */

@@ -1,19 +1,30 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getVisibleNavItems, isReadOnlyUser } from '../../utils/permissions';
+import { getVisibleNavGroups, isReadOnlyUser } from '../../utils/permissions';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
   '/bookings': 'Booking History',
+  '/bookings/partial-payments': 'Partial Payments',
+  '/bookings/voids': 'Voids',
+  '/bookings/refunds': 'Refunds',
+  '/bookings/reissues': 'Reissues',
+  '/bookings/invoices': 'Invoices',
   '/bookings/hotel': 'Hotel Booking',
   '/bookings/esim': 'e-Sim',
   '/bookings/insurance': 'Insurance',
-  '/bookings/partial-payments': 'Partial Payments',
   '/reports/sales': 'Sales Report',
+  '/reports/business-summary': 'Business Summary',
+  '/finance/ledger': 'Ledger',
   '/bookings/new': 'New Booking',
+  '/bookings/upcoming': 'Upcoming Flights',
+  '/agents': 'B2B Agents',
+  '/agent-bookings': 'Agent Bookings',
+  '/agent-accounting': 'Agent Accounting',
+  '/settings/currency': 'Currency Settings',
   '/customers': 'Customers',
   '/suppliers': 'Suppliers',
   '/accounts': 'Accounts',
@@ -50,12 +61,12 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navItems = getVisibleNavItems(user);
+  const navGroups = getVisibleNavGroups(user);
   const title = PAGE_TITLES[location.pathname] || 'Admin';
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar items={navItems} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar groups={navGroups} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-1 flex-col lg:pl-0">
         <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
