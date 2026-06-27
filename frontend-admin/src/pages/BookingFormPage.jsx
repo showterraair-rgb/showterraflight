@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
 import { useFieldPermission } from '../hooks/useFieldPermission';
-import { BOOKING_STATUSES, BOOKING_STATUS_LABELS, PRODUCT_CATEGORY_LABELS } from '../utils/constants';
+import { PRODUCT_CATEGORY_LABELS } from '../utils/constants';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
 
 const baseSchema = z.object({
@@ -17,17 +17,11 @@ const baseSchema = z.object({
   supplierId: z.string().optional(),
   airline: z.string().min(2),
   route: z.string().min(2, 'Route is required'),
-  sector: z.string().optional(),
-  departureDate: z.string().min(1),
-  passengerCount: z.coerce.number().min(1),
-  pnr: z.string().optional(),
-  ticketNumber: z.string().optional(),
   purchasePriceBRL: z.coerce.number().min(0),
   salePriceBRL: z.coerce.number().min(0),
   directCostsBRL: z.coerce.number().min(0),
   bdtRate: z.coerce.number().positive('BDT rate must be greater than 0'),
   notes: z.string().optional(),
-  status: z.enum(['draft', 'confirmed', 'ticket_issued', 'delivered', 'completed', 'cancelled']),
 });
 
 const createSchema = baseSchema.extend({
@@ -88,10 +82,18 @@ function brlFromStored(booking, field, rate) {
 const CATEGORY_PATHS = { air: '/bookings', hotel: '/bookings/hotel', esim: '/bookings/esim', insurance: '/bookings/insurance' };
 
 const CATEGORY_LABELS = {
-  air: { airline: 'Airline / Carrier *', route: 'Route *', routePh: 'e.g. DAC → DXB', date: 'Departure Date *' },
-  hotel: { airline: 'Hotel name *', route: 'City / Location *', routePh: 'e.g. Makkah — 5 nights', date: 'Check-in Date *' },
-  esim: { airline: 'Provider *', route: 'Plan / Region *', routePh: 'e.g. Europe 10GB', date: 'Activation Date *' },
-  insurance: { airline: 'Insurer *', route: 'Policy / Coverage *', routePh: 'e.g. Schengen travel', date: 'Start Date *' },
+  air: { airline: 'Airline / Carrier *', route: 'Route *', routePh: 'e.g. DAC → DXB' },
+  hotel: { airline: 'Hotel name *', route: 'City / Location *', routePh: 'e.g. Makkah — 5 nights' },
+  esim: { airline: 'Provider *', route: 'Plan / Region *', routePh: 'e.g. Europe 10GB' },
+  insurance: { airline: 'Insurer *', route: 'Policy / Coverage *', routePh: 'e.g. Schengen travel' },
+};
+
+const DEFAULT_HIDDEN = {
+  departureDate: () => new Date().toISOString().slice(0, 10),
+  passengerCount: 1,
+  status: 'confirmed',
+  pnr: '',
+  ticketNumber: '',
 };
 
 export default function BookingFormPage() {
@@ -103,7 +105,6 @@ export default function BookingFormPage() {
   const { brlRate } = useCurrency();
   const financeFields = useFieldPermission('finance');
   const paymentFields = useFieldPermission('payments');
-  const statusFields = useFieldPermission('status');
   const notesFields = useFieldPermission('notes');
 
   const [loadingData, setLoadingData] = useState(isEdit);
@@ -111,6 +112,7 @@ export default function BookingFormPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [paymentSummary, setPaymentSummary] = useState(null);
   const [travelMeta, setTravelMeta] = useState(null);
+  const [hiddenFields, setHiddenFields] = useState({ ...DEFAULT_HIDDEN, departureDate: DEFAULT_HIDDEN.departureDate() });
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
   const [rateError, setRateError] = useState('');
@@ -122,12 +124,10 @@ export default function BookingFormPage() {
   const form = useForm({
     resolver: zodResolver(isEdit ? baseSchema : createSchema),
     defaultValues: {
-      passengerCount: 1,
       purchasePriceBRL: 0,
       salePriceBRL: 0,
       directCostsBRL: 0,
       bdtRate: brlRate,
-      status: 'confirmed',
       customerPaymentStatus: 'due',
       customerPaidAmountBRL: 0,
       customerPaymentAccountId: '',
@@ -180,17 +180,18 @@ export default function BookingFormPage() {
             supplierId: b.supplier || '',
             airline: b.airline,
             route: b.route,
-            sector: b.sector || '',
-            departureDate: b.departureDate?.slice(0, 10),
-            passengerCount: b.passengerCount,
-            pnr: b.pnr || '',
-            ticketNumber: b.ticketNumber || '',
             purchasePriceBRL: brlFromStored(b, 'purchase', rate),
             salePriceBRL: brlFromStored(b, 'sale', rate),
             directCostsBRL: brlFromStored(b, 'direct', rate),
             bdtRate: rate,
             notes: b.notes || '',
-            status: b.status,
+          });
+          setHiddenFields({
+            departureDate: b.departureDate?.slice(0, 10) || DEFAULT_HIDDEN.departureDate(),
+            passengerCount: b.passengerCount || 1,
+            status: b.status || 'confirmed',
+            pnr: b.pnr || '',
+            ticketNumber: b.ticketNumber || '',
           });
           setExistingTicket(b.ticketCopyUrl ? { url: b.ticketCopyUrl, name: b.ticketCopyFileName } : null);
           setProductCategory(b.productCategory || 'air');
@@ -276,6 +277,12 @@ export default function BookingFormPage() {
         productCategory,
         supplierId: values.supplierId || undefined,
         customerId: values.customerId || undefined,
+        sector: `${fromDestination}-${toDestination}`,
+        departureDate: hiddenFields.departureDate || DEFAULT_HIDDEN.departureDate(),
+        passengerCount: hiddenFields.passengerCount || 1,
+        status: hiddenFields.status || 'confirmed',
+        pnr: hiddenFields.pnr || undefined,
+        ticketNumber: hiddenFields.ticketNumber || undefined,
         journeyType: travelMeta?.journeyType || 'one_way',
         travelClass: travelMeta?.travelClass || 'economy',
         returnDate: travelMeta?.returnDate || undefined,
@@ -360,36 +367,6 @@ export default function BookingFormPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">{fieldLabels.route}</label>
             <input className="input-field uppercase" placeholder={fieldLabels.routePh} {...form.register('route')} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Sector</label>
-            <input className="input-field" {...form.register('sector')} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{fieldLabels.date}</label>
-            <input type="date" className="input-field" {...form.register('departureDate')} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Passengers</label>
-            <input type="number" min={1} className="input-field" {...form.register('passengerCount')} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Status</label>
-            {statusFields.hidden ? (
-              <p className="text-xs text-slate-500">Status hidden for your role</p>
-            ) : (
-              <select className="input-field" disabled={statusFields.readOnly} {...form.register('status')}>
-                {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{BOOKING_STATUS_LABELS[s]}</option>)}
-              </select>
-            )}
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">PNR</label>
-            <input className="input-field" {...form.register('pnr')} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Ticket Number</label>
-            <input className="input-field" {...form.register('ticketNumber')} />
           </div>
         </div>
 
