@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePermission } from '../hooks/usePermission';
+import { usePermission } from '../../hooks/usePermission';
 
 const CHANNELS = [
   { key: 'sms', label: 'SMS', className: 'border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100' },
