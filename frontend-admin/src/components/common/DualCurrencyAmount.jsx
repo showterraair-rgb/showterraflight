@@ -1,7 +1,7 @@
 const SIZE_CLASSES = {
-  sm: { primary: 'text-sm font-semibold', secondary: 'text-[0.70rem] font-normal text-slate-500' },
-  md: { primary: 'text-base font-semibold', secondary: 'text-xs font-normal text-slate-500' },
-  lg: { primary: 'text-xl font-bold', secondary: 'text-sm font-normal text-slate-500' },
+  sm: { primary: 'text-sm font-semibold', secondary: 'text-[0.70rem] font-normal' },
+  md: { primary: 'text-base font-semibold', secondary: 'text-xs font-normal' },
+  lg: { primary: 'text-xl font-bold', secondary: 'text-sm font-normal' },
 };
 
 function fmt(n) {
@@ -12,7 +12,7 @@ export default function DualCurrencyAmount({ totalBRL, totalBDT, size = 'md', cl
   const sizes = SIZE_CLASSES[size] || SIZE_CLASSES.md;
   return (
     <div className={`dual-currency flex flex-col gap-0.5 ${className}`}>
-      <span className={`amount-primary ${sizes.primary} text-slate-900`}>R$ {fmt(totalBRL)}</span>
+      <span className={`amount-primary ${sizes.primary} text-primary`}>R$ {fmt(totalBRL)}</span>
       <span className={`amount-secondary ${sizes.secondary}`}>৳ {fmt(totalBDT)}</span>
     </div>
   );

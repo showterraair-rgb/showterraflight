@@ -3,29 +3,126 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    @apply antialiased;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  table {
+    @apply tabular-nums;
   }
 }
 
 @layer components {
+  .bg-surface {
+    @apply bg-slate-50 dark:bg-slate-950;
+  }
+
+  .bg-surface-raised {
+    @apply bg-white dark:bg-slate-900;
+  }
+
+  .text-primary {
+    @apply text-slate-900 dark:text-slate-100;
+  }
+
+  .text-muted {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  .border-default {
+    @apply border-slate-200 dark:border-slate-700;
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+    @apply inline-flex items-center justify-center rounded-lg border border-default bg-surface-raised px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800;
   }
 
-  .input-field {
-    @apply w-full min-h-[2.75rem] rounded-lg border border-slate-300 px-3 py-2.5 text-sm leading-normal outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  .input-field,
+  .input {
+    @apply w-full min-h-[2.75rem] rounded-lg border border-default bg-surface-raised px-3 py-2.5 text-sm leading-normal text-primary outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-slate-700;
   }
 
-  input[type='number'].input-field {
+  input[type='number'].input-field,
+  input[type='number'].input {
     @apply tabular-nums;
   }
 
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border border-default bg-surface-raised p-5 shadow-sm;
+  }
+
+  .card-compact {
+    @apply rounded-xl border border-default bg-surface-raised p-4 shadow-sm;
+  }
+
+  .dual-currency .amount-primary {
+    @apply tabular-nums;
+  }
+
+  .dual-currency .amount-secondary {
+    @apply tabular-nums text-muted;
+  }
+
+  /* Scoped dark fixes for pages that still use light Tailwind tokens */
+  .dark .admin-content .text-slate-900 {
+    @apply text-slate-100;
+  }
+
+  .dark .admin-content .text-slate-800 {
+    @apply text-slate-100;
+  }
+
+  .dark .admin-content .text-slate-700 {
+    @apply text-slate-200;
+  }
+
+  .dark .admin-content .text-slate-600 {
+    @apply text-slate-300;
+  }
+
+  .dark .admin-content .text-slate-500 {
+    @apply text-slate-400;
+  }
+
+  .dark .admin-content .bg-white {
+    @apply bg-slate-900;
+  }
+
+  .dark .admin-content .bg-slate-50 {
+    @apply bg-slate-800/60;
+  }
+
+  .dark .admin-content .bg-slate-100 {
+    @apply bg-slate-800;
+  }
+
+  .dark .admin-content .border-slate-100,
+  .dark .admin-content .border-slate-200,
+  .dark .admin-content .border-slate-300 {
+    @apply border-slate-700;
+  }
+
+  .dark .admin-content .hover\:bg-slate-50:hover {
+    @apply bg-slate-800;
+  }
+
+  .dark .admin-content .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+    @apply border-slate-800;
+  }
+
+  .dark .admin-content .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    @apply border-slate-700;
   }
 }

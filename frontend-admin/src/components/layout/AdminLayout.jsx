@@ -66,17 +66,17 @@ export default function AdminLayout() {
   const title = PAGE_TITLES[location.pathname] || 'Admin';
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-surface">
       <Sidebar groups={navGroups} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-1 flex-col lg:pl-0">
         <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
         {isReadOnlyUser(user) && (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 lg:px-6">
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 lg:px-6">
             Demo mode — you can browse the panel but cannot create, edit, or delete records.
           </div>
         )}
-        <main className="flex-1 overflow-x-hidden p-4 lg:p-6">
+        <main className="admin-content flex-1 overflow-x-hidden p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

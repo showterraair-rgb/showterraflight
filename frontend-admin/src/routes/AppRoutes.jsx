@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import AdminLayout from '../components/layout/AdminLayout';
 import LoginPage from '../pages/LoginPage';
@@ -59,8 +60,9 @@ import BulkImportPage from '../pages/BulkImportPage';
 export default function AppRoutes() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
 
           <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
@@ -132,7 +134,8 @@ export default function AppRoutes() {
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

@@ -150,8 +150,8 @@ function NavItemLink({ item, onClose, nested = false, subNested = false }) {
       className={({ isActive }) =>
         `flex items-center rounded-lg text-sm font-medium transition ${pad} px-3 py-2 ${
           isActive
-            ? 'bg-brand-50 text-brand-700'
-            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100'
         }`
       }
     >
@@ -171,8 +171,8 @@ function NavSubGroup({ node, nodeKey, expanded, onToggle, onClose, pathname, dep
         onClick={() => onToggle(nodeKey)}
         className={`flex w-full items-center gap-2 rounded-lg py-2 pl-10 pr-3 text-left text-xs font-semibold uppercase tracking-wide transition ${
           isActive && !isOpen
-            ? 'text-brand-700'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+            ? 'text-brand-700 dark:text-brand-300'
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
         }`}
         aria-expanded={isOpen}
       >
@@ -236,8 +236,8 @@ function NavGroup({ group, expanded, onToggle, onClose, pathname }) {
         onClick={() => onToggle(groupKey)}
         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${
           isActive && !isOpen
-            ? 'bg-brand-50/60 text-brand-700'
-            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+            ? 'bg-brand-50/60 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300'
+            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white'
         }`}
         aria-expanded={isOpen}
       >
@@ -336,17 +336,17 @@ export default function Sidebar({ groups, isOpen, onClose }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-default bg-surface-raised transition-transform lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
+        <div className="flex h-16 items-center gap-3 border-b border-default px-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
             STA
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-900">Show Terra Air</p>
-            <p className="text-xs text-slate-500">Admin Panel</p>
+            <p className="text-sm font-bold text-primary">Show Terra Air</p>
+            <p className="text-xs text-muted">Admin Panel</p>
           </div>
         </div>
 
@@ -371,12 +371,12 @@ export default function Sidebar({ groups, isOpen, onClose }) {
           </ul>
         </nav>
 
-        <div className="border-t border-slate-200 px-3 py-3">
+        <div className="border-t border-default px-3 py-3">
           <div className="flex gap-1">
             <button
               type="button"
               onClick={expandAll}
-              className="flex-1 rounded-md px-2 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+              className="flex-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               Expand all
             </button>
@@ -384,12 +384,12 @@ export default function Sidebar({ groups, isOpen, onClose }) {
               type="button"
               onClick={collapseAll}
               disabled={!anyExpanded}
-              className="flex-1 rounded-md px-2 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+              className="flex-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
             >
               Collapse all
             </button>
           </div>
-          <p className="mt-2 px-1 text-xs text-slate-400">Show Terra Air v1.0</p>
+          <p className="mt-2 px-1 text-xs text-slate-400 dark:text-slate-500">Show Terra Air v1.0</p>
         </div>
       </aside>
     </>
