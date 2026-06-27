@@ -1,16 +1,23 @@
 import env from '../../config/env.js';
 
-function getWasenderConfig() {
+export function getWasenderConfig() {
+  const apiKey = process.env.WASENDER_API_KEY || env.wasender?.apiKey || '';
   return {
-    apiUrl: process.env.WASENDER_API_URL || 'https://wasenderapi.com/api/send-message',
-    apiKey: process.env.WASENDER_API_KEY || '',
-    enabled: process.env.WASENDER_ENABLED === 'true',
+    apiUrl: process.env.WASENDER_API_URL || env.wasender?.apiUrl || 'https://www.wasenderapi.com/api/send-message',
+    apiKey,
+    enabled: process.env.WASENDER_ENABLED === 'true'
+      || env.wasender?.enabled
+      || Boolean(apiKey),
   };
+}
+
+export function isWasenderConfigured() {
+  const config = getWasenderConfig();
+  return Boolean(config.enabled && config.apiKey);
 }
 
 /**
  * WhatsApp via Wasender API — https://wasenderapi.com/
- * Set WASENDER_API_KEY and WASENDER_ENABLED=true when ready.
  */
 export async function sendWasenderMessage({ to, message }) {
   const config = getWasenderConfig();
@@ -23,11 +30,10 @@ export async function sendWasenderMessage({ to, message }) {
   if (!config.enabled || !config.apiKey) {
     console.log('[Wasender:stub]', phone, message?.slice(0, 100));
     return {
-      success: true,
+      success: false,
       channel: 'whatsapp',
-      messageId: `wasender-stub-${Date.now()}`,
+      error: 'Wasender API not configured (set WASENDER_API_KEY)',
       mocked: true,
-      note: 'Set WASENDER_API_KEY and WASENDER_ENABLED=true',
     };
   }
 
@@ -42,12 +48,22 @@ export async function sendWasenderMessage({ to, message }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { success: false, channel: 'whatsapp', error: data.message || data.error || res.statusText };
+      const errMsg = data.message || data.error || data.msg || res.statusText;
+      console.error('[Wasender:failed]', phone, errMsg);
+      return { success: false, channel: 'whatsapp', error: errMsg, raw: data };
     }
-    return { success: true, channel: 'whatsapp', messageId: data.id || data.messageId || `wasender-${Date.now()}`, raw: data };
+    console.log('[Wasender:sent]', phone, data.id || data.messageId || 'ok');
+    return {
+      success: true,
+      channel: 'whatsapp',
+      messageId: data.id || data.messageId || data.data?.id || `wasender-${Date.now()}`,
+      provider: 'wasender',
+      raw: data,
+    };
   } catch (err) {
+    console.error('[Wasender:error]', err.message);
     return { success: false, channel: 'whatsapp', error: err.message };
   }
 }
 
-export default { sendWasenderMessage, getWasenderConfig };
+export default { sendWasenderMessage, getWasenderConfig, isWasenderConfigured };

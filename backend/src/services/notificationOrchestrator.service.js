@@ -3,6 +3,7 @@
  */
 
 import NotificationLog from '../models/NotificationLog.js';
+import env from '../config/env.js';
 import {
   getSmsSettingsRaw,
   getEmailSettingsRaw,
@@ -22,7 +23,7 @@ import {
 } from '../config/constants.js';
 import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
 import { sendMetaWhatsAppTemplate, sendMetaWhatsAppText } from './whatsapp/metaCloud.provider.js';
-import { sendWasenderMessage } from './whatsapp/wasender.provider.js';
+import { sendWasenderMessage, isWasenderConfigured } from './whatsapp/wasender.provider.js';
 import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
@@ -153,14 +154,9 @@ export async function sendEmailMessage({ to, subject, message, replyTo }) {
     return { success: false, error: 'Missing recipient email', channel: 'email' };
   }
 
-  if (!settings.isEnabled) {
+  if (!settings.isEnabled && !env.email.enabled) {
     console.log('[NOTIFICATION:email:disabled]', subject, '→', recipient);
     return { success: true, channel: 'email', messageId: `email-disabled-${Date.now()}`, mocked: true };
-  }
-
-  if (!settings.smtpHost) {
-    console.log('[NOTIFICATION:email:no-config]', subject, '→', recipient);
-    return { success: true, channel: 'email', messageId: `email-mock-${Date.now()}`, mocked: true };
   }
 
   return sendSmtpEmail({ to: recipient, subject, text: message, replyTo });
@@ -176,25 +172,37 @@ export async function sendWhatsAppMessage({
   const rawSettings = await getWhatsAppSettingsRaw();
   const settings = resolveWhatsAppConfig(rawSettings);
   const recipient = normalizeWaPhone(to, settings.defaultCountryCode);
+  const messageText = String(textFallback || '').trim()
+    || (bodyParams.length ? bodyParams.filter(Boolean).join(' — ') : '');
 
   if (!recipient) {
     return { success: false, error: 'Missing recipient phone', channel: 'whatsapp' };
   }
 
-  if (!settings.isEnabled) {
-    console.log('[NOTIFICATION:whatsapp:disabled]', recipient, templateName || textFallback?.slice(0, 80));
+  const waEnabled = settings.isEnabled || isWasenderConfigured();
+  if (!waEnabled) {
+    console.log('[NOTIFICATION:whatsapp:disabled]', recipient, templateName || messageText?.slice(0, 80));
     return { success: true, channel: 'whatsapp', messageId: `wa-disabled-${Date.now()}`, mocked: true };
   }
 
-  if (!settings.isConfigured) {
-    if (textFallback) {
-      return sendWasenderMessage({ to: recipient, message: textFallback });
+  // Wasender API — primary provider for all WhatsApp text notifications
+  if (isWasenderConfigured()) {
+    if (!messageText) {
+      return { success: false, channel: 'whatsapp', error: 'WhatsApp message text required' };
     }
+    const result = await sendWasenderMessage({ to: recipient, message: messageText });
+    if (!result.success) {
+      console.error('[NOTIFICATION:whatsapp:wasender-failed]', recipient, result.error);
+    }
+    return result;
+  }
+
+  if (!settings.isConfigured) {
     console.log('[NOTIFICATION:whatsapp:no-config]', recipient);
     return {
       success: false,
       channel: 'whatsapp',
-      error: 'WhatsApp not configured (Meta Cloud or Wasender API)',
+      error: 'WhatsApp not configured (Wasender API or Meta Cloud)',
     };
   }
 
@@ -210,13 +218,13 @@ export async function sendWhatsAppMessage({
         languageCode: languageCode || settings.defaultLanguageCode,
         bodyParams,
       });
-    } else if (textFallback) {
+    } else if (messageText) {
       result = await sendMetaWhatsAppText({
         graphApiBase: settings.graphApiBase,
         phoneNumberId: settings.phoneNumberId,
         accessToken: settings.accessToken,
         to: recipient,
-        text: textFallback,
+        text: messageText,
       });
     } else {
       return {
@@ -378,10 +386,10 @@ export async function triggerNotificationEvent(eventType, context = {}) {
           customerPaymentId: context.customerPaymentId,
           replyTo: admin.adminEmail,
           vars,
-          whatsappTemplateName,
+          whatsappTemplateName: isWasenderConfigured() ? '' : whatsappTemplateName,
           whatsappTemplateLanguage,
           whatsappBodyParams,
-          whatsappTextFallback: r.channel === 'whatsapp' && !whatsappTemplateName ? whatsappTextFallback : '',
+          whatsappTextFallback: r.channel === 'whatsapp' ? whatsappTextFallback : '',
         },
       });
       results.push({ ...result, audience: r.audience });
@@ -413,12 +421,17 @@ export async function sendTestEmail({ to, subject, message }) {
 }
 
 export async function sendTestWhatsApp({ to, templateName, message }) {
+  const text = message || 'Test WhatsApp from Show Terra Flight admin panel.';
+  if (isWasenderConfigured()) {
+    return sendWasenderMessage({ to, message: text });
+  }
+
   const rawSettings = await getWhatsAppSettingsRaw();
   const settings = resolveWhatsAppConfig(rawSettings);
   const name = templateName || settings.testTemplateName || 'hello_world';
 
   if (name === 'hello_world' || !message) {
-    return sendWhatsAppMessage({ to, templateName: name, languageCode: settings.defaultLanguageCode });
+    return sendWhatsAppMessage({ to, templateName: name, languageCode: settings.defaultLanguageCode, textFallback: text });
   }
 
   return sendWhatsAppMessage({
@@ -426,6 +439,7 @@ export async function sendTestWhatsApp({ to, templateName, message }) {
     templateName: name,
     languageCode: settings.defaultLanguageCode,
     bodyParams: [message],
+    textFallback: text,
   });
 }
 

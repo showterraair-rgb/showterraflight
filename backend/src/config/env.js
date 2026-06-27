@@ -65,6 +65,21 @@ export const env = {
     testTemplateName: process.env.WHATSAPP_TEST_TEMPLATE || 'hello_world',
     enabled: process.env.WHATSAPP_ENABLED === 'true',
   },
+  wasender: {
+    apiUrl: process.env.WASENDER_API_URL || 'https://www.wasenderapi.com/api/send-message',
+    apiKey: process.env.WASENDER_API_KEY || '',
+    enabled: process.env.WASENDER_ENABLED === 'true' || Boolean(process.env.WASENDER_API_KEY),
+  },
+  email: {
+    smtpHost: process.env.SMTP_HOST || process.env.EMAIL_SMTP_HOST || '',
+    smtpPort: parseInt(process.env.SMTP_PORT || process.env.EMAIL_SMTP_PORT || '587', 10),
+    username: process.env.SMTP_USER || process.env.EMAIL_SMTP_USER || '',
+    password: process.env.SMTP_PASS || process.env.EMAIL_SMTP_PASS || '',
+    fromEmail: process.env.SMTP_FROM || process.env.EMAIL_FROM || '',
+    fromName: process.env.SMTP_FROM_NAME || process.env.EMAIL_FROM_NAME || 'Show Terra Flight',
+    encryption: process.env.SMTP_ENCRYPTION || 'tls',
+    enabled: process.env.SMTP_ENABLED === 'true' || process.env.EMAIL_ENABLED === 'true',
+  },
   isProduction: process.env.NODE_ENV === 'production',
 };
 

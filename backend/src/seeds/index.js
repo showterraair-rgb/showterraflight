@@ -24,6 +24,7 @@ import { seedHomeMedia } from './seedHomeMedia.js';
 import SecuritySetting from '../models/SecuritySetting.js';
 import SmsSetting from '../models/SmsSetting.js';
 import EmailSetting from '../models/EmailSetting.js';
+import WhatsAppSetting from '../models/WhatsAppSetting.js';
 import NotificationTemplate from '../models/NotificationTemplate.js';
 import NotificationAutomationRule from '../models/NotificationAutomationRule.js';
 
@@ -251,6 +252,29 @@ async function seedNotificationSettings() {
       || Boolean(process.env.BULKSMSBD_API_KEY && process.env.BULKSMSBD_SENDER_ID),
   };
 
+  const emailFromEnv = {
+    smtpHost: process.env.SMTP_HOST || process.env.EMAIL_SMTP_HOST || '',
+    smtpPort: parseInt(process.env.SMTP_PORT || process.env.EMAIL_SMTP_PORT || '587', 10),
+    username: process.env.SMTP_USER || process.env.EMAIL_SMTP_USER || '',
+    password: process.env.SMTP_PASS || process.env.EMAIL_SMTP_PASS || '',
+    encryption: process.env.SMTP_ENCRYPTION || 'tls',
+    fromEmail: process.env.SMTP_FROM || process.env.EMAIL_FROM || '',
+    fromName: process.env.SMTP_FROM_NAME || process.env.EMAIL_FROM_NAME || 'Show Terra Flight',
+    replyTo: process.env.SMTP_FROM || process.env.EMAIL_FROM || '',
+    isEnabled: process.env.SMTP_ENABLED === 'true'
+      || process.env.EMAIL_ENABLED === 'true'
+      || Boolean(
+        (process.env.SMTP_USER || process.env.EMAIL_SMTP_USER)
+        && (process.env.SMTP_PASS || process.env.EMAIL_SMTP_PASS)
+      ),
+  };
+
+  const whatsappFromEnv = {
+    isEnabled: process.env.WHATSAPP_ENABLED === 'true' || Boolean(process.env.WASENDER_API_KEY),
+    defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '880',
+    defaultLanguageCode: process.env.WHATSAPP_DEFAULT_LANGUAGE || 'en',
+  };
+
   await SmsSetting.findOneAndUpdate(
     { key: 'sms' },
     { key: 'sms', ...smsFromEnv },
@@ -258,10 +282,15 @@ async function seedNotificationSettings() {
   );
   await EmailSetting.findOneAndUpdate(
     { key: 'email' },
-    { key: 'email', isEnabled: false, smtpPort: 587, encryption: 'tls' },
+    { key: 'email', ...emailFromEnv },
     { upsert: true, new: true }
   );
-  console.log('✓ SMS & email settings seeded');
+  await WhatsAppSetting.findOneAndUpdate(
+    { key: 'whatsapp' },
+    { key: 'whatsapp', ...whatsappFromEnv },
+    { upsert: true, new: true }
+  );
+  console.log('✓ SMS, email & WhatsApp settings seeded');
 }
 
 async function seedNotificationTemplates() {

@@ -12,6 +12,7 @@
     "seed:home": "node src/seeds/seedHomeContent.js",
     "recalculate-financials": "node src/scripts/recalculateFinancials.js",
     "configure-sms": "node src/scripts/configureSms.js",
+    "configure-notifications": "node src/scripts/configureNotifications.js",
     "create-demo-user": "node src/scripts/createDemoUser.js",
     "create-admin-user": "node src/scripts/createAdminUser.js"
   },
@@ -39,6 +40,7 @@
     "mongoose": "^8.9.3",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "nodemailer": "^9.0.1",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.15.2",
