@@ -11,18 +11,14 @@ import { usePermission } from '../hooks/usePermission';
 import { SUPPLIER_TYPES } from '../utils/constants';
 
 const schema = z.object({
-  name: z.string().min(2),
-  company: z.string().optional(),
+  company: z.string().min(2, 'Company name required'),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
-  address: z.string().optional(),
-  contactPerson: z.string().optional(),
   type: z.enum(['agent', 'supplier', 'airline_office', 'other']),
-  paymentTerms: z.string().optional(),
   notes: z.string().optional(),
 });
 
-const empty = { name: '', company: '', phone: '', email: '', address: '', contactPerson: '', type: 'agent', paymentTerms: '', notes: '' };
+const empty = { company: '', phone: '', email: '', type: 'supplier', notes: '' };
 
 export default function SuppliersPage() {
   const { can } = usePermission();
@@ -58,14 +54,10 @@ export default function SuppliersPage() {
   const openEdit = (row) => {
     setEditing(row);
     reset({
-      name: row.name,
-      company: row.company || '',
+      company: row.company || row.name || '',
       phone: row.phone || '',
       email: row.email || '',
-      address: row.address || '',
-      contactPerson: row.contactPerson || '',
-      type: row.type || 'agent',
-      paymentTerms: row.paymentTerms || '',
+      type: row.type || 'supplier',
       notes: row.notes || '',
     });
     setError('');
@@ -75,7 +67,15 @@ export default function SuppliersPage() {
   const onSubmit = async (form) => {
     setError('');
     try {
-      const payload = { ...form, email: form.email || undefined };
+      const company = form.company.trim();
+      const payload = {
+        name: company,
+        company,
+        phone: form.phone || undefined,
+        email: form.email || undefined,
+        type: form.type,
+        notes: form.notes || undefined,
+      };
       if (editing) await suppliersApi.update(editing.id, payload);
       else await suppliersApi.create(payload);
       setModalOpen(false);
@@ -86,7 +86,7 @@ export default function SuppliersPage() {
   };
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Delete supplier "${row.name}"? Linked bookings or payments will be archived instead.`)) return;
+    if (!window.confirm(`Delete supplier "${row.company || row.name}"? Linked bookings or payments will be archived instead.`)) return;
     try {
       const { data } = await suppliersApi.delete(row.id);
       alert(data.message || 'Supplier removed');
@@ -97,11 +97,10 @@ export default function SuppliersPage() {
   };
 
   const columns = [
-    { key: 'name', label: 'Name', render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'company', label: 'Company', render: (r) => r.company || '—' },
+    { key: 'company', label: 'Company', render: (r) => <span className="font-medium">{r.company || r.name}</span> },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
+    { key: 'email', label: 'Email', render: (r) => r.email || '—' },
     { key: 'type', label: 'Type', render: (r) => <span className="capitalize">{r.type?.replace('_', ' ')}</span> },
-    { key: 'paymentTerms', label: 'Payment Terms', render: (r) => r.paymentTerms || '—' },
     {
       key: 'actions',
       label: 'Actions',
@@ -155,14 +154,10 @@ export default function SuppliersPage() {
         <form id="supplier-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Name *</label>
-              <input className="input-field" {...register('name')} />
-              {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Company</label>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium">Company *</label>
               <input className="input-field" {...register('company')} />
+              {errors.company && <p className="mt-1 text-xs text-red-600">{errors.company.message}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Phone</label>
@@ -170,11 +165,8 @@ export default function SuppliersPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Email</label>
-              <input className="input-field" {...register('email')} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Contact Person</label>
-              <input className="input-field" {...register('contactPerson')} />
+              <input type="email" className="input-field" {...register('email')} />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Type</label>
@@ -183,14 +175,6 @@ export default function SuppliersPage() {
                   <option key={t} value={t}>{t.replace('_', ' ')}</option>
                 ))}
               </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Payment Terms</label>
-              <input className="input-field" placeholder="e.g. Pay within 7 days" {...register('paymentTerms')} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Address</label>
-              <input className="input-field" {...register('address')} />
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Notes</label>
