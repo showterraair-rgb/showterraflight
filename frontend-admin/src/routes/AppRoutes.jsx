@@ -49,6 +49,9 @@ import AgentBookingDetailPage from '../pages/AgentBookingDetailPage';
 import AgentAccountingPage from '../pages/AgentAccountingPage';
 import CurrencySettingsPage from '../pages/CurrencySettingsPage';
 import UpcomingFlightsPage from '../pages/UpcomingFlightsPage';
+import { VoidBookingsPage, RefundBookingsPage, ReissueBookingsPage, InvoicesPage } from '../pages/TicketingListPages';
+import LedgerPage from '../pages/LedgerPage';
+import BusinessSummaryPage from '../pages/BusinessSummaryPage';
 
 export default function AppRoutes() {
   return (
@@ -72,6 +75,10 @@ export default function AppRoutes() {
             <Route path="bookings/partial-payments" element={<ProtectedRoute permissions={['bookings:view']}><PartialPaymentsPage /></ProtectedRoute>} />
             <Route path="bookings/new" element={<ProtectedRoute permissions={['bookings:create']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/upcoming" element={<ProtectedRoute permissions={['bookings:view']}><UpcomingFlightsPage /></ProtectedRoute>} />
+            <Route path="bookings/voids" element={<ProtectedRoute permissions={['bookings:view']}><VoidBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/refunds" element={<ProtectedRoute permissions={['bookings:view']}><RefundBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/reissues" element={<ProtectedRoute permissions={['bookings:view']}><ReissueBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/invoices" element={<ProtectedRoute permissions={['bookings:view']}><InvoicesPage /></ProtectedRoute>} />
             <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />
             <Route path="bookings/:id" element={<ProtectedRoute permissions={['bookings:view']}><BookingDetailPage /></ProtectedRoute>} />
 
@@ -83,9 +90,11 @@ export default function AppRoutes() {
             <Route path="payments/history" element={<ProtectedRoute permissions={['payments:customer']}><PaymentHistoryPage /></ProtectedRoute>} />
             <Route path="payments/gateway/result" element={<ProtectedRoute permissions={['payments:customer']}><GatewayResultPage /></ProtectedRoute>} />
             <Route path="payments/suppliers" element={<ProtectedRoute permissions={['payments:supplier']}><SupplierPaymentsPage /></ProtectedRoute>} />
+            <Route path="finance/ledger" element={<ProtectedRoute permissions={['accounts:view']}><LedgerPage /></ProtectedRoute>} />
             <Route path="expenses" element={<ProtectedRoute permissions={['expenses:view']}><ExpensesPage /></ProtectedRoute>} />
             <Route path="transfers" element={<ProtectedRoute permissions={['transfers:create', 'accounts:view']}><TransfersPage /></ProtectedRoute>} />
             <Route path="reminders" element={<ProtectedRoute permissions={['reminders:view']}><RemindersPage /></ProtectedRoute>} />
+            <Route path="reports/business-summary" element={<ProtectedRoute permissions={['reports:view', 'dashboard:view']}><BusinessSummaryPage /></ProtectedRoute>} />
             <Route path="reports" element={<ProtectedRoute permissions={['reports:view']}><ReportsPage /></ProtectedRoute>} />
             <Route path="reports/sales" element={<ProtectedRoute permissions={['reports:view']}><SalesReportPage /></ProtectedRoute>} />
             <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />

@@ -71,6 +71,7 @@ export const listQuerySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   paymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
+  invoiced: z.enum(['true', 'false']).optional(),
   bookingDateFrom: z.string().optional(),
   bookingDateTo: z.string().optional(),
   productCategory: z.enum(PRODUCT_CATEGORIES).optional(),

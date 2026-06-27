@@ -154,7 +154,11 @@ function buildBookingFilter(query) {
 
   const filter = {};
 
-  if (query.status) filter.status = query.status;
+  if (query.status) {
+    filter.status = query.status;
+  } else if (query.invoiced === 'true' || query.invoiced === true) {
+    filter.status = { $in: ['ticket_issued', 'delivered', 'completed'] };
+  }
   if (query.approvalStatus) filter.approvalStatus = query.approvalStatus;
   if (query.customerId) filter.customer = query.customerId;
   if (query.supplierId) filter.supplier = query.supplierId;
