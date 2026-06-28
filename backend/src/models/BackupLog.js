@@ -20,6 +20,13 @@ const backupLogSchema = new mongoose.Schema(
     errorMessage: { type: String },
     triggeredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     restoreNotes: { type: String, default: 'Restore is manual-only. Contact admin to restore from backup file.' },
+    restoreStatus: {
+      type: String,
+      enum: ['none', 'requested', 'completed'],
+      default: 'none',
+    },
+    restoreRequestedAt: { type: Date },
+    restoreRequestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     offsitePath: { type: String },
     checksum: { type: String },
   },

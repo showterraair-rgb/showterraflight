@@ -25,4 +25,18 @@ export const strategy = asyncHandler(async (_req, res) => {
   res.json({ success: true, data });
 });
 
-export default { list, getById, trigger, strategy };
+export const download = asyncHandler(async (req, res) => {
+  const { filePath, fileName } = await backupService.getBackupDownloadPath(req.params.id);
+  res.download(filePath, fileName);
+});
+
+export const restoreRequest = asyncHandler(async (req, res) => {
+  const data = await backupService.requestRestore(req.params.id, req.body, req.user.id, req);
+  res.json({
+    success: true,
+    data,
+    message: 'Restore runbook generated. Follow the steps on the server — automated restore is disabled.',
+  });
+});
+
+export default { list, getById, trigger, strategy, download, restoreRequest };

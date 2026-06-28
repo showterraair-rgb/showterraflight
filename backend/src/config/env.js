@@ -46,6 +46,8 @@ export const env = {
   backup: {
     dir: process.env.BACKUP_DIR || 'uploads/backups',
     cron: process.env.BACKUP_CRON || '0 2 * * *',
+    offsiteDir: process.env.BACKUP_OFFSITE_DIR || '',
+    rsyncTarget: process.env.BACKUP_RSYNC_TARGET || '',
   },
   sms: {
     apiUrl: process.env.BULKSMSBD_API_URL || 'http://bulksmsbd.net/api/smsapi',

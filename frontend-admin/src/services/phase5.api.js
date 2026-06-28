@@ -42,6 +42,8 @@ export const backupApi = {
   get: (id) => api.get(`/backups/${id}`),
   trigger: () => api.post('/backups/trigger'),
   strategy: () => api.get('/backups/strategy'),
+  download: (id) => api.get(`/backups/${id}/download`, { responseType: 'blob' }),
+  requestRestore: (id, body) => api.post(`/backups/${id}/restore-request`, body),
 };
 
 export const securityApi = {
