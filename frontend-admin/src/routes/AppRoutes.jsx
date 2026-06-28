@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import ScrollToTop from '../components/layout/ScrollToTop';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import AdminLayout from '../components/layout/AdminLayout';
 import LoginPage from '../pages/LoginPage';
@@ -60,6 +61,7 @@ import BulkImportPage from '../pages/BulkImportPage';
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ThemeProvider>
         <AuthProvider>
           <Routes>
