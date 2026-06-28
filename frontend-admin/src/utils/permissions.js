@@ -18,8 +18,6 @@ export const NAV_GROUPS = [
     children: [
       { label: 'Booking Ledger', path: '/bookings', permissions: ['bookings:view'] },
       { label: 'New Booking', path: '/bookings/new', permissions: ['bookings:create'] },
-      { label: 'Bulk Import', path: '/bookings/bulk-import', permissions: ['bookings:create'] },
-      { label: 'Upcoming Flights', path: '/bookings/upcoming', permissions: ['bookings:view'] },
       { label: 'Partial Payments', path: '/bookings/partial-payments', permissions: ['bookings:view', 'payments:customer'] },
     ],
   },
