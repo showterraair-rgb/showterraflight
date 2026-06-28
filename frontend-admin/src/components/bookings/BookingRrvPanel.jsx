@@ -30,6 +30,7 @@ export default function BookingRrvPanel({ booking, onDone }) {
   const canVoid = !isTerminal && ['draft', 'confirmed'].includes(booking.status) && !booking.ticketCopyUrl;
   const canRefund = !isTerminal && ['ticket_issued', 'delivered', 'completed'].includes(booking.status);
   const canReissue = !isTerminal && ['confirmed', 'ticket_issued', 'delivered', 'completed'].includes(booking.status);
+  const refundPending = Boolean(booking.rrvNote && !booking.rrvProcessedAt && canRefund);
 
   useEffect(() => {
     if (refundOpen) {
@@ -45,6 +46,16 @@ export default function BookingRrvPanel({ booking, onDone }) {
     }
   }, [refundOpen, refundForm.penalty, booking.amountPaid]);
 
+  useEffect(() => {
+    if (refundOpen && refundPending) {
+      setRefundForm((f) => ({
+        ...f,
+        reason: booking.rrvNote || f.reason,
+        penalty: booking.rrvPenalty ?? f.penalty,
+      }));
+    }
+  }, [refundOpen, refundPending, booking.rrvNote, booking.rrvPenalty]);
+
   if (!can('bookings:update') || isTerminal) return null;
 
   const handleVoid = async () => {
@@ -56,6 +67,23 @@ export default function BookingRrvPanel({ booking, onDone }) {
       onDone?.();
     } catch (err) {
       setError(err.response?.data?.message || 'Void failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefundRequest = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await bookingsApi.refundRequest(booking.id, {
+        reason: refundForm.reason,
+        penalty: Number(refundForm.penalty) || 0,
+      });
+      setRefundOpen(false);
+      onDone?.();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Refund request failed');
     } finally {
       setLoading(false);
     }
@@ -114,7 +142,10 @@ export default function BookingRrvPanel({ booking, onDone }) {
           </p>
         )}
         {booking.rrvNote && (
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{booking.rrvNote}</p>
+          <p className={`rounded-lg px-3 py-2 text-sm ${refundPending ? 'bg-amber-50 text-amber-900' : 'bg-slate-50 text-slate-700'}`}>
+            {refundPending ? 'Pending refund: ' : ''}{booking.rrvNote}
+            {refundPending && booking.rrvPenalty > 0 && ` (penalty ৳${booking.rrvPenalty.toLocaleString()})`}
+          </p>
         )}
         <div className="flex flex-wrap gap-2">
           {canVoid && (
@@ -123,8 +154,8 @@ export default function BookingRrvPanel({ booking, onDone }) {
             </button>
           )}
           {canRefund && (
-            <button type="button" onClick={() => { setError(''); setRefundOpen(true); }} className="rounded-lg border border-teal-300 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-800 hover:bg-teal-100">
-              Refund
+            <button type="button" onClick={() => { setError(''); setRefundOpen(true); }} className={`rounded-lg border px-4 py-2 text-sm font-medium ${refundPending ? 'border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100' : 'border-teal-300 bg-teal-50 text-teal-800 hover:bg-teal-100'}`}>
+              {refundPending ? 'Approve refund' : 'Refund'}
             </button>
           )}
           {canReissue && can('bookings:create') && (
@@ -154,16 +185,26 @@ export default function BookingRrvPanel({ booking, onDone }) {
         </div>
       </Modal>
 
-      <Modal open={refundOpen} onClose={() => setRefundOpen(false)} title="Refund booking" wide
+      <Modal open={refundOpen} onClose={() => setRefundOpen(false)} title={refundPending ? 'Approve & pay refund' : 'Refund booking'} wide
         footer={(
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <button type="button" onClick={() => setRefundOpen(false)} className="btn-secondary">Cancel</button>
-            <button type="button" onClick={handleRefund} disabled={loading} className="btn-primary">Process refund</button>
+            {!refundPending && (
+              <button type="button" onClick={handleRefundRequest} disabled={loading} className="btn-secondary">Submit request only</button>
+            )}
+            <button type="button" onClick={handleRefund} disabled={loading} className="btn-primary">
+              {refundPending ? 'Approve & pay refund' : 'Process refund'}
+            </button>
           </div>
         )}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
+          {refundPending && (
+            <p className="sm:col-span-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              A refund request is pending. Confirm amounts below, then approve and pay.
+            </p>
+          )}
           <div>
             <label className="mb-1 block text-sm font-medium">Penalty (৳)</label>
             <input type="number" min="0" className="input-field" value={refundForm.penalty} onChange={(e) => setRefundForm((f) => ({ ...f, penalty: e.target.value }))} />

@@ -48,6 +48,16 @@ export const voidCustomerPayment = asyncHandler(async (req, res) => {
 
 
 
+export const uploadCustomerPaymentReceipt = asyncHandler(async (req, res) => {
+
+  const data = await customerPaymentService.uploadCustomerPaymentReceipt(req.params.id, req.file, req.user.id, req);
+
+  res.json({ success: true, data, message: 'Receipt uploaded' });
+
+});
+
+
+
 export const listSupplierPayments = asyncHandler(async (req, res) => {
 
   const data = await supplierPaymentService.listSupplierPayments(req.query);
@@ -88,6 +98,16 @@ export const voidSupplierPayment = asyncHandler(async (req, res) => {
 
 
 
+export const uploadSupplierPaymentReceipt = asyncHandler(async (req, res) => {
+
+  const data = await supplierPaymentService.uploadSupplierPaymentReceipt(req.params.id, req.file, req.user.id, req);
+
+  res.json({ success: true, data, message: 'Receipt uploaded' });
+
+});
+
+
+
 export const listPaymentRequests = asyncHandler(async (req, res) => {
   const data = await paymentRequestService.listPaymentRequests(req.query);
   res.json({ success: true, data: data.items, pagination: data.pagination });
@@ -120,6 +140,8 @@ export default {
 
   voidCustomerPayment,
 
+  uploadCustomerPaymentReceipt,
+
   listSupplierPayments,
 
   getSupplierPayment,
@@ -127,6 +149,8 @@ export default {
   createSupplierPayment,
 
   voidSupplierPayment,
+
+  uploadSupplierPaymentReceipt,
 
   listPaymentRequests,
 

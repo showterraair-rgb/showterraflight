@@ -19,13 +19,29 @@ const OPERATION_ACCENTS = {
   CANCEL_REFUND: 'slate',
 };
 
+const OPERATION_STATUS_LABELS = {
+  draft: 'Draft',
+  pending: 'Pending',
+  approved: 'Approved',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const OPERATION_STATUS_ACCENTS = {
+  draft: 'slate',
+  pending: 'amber',
+  approved: 'blue',
+  completed: 'green',
+  cancelled: 'red',
+};
+
 export default function BookingOperationTimeline({ operations = [], loading = false }) {
   if (loading) {
     return <p className="text-sm text-slate-500">Loading ticket operations…</p>;
   }
 
   if (!operations.length) {
-    return <p className="text-sm text-slate-500">No ticket operations recorded yet.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">No ticket operations recorded yet.</p>;
   }
 
   return (
@@ -33,7 +49,7 @@ export default function BookingOperationTimeline({ operations = [], loading = fa
       {operations.map((op) => (
         <li
           key={op.id}
-          className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3"
+          className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50"
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -41,6 +57,12 @@ export default function BookingOperationTimeline({ operations = [], loading = fa
                 status={OPERATION_ACCENTS[op.operationType] || 'slate'}
                 label={OPERATION_LABELS[op.operationType] || op.operationType}
               />
+              {op.status && op.status !== 'completed' && (
+                <StatusBadge
+                  status={OPERATION_STATUS_ACCENTS[op.status] || 'slate'}
+                  label={OPERATION_STATUS_LABELS[op.status] || op.status}
+                />
+              )}
               {op.operationNumber && op.operationNumber !== '—' && (
                 <span className="font-mono text-xs text-slate-600">{op.operationNumber}</span>
               )}

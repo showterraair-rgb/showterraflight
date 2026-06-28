@@ -77,6 +77,7 @@ export const listQuerySchema = z.object({
   bookingDateFrom: z.string().optional(),
   bookingDateTo: z.string().optional(),
   productCategory: z.enum(PRODUCT_CATEGORIES).optional(),
+  refundPending: z.enum(['true', 'false']).optional(),
 });
 
 export const createBookingBaseSchema = z.object({
@@ -239,6 +240,11 @@ export const refundBookingSchema = z.object({
   paymentDate: z.string().optional(),
 });
 
+export const refundRequestSchema = z.object({
+  reason: z.string().max(1000).optional(),
+  penalty: z.coerce.number().min(0).optional().default(0),
+});
+
 export const reissueBookingSchema = z.object({
   reason: z.string().max(1000).optional(),
   journeyType: z.enum(JOURNEY_TYPES).optional(),
@@ -304,6 +310,7 @@ export default {
   idParamSchema,
   voidBookingSchema,
   refundBookingSchema,
+  refundRequestSchema,
   reissueBookingSchema,
   bulkImportExecuteSchema,
 };

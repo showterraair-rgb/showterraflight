@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { bookingsApi } from '../services/crm.api';
 import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
@@ -25,6 +25,14 @@ const STATUS_TABS = [
 
 const PAYMENT_LABELS = { paid: 'Paid', partial: 'Partial', unpaid: 'Due' };
 
+function renderPassengerCell(r) {
+  const name = r.passengerName || r.passengers?.[0]?.fullName || '—';
+  const count = r.passengerCount || r.passengers?.length || 0;
+  const extra = count > 1 ? ` (+${count - 1})` : '';
+  const label = `${name}${extra}`;
+  return <span className="max-w-[10rem] truncate text-xs" title={label}>{label}</span>;
+}
+
 export function BookingsListView({
   productCategory,
   title = 'Booking History',
@@ -39,6 +47,8 @@ export function BookingsListView({
 }) {
   const { can } = usePermission();
   const financeFields = useFieldPermission('finance');
+  const [searchParams] = useSearchParams();
+  const refundPendingFilter = searchParams.get('refundPending') === '1';
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -59,6 +69,7 @@ export function BookingsListView({
       if (productCategory) params.productCategory = productCategory;
       if (invoicedOnly) params.invoiced = 'true';
       if (fixedStatus) params.status = fixedStatus;
+      if (refundPendingFilter) params.refundPending = 'true';
       Object.keys(params).forEach((k) => !params[k] && delete params[k]);
       const [listRes, sumRes] = await Promise.all([
         bookingsApi.list(params),
@@ -70,7 +81,7 @@ export function BookingsListView({
     } finally {
       setLoading(false);
     }
-  }, [page, filters, productCategory, fixedStatus, invoicedOnly]);
+  }, [page, filters, productCategory, fixedStatus, invoicedOnly, refundPendingFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -93,13 +104,19 @@ export function BookingsListView({
     }
   };
 
+  const ledgerColumns = productCategory === 'air' && !showRrvColumns && !invoiceFocus;
+
   const columns = [
     { key: 'bookingNumber', label: 'Booking #', render: (r) => (
       <Link to={`/bookings/${r.id}`} className="font-mono text-xs font-medium text-brand-600 hover:underline">{r.bookingNumber}</Link>
     ) },
+    ...(ledgerColumns ? [{ key: 'passengerName', label: 'Passenger', render: renderPassengerCell }] : []),
     { key: 'customerName', label: 'Customer' },
     { key: 'route', label: 'Route' },
     { key: 'pnr', label: 'PNR', render: (r) => r.pnr || '—' },
+    ...(ledgerColumns ? [{ key: 'ticketNumber', label: 'Ticket #', render: (r) => (
+      <span className="font-mono text-xs">{r.ticketNumber || '—'}</span>
+    ) }] : []),
     { key: 'airline', label: productCategory === 'hotel' ? 'Hotel' : productCategory === 'esim' ? 'Provider' : 'Airline' },
     { key: 'departureDate', label: productCategory === 'hotel' ? 'Check-in' : 'Flight Date', render: (r) => formatDate(r.departureDate) },
     ...(!financeFields.hidden ? [
@@ -119,9 +136,42 @@ export function BookingsListView({
           return <MoneyAmount totalBRL={m.purchaseBRL} totalBDT={m.purchaseBDT ?? r.purchasePrice} size="sm" />;
         },
       },
-      { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" className={r.customerDue > 0 ? 'text-red-600' : ''} /> },
+      ...(ledgerColumns ? [{
+        key: 'amountPaid',
+        label: 'Received',
+        render: (r) => <MoneyAmount amount={r.amountPaid} size="sm" className={r.amountPaid > 0 ? 'text-green-700 dark:text-green-400' : ''} />,
+      }, {
+        key: 'supplierPaid',
+        label: 'Supplier Paid',
+        render: (r) => <MoneyAmount amount={r.supplierPaid} size="sm" className={(r.supplierPaid ?? 0) > 0 ? 'text-slate-700 dark:text-slate-300' : ''} />,
+      }] : []),
+      { key: 'customerDue', label: 'Due', render: (r) => <MoneyAmount amount={r.customerDue} size="sm" className={r.customerDue > 0 ? 'text-red-600 dark:text-red-400' : ''} /> },
+      ...(ledgerColumns ? [
+        {
+          key: 'supplierPayable',
+          label: 'Supplier Due',
+          render: (r) => {
+            const m = getBookingMoney(r);
+            return <MoneyAmount totalBRL={m.supplierDueBRL} totalBDT={m.supplierDueBDT ?? r.supplierPayable} size="sm" className={(r.supplierPayable ?? 0) > 0 ? 'text-amber-700 dark:text-amber-400' : ''} />;
+          },
+        },
+        {
+          key: 'profit',
+          label: 'Profit',
+          render: (r) => {
+            const m = getBookingMoney(r);
+            const profit = m.profitBDT ?? r.profit ?? 0;
+            return <MoneyAmount totalBRL={m.profitBRL} totalBDT={profit} size="sm" className={profit >= 0 ? 'text-teal-700 dark:text-teal-400' : 'text-red-600 dark:text-red-400'} />;
+          },
+        },
+        {
+          key: 'duePaymentAt',
+          label: 'Pay By',
+          render: (r) => (r.duePaymentAt ? formatDate(r.duePaymentAt) : '—'),
+        },
+      ] : []),
     ] : []),
-    { key: 'passengerCount', label: 'PAX' },
+    ...(!ledgerColumns ? [{ key: 'passengerCount', label: 'PAX' }] : []),
     { key: 'paymentStatus', label: 'Payment', render: (r) => (
       <StatusBadge status={r.paymentStatus === 'paid' ? 'success' : r.paymentStatus === 'partial' ? 'pending' : 'cancelled'} label={PAYMENT_LABELS[r.paymentStatus] || r.paymentStatus} />
     ) },
@@ -182,13 +232,25 @@ export function BookingsListView({
         </div>
         <div className="flex flex-wrap gap-2">
           {productCategory === 'air' && !fixedStatus && (
-            <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
+            <>
+              <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
+              {!refundPendingFilter && (
+                <Link to="/bookings?refundPending=1" className="btn-secondary text-sm">Pending Refunds</Link>
+              )}
+            </>
           )}
           {can('bookings:create') && !hideNewButton && (
             <Link to={newBookingPath} className="btn-primary">New Booking</Link>
           )}
         </div>
       </div>
+
+      {refundPendingFilter && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          Showing bookings with <strong>pending refund requests</strong> awaiting approval.
+          <Link to="/bookings" className="ml-2 font-medium text-brand-600 hover:underline dark:text-brand-400">Clear filter</Link>
+        </div>
+      )}
 
       {summary && !financeFields.hidden && !invoiceFocus && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
@@ -232,7 +294,7 @@ export function BookingsListView({
         <div className="flex flex-wrap gap-3 border-b border-slate-200 p-4">
           <input
             type="search"
-            placeholder="Booking #, PNR, airline..."
+            placeholder="Booking #, PNR, ticket, passenger..."
             className="input-field max-w-[200px]"
             value={filters.search}
             onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1); }}
@@ -257,8 +319,8 @@ export default function BookingsPage() {
   return (
     <BookingsListView
       productCategory="air"
-      title="Booking History"
-      description="Flight bookings — search by PNR, booking number, airline, or customer."
+      title="Booking Ledger"
+      description="Flight bookings — search by PNR, ticket, passenger, booking number, or route."
       newBookingPath="/bookings/new"
     />
   );

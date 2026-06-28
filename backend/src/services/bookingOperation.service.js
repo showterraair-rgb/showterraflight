@@ -135,8 +135,12 @@ function buildLegacyOperations(booking, childBookings = []) {
 }
 
 async function operationExists(bookingId, operationType, extra = {}) {
-  const filter = { booking: bookingId, operationType, ...extra };
+  const filter = { booking: bookingId, operationType, status: 'completed', ...extra };
   return Boolean(await BookingOperation.exists(filter));
+}
+
+async function pendingRefundExists(bookingId) {
+  return Boolean(await BookingOperation.exists({ booking: bookingId, operationType: 'REFUND', status: 'pending' }));
 }
 
 export async function recordBookingOperation(data) {
@@ -301,6 +305,17 @@ export async function recordVoidOperation(booking, reason, userId) {
 
 export async function recordRefundOperation(booking, { penalty, refundAmount, reason }, userId) {
   const rate = booking.bdtRateAtBooking ?? booking.exchangeRateAtBooking ?? 1;
+  const pending = await BookingOperation.findOne({ booking: booking._id, operationType: 'REFUND', status: 'pending' });
+  if (pending) {
+    pending.status = 'completed';
+    pending.penaltyBRL = bdtToBrl(penalty, rate);
+    pending.refundAmountBRL = bdtToBrl(refundAmount, rate);
+    pending.remarks = reason || pending.remarks;
+    pending.financialApplied = true;
+    pending.operationDate = new Date();
+    await pending.save();
+    return formatOperation(pending.toObject());
+  }
   return recordBookingOperation({
     bookingId: booking._id,
     operationType: 'REFUND',
@@ -310,6 +325,24 @@ export async function recordRefundOperation(booking, { penalty, refundAmount, re
     exchangeRateBrlToBdt: rate,
     remarks: reason || `Refund processed`,
     status: 'completed',
+    userId,
+  });
+}
+
+export async function recordRefundRequestOperation(booking, { penalty, reason }, userId) {
+  if (await pendingRefundExists(booking._id)) {
+    throw ApiError.badRequest('A refund request is already pending for this booking');
+  }
+  const rate = booking.bdtRateAtBooking ?? booking.exchangeRateAtBooking ?? 1;
+  return recordBookingOperation({
+    bookingId: booking._id,
+    operationType: 'REFUND',
+    oldTicketNumber: booking.ticketNumber || '',
+    penaltyBRL: bdtToBrl(penalty, rate),
+    exchangeRateBrlToBdt: rate,
+    remarks: reason || 'Refund requested',
+    status: 'pending',
+    financialApplied: false,
     userId,
   });
 }
@@ -335,6 +368,7 @@ export default {
   recordIssueOperation,
   recordVoidOperation,
   recordRefundOperation,
+  recordRefundRequestOperation,
   recordReissueOperation,
   backfillBookingOperations,
 };

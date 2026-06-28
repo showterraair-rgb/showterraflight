@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { authApi } from '../services/auth.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
@@ -33,6 +34,7 @@ function authErrorMessage(err) {
 
 export default function LoginPage() {
   const { login, loginWithOtp, isAuthenticated, loading } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [mode, setMode] = useState('password');
   const [otpStep, setOtpStep] = useState('request');
@@ -103,22 +105,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-950">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="absolute right-4 top-4 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+        aria-label="Toggle theme"
+      >
+        {isDark ? 'Light' : 'Dark'}
+      </button>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">STA</div>
-          <h1 className="text-2xl font-bold text-slate-900">Show Terra Air</h1>
-          <p className="mt-1 text-sm text-slate-500">Staff sign in</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Show Terra Air</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Staff sign in</p>
         </div>
 
-        <div className="mb-4 flex rounded-lg border border-slate-200 bg-white p-1">
-          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'password' ? 'bg-brand-600 text-white' : 'text-slate-600'}`} onClick={() => { setMode('password'); setError(''); setInfo(''); }}>Password</button>
-          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'otp' ? 'bg-brand-600 text-white' : 'text-slate-600'}`} onClick={() => { setMode('otp'); setError(''); setInfo(''); }}>OTP (Email/Phone)</button>
+        <div className="mb-4 flex rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'password' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'}`} onClick={() => { setMode('password'); setError(''); setInfo(''); }}>Password</button>
+          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'otp' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'}`} onClick={() => { setMode('otp'); setError(''); setInfo(''); }}>OTP (Email/Phone)</button>
         </div>
 
         <div className="card space-y-4">
-          {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-          {info && <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">{info}</div>}
+          {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{error}</div>}
+          {info && <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-950/50 dark:text-green-300">{info}</div>}
 
           {mode === 'password' ? (
             <form onSubmit={passwordForm.handleSubmit(onPasswordLogin)} className="space-y-4">
@@ -157,7 +167,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
           Kanaighat, Sylhet — Show Terra Air Management System
         </p>
       </div>

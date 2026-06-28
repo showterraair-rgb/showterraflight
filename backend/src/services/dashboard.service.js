@@ -66,6 +66,7 @@ export async function getDashboardSummary(user) {
     reissuedCount,
     dueCollectionCount,
     dueSupplierCount,
+    pendingRefundRequests,
     bookingAggregates,
     expenseTotal,
     accounts,
@@ -82,6 +83,11 @@ export async function getDashboardSummary(user) {
     Booking.countDocuments({ status: 'reissued' }),
     Booking.countDocuments({ customerDue: { $gt: 0 }, status: ACTIVE_BOOKING_STATUSES }),
     Booking.countDocuments({ supplierPayable: { $gt: 0 }, status: ACTIVE_BOOKING_STATUSES }),
+    Booking.countDocuments({
+      status: { $in: ['ticket_issued', 'delivered', 'completed'] },
+      rrvNote: { $exists: true, $nin: ['', null] },
+      rrvProcessedAt: null,
+    }),
     Booking.aggregate([
       { $match: { status: ACTIVE_BOOKING_STATUSES } },
       {
@@ -128,6 +134,7 @@ export async function getDashboardSummary(user) {
     reissuedCount,
     dueCollectionCount,
     dueSupplierCount,
+    pendingRefundRequests,
     customerDue: agg.customerDue,
     supplierPayable: agg.supplierPayable,
     totalSales: agg.totalSales,
@@ -181,7 +188,7 @@ export async function getRecentActivity() {
 export async function getDashboardAlerts() {
   const todayStart = dayjs().startOf('day').toDate();
 
-  const [dueReminders, paymentAlerts, supplierAlerts, failedNotifications, lastFailedBackup] = await Promise.all([
+  const [dueReminders, paymentAlerts, supplierAlerts, pendingRefunds, failedNotifications, lastFailedBackup] = await Promise.all([
     Reminder.find({ status: 'pending', dueDate: { $lte: dayjs().add(7, 'day').toDate() } })
       .sort({ dueDate: 1 })
       .limit(5)
@@ -197,6 +204,16 @@ export async function getDashboardAlerts() {
       .limit(8)
       .populate('supplier', 'name company phone')
       .select('bookingNumber supplierPayable departureDate route supplierName')
+      .lean(),
+    Booking.find({
+      status: { $in: ['ticket_issued', 'delivered', 'completed'] },
+      rrvNote: { $exists: true, $nin: ['', null] },
+      rrvProcessedAt: null,
+    })
+      .sort({ updatedAt: -1 })
+      .limit(8)
+      .populate('customer', 'name phone')
+      .select('bookingNumber customer rrvNote rrvPenalty amountPaid route updatedAt')
       .lean(),
     NotificationLog.find({ status: 'failed' })
       .sort({ createdAt: -1 })
@@ -222,6 +239,16 @@ export async function getDashboardAlerts() {
       supplierPayable: b.supplierPayable,
       departureDate: b.departureDate,
       route: b.route,
+    })),
+    pendingRefunds: pendingRefunds.map((b) => ({
+      id: b._id.toString(),
+      bookingNumber: b.bookingNumber,
+      customerName: b.customer?.name || '',
+      route: b.route,
+      rrvNote: b.rrvNote,
+      rrvPenalty: b.rrvPenalty || 0,
+      amountPaid: b.amountPaid || 0,
+      updatedAt: b.updatedAt,
     })),
     failedNotifications: failedNotifications.map((n) => ({
       id: n._id.toString(),

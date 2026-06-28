@@ -1,6 +1,6 @@
 # Show Terra Air — Travel ERP Redesign Plan (v2)
 
-> **Status:** Phase 1 applied (sidebar IA + additive schema). Live finance/ticketing logic unchanged.
+> **Status:** Phases 1–6 applied. Phase 7 (RRV field deprecation) deferred.
 
 ## 1. Final Information Architecture
 
@@ -262,12 +262,12 @@ Event → NotificationAutomationRule → NotificationTemplate → Orchestrator
 | booking_confirmed | PARTIAL (approval_approved) | approval flow |
 | payment_received | EXISTS | customerPayment |
 | due_reminder | EXISTS (payment_due_reminder) | manual + cron |
-| upcoming_flight | PARTIAL (booking_travel reminder) | reminder job |
-| reissue_done | NEW | operation complete |
-| void_done | NEW | operation complete |
-| refund_requested | NEW | operation draft |
-| refund_approved | NEW | operation approved |
-| refund_paid | NEW | refund payment |
+| upcoming_flight | DONE | reminder job + travel reminders |
+| reissue_done | DONE | operation complete |
+| void_done | DONE | operation complete |
+| refund_requested | DONE | refund request API |
+| refund_approved | DONE | refund approval |
+| refund_paid | DONE | refund payment |
 
 Phase 2: add templates + rules for NEW events; wire from `BookingOperation` service.
 
@@ -294,12 +294,12 @@ Phase 2:
 | Phase | Scope | Risk |
 |-------|-------|------|
 | **1 ✅** | Sidebar IA refactor; `BookingOperation` model; optional Booking fields (`saleType`, `agent`, `passengerName`) | Low — additive only |
-| **2** | Dashboard KPI expansion; surface CMS/Backup in nav (done in 1); operation timeline read API | Low |
-| **3** | Write path: void/refund/reissue → `BookingOperation` + keep legacy child booking sync | Medium — dual-write |
-| **4** | CMS sections expansion; report keys; notification events | Low |
-| **5** | Dark mode; dense table CSS; tabular-nums global | Low |
-| **6** | Backup restore API; offsite sync | Medium — ops only |
-| **7** | Deprecate RRV fields on Booking when ops fully migrated | High — post validation |
+| **2 ✅** | Dashboard KPI expansion; operation timeline read API; failed notification retry | Low |
+| **3 ✅** | Write path: void/refund/reissue → `BookingOperation` + backfill script | Medium — dual-write |
+| **4 ✅** | CMS sections expansion; report keys; notification events | Low |
+| **5 ✅** | Dark mode; dense table CSS; tabular-nums global | Low |
+| **6 ✅** | Backup restore/download; offsite sync; failure alerts | Medium — ops only |
+| **7** | Deprecate RRV fields on Booking when ops fully migrated | High — post validation (skipped) |
 
 ### Data backfill script (phase 2)
 - For each booking with `bookingType !== standard`, create matching `BookingOperation` from `parentBooking` / `rrv*` fields

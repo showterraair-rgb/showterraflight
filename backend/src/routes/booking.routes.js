@@ -13,6 +13,7 @@ import {
   idParamSchema,
   voidBookingSchema,
   refundBookingSchema,
+  refundRequestSchema,
   reissueBookingSchema,
   scheduleChangeSchema,
   bulkImportExecuteSchema,
@@ -51,6 +52,7 @@ router.get('/:id', authorize('bookings:view'), validate(idParamSchema, 'params')
 router.put('/:id', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingSchema), bookingController.update);
 router.patch('/:id/status', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateBookingStatusSchema), bookingController.updateStatus);
 router.post('/:id/void', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(voidBookingSchema), bookingController.voidBooking);
+router.post('/:id/refund-request', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(refundRequestSchema), bookingController.requestRefundBooking);
 router.post('/:id/refund', authorize('bookings:update', 'payments:customer'), validate(idParamSchema, 'params'), validate(refundBookingSchema), bookingController.refundBooking);
 router.post('/:id/reissue', authorize('bookings:update', 'bookings:create'), validate(idParamSchema, 'params'), validate(reissueBookingSchema), bookingController.reissueBooking);
 router.patch('/:id/approval', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(updateApprovalSchema), bookingController.updateApproval);

@@ -64,6 +64,7 @@ export const bookingsApi = {
   downloadETicketPdf: (id) => api.get(`/bookings/${id}/e-ticket/pdf`, { responseType: 'blob' }),
   void: (id, data) => api.post(`/bookings/${id}/void`, data),
   refund: (id, data) => api.post(`/bookings/${id}/refund`, data),
+  refundRequest: (id, data) => api.post(`/bookings/${id}/refund-request`, data),
   reissue: (id, data) => api.post(`/bookings/${id}/reissue`, data),
   upcoming: (params) => api.get('/bookings/upcoming', { params }),
   extractTicket: (file) => {

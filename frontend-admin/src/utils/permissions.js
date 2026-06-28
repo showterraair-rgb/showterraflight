@@ -30,6 +30,7 @@ export const NAV_GROUPS = [
     children: [
       { label: 'Voids', path: '/bookings/voids', permissions: ['bookings:view'] },
       { label: 'Refunds', path: '/bookings/refunds', permissions: ['bookings:view'] },
+      { label: 'Pending Refunds', path: '/bookings?refundPending=1', permissions: ['bookings:view'] },
       { label: 'Reissues', path: '/bookings/reissues', permissions: ['bookings:view'] },
       { label: 'Invoices', path: '/bookings/invoices', permissions: ['bookings:view'] },
     ],

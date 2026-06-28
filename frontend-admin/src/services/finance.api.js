@@ -40,6 +40,12 @@ export const paymentsApi = {
 
   voidCustomer: (id, data) => api.post(`/payments/customers/${id}/void`, data),
 
+  uploadCustomerReceipt: (id, file) => {
+    const form = new FormData();
+    form.append('receiptFile', file);
+    return api.post(`/payments/customers/${id}/receipt`, form);
+  },
+
   listSupplier: (params) => api.get('/payments/suppliers', { params }),
 
   getSupplier: (id) => api.get(`/payments/suppliers/${id}`),
@@ -47,6 +53,12 @@ export const paymentsApi = {
   createSupplier: (data) => api.post('/payments/suppliers', data),
 
   voidSupplier: (id, data) => api.post(`/payments/suppliers/${id}/void`, data),
+
+  uploadSupplierReceipt: (id, file) => {
+    const form = new FormData();
+    form.append('receiptFile', file);
+    return api.post(`/payments/suppliers/${id}/receipt`, form);
+  },
 
 };
 

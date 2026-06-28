@@ -19,6 +19,8 @@ export function getBookingMoney(row) {
       profitBDT: p.profitBDT ?? 0,
       purchaseBRL: p.purchasePriceBRL ?? 0,
       purchaseBDT: p.purchasePriceBDT ?? 0,
+      supplierDueBRL: p.supplierPayableBRL ?? 0,
+      supplierDueBDT: p.supplierPayableBDT ?? 0,
     };
   }
   return {
@@ -28,5 +30,7 @@ export function getBookingMoney(row) {
     profitBDT: row?.profit ?? 0,
     purchaseBRL: null,
     purchaseBDT: row?.purchasePrice ?? 0,
+    supplierDueBRL: null,
+    supplierDueBDT: row?.supplierPayable ?? 0,
   };
 }

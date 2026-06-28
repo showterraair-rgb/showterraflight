@@ -31,6 +31,7 @@ export function CustomerPaymentsList({
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [receiptFile, setReceiptFile] = useState(null);
 
   const form = useForm({
     defaultValues: {
@@ -100,13 +101,17 @@ export function CustomerPaymentsList({
   const onSubmit = async (values) => {
     setError('');
     try {
-      await paymentsApi.createCustomer({
+      const { data: res } = await paymentsApi.createCustomer({
         ...values,
         amount: Number(values.amount),
         bookingId: values.onAccount ? undefined : (values.bookingId || undefined),
         onAccount: Boolean(values.onAccount),
       });
+      if (receiptFile && res.data?.id) {
+        await paymentsApi.uploadCustomerReceipt(res.data.id, receiptFile);
+      }
       setModalOpen(false);
+      setReceiptFile(null);
       setPrefillBooking(null);
       if (bookingIdParam) setSearchParams({});
       form.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Cash', amount: 0, onAccount: false });
@@ -128,6 +133,16 @@ export function CustomerPaymentsList({
     }
   };
 
+  const handleReceiptUpload = async (row, file) => {
+    if (!file) return;
+    try {
+      await paymentsApi.uploadCustomerReceipt(row.id, file);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Receipt upload failed');
+    }
+  };
+
   const onAccount = form.watch('onAccount');
 
   const columns = [
@@ -137,12 +152,29 @@ export function CustomerPaymentsList({
     { key: 'account', label: 'Received In', render: (r) => r.accountName },
     { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" className="font-medium text-green-700" /> },
     { key: 'date', label: 'Date', render: (r) => formatDate(r.paymentDate) },
+    { key: 'receipt', label: 'Receipt', render: (r) => r.receiptUrl ? (
+      <a href={r.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-600 hover:underline">View</a>
+    ) : '—' },
     { key: 'status', label: 'Status', render: (r) => <span className="capitalize">{r.status}</span> },
     {
       key: 'actions',
       label: '',
       render: (r) => can('payments:customer') ? (
-        <button type="button" onClick={() => handleVoid(r)} className="text-xs text-red-600 hover:underline">Void</button>
+        <div className="flex flex-col items-start gap-1">
+          <label className="cursor-pointer text-xs text-brand-600 hover:underline">
+            {r.receiptUrl ? 'Replace receipt' : 'Upload receipt'}
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*,application/pdf"
+              onChange={(e) => {
+                handleReceiptUpload(r, e.target.files?.[0]);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <button type="button" onClick={() => handleVoid(r)} className="text-xs text-red-600 hover:underline">Void</button>
+        </div>
       ) : null,
     },
   ];
@@ -243,6 +275,11 @@ export function CustomerPaymentsList({
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Notes</label>
               <textarea rows={2} className="input-field" {...form.register('notes')} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium">Receipt (optional)</label>
+              <input type="file" accept="image/*,application/pdf" className="input-field py-1.5" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
+              <p className="mt-1 text-xs text-slate-500">PDF or image, max 8MB</p>
             </div>
           </div>
         </form>

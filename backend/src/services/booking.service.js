@@ -28,6 +28,7 @@ import {
   recordIssueOperation,
   recordVoidOperation,
   recordRefundOperation,
+  recordRefundRequestOperation,
   recordReissueOperation,
 } from './bookingOperation.service.js';
 
@@ -65,6 +66,7 @@ function formatBooking(doc) {
     departureDate: doc.departureDate,
     returnDate: doc.returnDate,
     passengerCount: doc.passengerCount,
+    passengerName: doc.passengerName || doc.passengers?.[0]?.fullName || '',
     passengers: doc.passengers || [],
     flightSegment: doc.flightSegment || null,
     fareBreakdown: doc.fareBreakdown || null,
@@ -102,6 +104,11 @@ function formatBooking(doc) {
     rrvPenalty: doc.rrvPenalty || 0,
     rrvRefundAmount: doc.rrvRefundAmount || 0,
     rrvProcessedAt: doc.rrvProcessedAt,
+    refundRequestPending: Boolean(
+      doc.rrvNote
+      && !doc.rrvProcessedAt
+      && ['ticket_issued', 'delivered', 'completed'].includes(doc.status)
+    ),
     approvalStatus: doc.approvalStatus || 'pending',
     approvalTimeline: doc.approvalTimeline?.map((t) => ({
       status: t.status,
@@ -155,7 +162,7 @@ async function resolveBookingCurrencyFields(data) {
 
 function buildBookingFilter(query) {
   const andParts = [];
-  const searchPart = buildSearchFilter(query.search, ['bookingNumber', 'pnr', 'ticketNumber', 'airline', 'route']);
+  const searchPart = buildSearchFilter(query.search, ['bookingNumber', 'pnr', 'ticketNumber', 'airline', 'route', 'passengerName']);
   if (Object.keys(searchPart).length) andParts.push(searchPart);
 
   const filter = {};
@@ -204,6 +211,12 @@ function buildBookingFilter(query) {
       end.setHours(23, 59, 59, 999);
       filter.departureDate.$lte = end;
     }
+  }
+
+  if (query.refundPending === 'true' || query.refundPending === true) {
+    filter.status = { $in: ['ticket_issued', 'delivered', 'completed'] };
+    filter.rrvNote = { $exists: true, $nin: ['', null] };
+    filter.rrvProcessedAt = null;
   }
 
   if (andParts.length) {
@@ -787,6 +800,46 @@ export async function voidBooking(id, { reason, voidPayments = false } = {}, use
   return getBookingById(id);
 }
 
+export async function requestRefundBooking(id, data, userId, req) {
+  const booking = await Booking.findById(id);
+  if (!booking) throw ApiError.notFound('Booking not found');
+  if (TERMINAL_STATUSES.includes(booking.status)) {
+    throw ApiError.badRequest('Booking is already closed or processed');
+  }
+  if (!['ticket_issued', 'delivered', 'completed'].includes(booking.status)) {
+    throw ApiError.badRequest('Refund request requires ticket to be issued');
+  }
+  if (booking.rrvNote && !booking.rrvProcessedAt) {
+    throw ApiError.badRequest('A refund request is already pending approval');
+  }
+
+  const penalty = Math.max(0, Number(data.penalty) || 0);
+  const paid = booking.amountPaid || 0;
+  const proposedRefund = Math.max(0, paid - penalty);
+
+  booking.rrvNote = data.reason || 'Refund requested';
+  booking.rrvPenalty = penalty;
+  pushTimeline(booking, 'refund_requested', booking.rrvNote, userId);
+  await booking.save();
+
+  await recordRefundRequestOperation(booking, { penalty, reason: data.reason }, userId);
+  await fireBookingNotification('refund_requested', booking, null, {
+    vars: { penalty, refundAmount: proposedRefund, reason: data.reason || '' },
+  });
+
+  await logAudit({
+    action: 'update',
+    module: 'bookings',
+    entityType: 'Booking',
+    entityId: booking._id,
+    description: `Refund requested for ${booking.bookingNumber}`,
+    userId,
+    req,
+  });
+
+  return getBookingById(id);
+}
+
 export async function refundBooking(id, data, userId, req) {
   const booking = await Booking.findById(id);
   if (!booking) throw ApiError.notFound('Booking not found');
@@ -804,6 +857,14 @@ export async function refundBooking(id, data, userId, req) {
     ? Math.min(Math.max(0, Number(data.refundAmount)), maxRefund)
     : maxRefund;
 
+  const hadPendingRequest = Boolean(booking.rrvNote && !booking.rrvProcessedAt);
+
+  if (hadPendingRequest) {
+    await fireBookingNotification('refund_approved', booking, null, {
+      vars: { penalty, refundAmount, reason: data.reason || booking.rrvNote || '' },
+    });
+  }
+
   if (refundAmount > 0.01) {
     if (!data.accountId) throw ApiError.badRequest('Payment account is required for refund payout');
     const { paymentMethod } = await resolveAccountPaymentMethod(data.accountId);
@@ -820,7 +881,7 @@ export async function refundBooking(id, data, userId, req) {
 
   booking.bookingType = 'refund';
   booking.status = 'refunded';
-  booking.rrvNote = data.reason || '';
+  booking.rrvNote = data.reason || booking.rrvNote || '';
   booking.rrvPenalty = penalty;
   booking.rrvRefundAmount = refundAmount;
   booking.rrvProcessedAt = new Date();
@@ -1218,6 +1279,7 @@ export default {
   updateBooking,
   updateBookingStatus,
   voidBooking,
+  requestRefundBooking,
   refundBooking,
   reissueBooking,
   updateBookingApproval,

@@ -124,6 +124,16 @@ export default function BookingDetailPage() {
 
   return (
     <div className="space-y-6">
+      {booking.refundRequestPending && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          <strong>Refund request pending.</strong> {booking.rrvNote}
+          {booking.rrvPenalty > 0 && <> — penalty ৳{Number(booking.rrvPenalty).toLocaleString()}</>}
+          {can('bookings:update') && (
+            <span className="ml-2 text-amber-800 dark:text-amber-300">Use the Refund panel below to approve and pay.</span>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link to="/bookings" className="text-sm text-brand-600 hover:underline">← Back to Bookings</Link>
@@ -348,9 +358,14 @@ export default function BookingDetailPage() {
             {customerPayments.length ? (
               <ul className="space-y-2">
                 {customerPayments.map((p) => (
-                  <li key={p.id} className="flex justify-between rounded-lg bg-green-50 px-3 py-2 text-sm">
-                    <span>{p.paymentNumber} — {formatDate(p.paymentDate)}</span>
-                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-green-700" />
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm dark:bg-green-950/30">
+                    <span>
+                      {p.paymentNumber} — {formatDate(p.paymentDate)}
+                      {p.receiptUrl && (
+                        <a href={p.receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-brand-600 hover:underline">Receipt</a>
+                      )}
+                    </span>
+                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-green-700 dark:text-green-400" />
                   </li>
                 ))}
               </ul>
@@ -363,9 +378,14 @@ export default function BookingDetailPage() {
             {supplierPayments.length ? (
               <ul className="space-y-2">
                 {supplierPayments.map((p) => (
-                  <li key={p.id} className="flex justify-between rounded-lg bg-red-50 px-3 py-2 text-sm">
-                    <span>{p.paymentNumber} — {formatDate(p.paymentDate)}</span>
-                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-red-600" />
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm dark:bg-red-950/30">
+                    <span>
+                      {p.paymentNumber} — {formatDate(p.paymentDate)}
+                      {p.receiptUrl && (
+                        <a href={p.receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-brand-600 hover:underline">Receipt</a>
+                      )}
+                    </span>
+                    <MoneyAmount amount={p.amount} size="sm" className="font-medium text-red-600 dark:text-red-400" />
                   </li>
                 ))}
               </ul>

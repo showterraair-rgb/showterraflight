@@ -9,6 +9,7 @@ import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
 import { parsePaginationQuery, buildPaginationResponse } from '../utils/pagination.js';
 import { logAudit } from './audit.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -201,6 +202,16 @@ export async function runBackup({ backupType = 'scheduled', userId = null, req =
     log.errorMessage = err.message;
     log.completedAt = new Date();
     await log.save();
+
+    triggerNotificationEventSafe('backup_failed', {
+      vars: {
+        fileName: log.fileName,
+        errorMessage: err.message,
+        backupType,
+        failedAt: log.completedAt.toISOString(),
+      },
+    });
+
     throw ApiError.internal(`Backup failed: ${err.message}`);
   }
 }

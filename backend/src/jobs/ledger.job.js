@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import {
   sendDailyLedgerNotifyToAdmin,
+  syncBackupFailureNotificationDefaults,
   syncDailyLedgerNotificationDefaults,
   syncManualBookingNotificationDefaults,
   syncRrvNotificationDefaults,
@@ -22,6 +23,10 @@ export function startLedgerJob() {
 
   syncRrvNotificationDefaults().catch((err) => {
     console.warn('[CRON] RRV notification defaults sync failed:', err.message);
+  });
+
+  syncBackupFailureNotificationDefaults().catch((err) => {
+    console.warn('[CRON] Backup failure notification defaults sync failed:', err.message);
   });
 
   // Daily 11:00 PM Asia/Dhaka — admin SMS + WhatsApp summary

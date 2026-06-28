@@ -54,6 +54,11 @@ export const refundBooking = asyncHandler(async (req, res) => {
   res.json({ success: true, data, message: 'Booking refunded' });
 });
 
+export const requestRefundBooking = asyncHandler(async (req, res) => {
+  const data = await bookingService.requestRefundBooking(req.params.id, req.body, req.user.id, req);
+  res.json({ success: true, data, message: 'Refund request submitted' });
+});
+
 export const reissueBooking = asyncHandler(async (req, res) => {
   const data = await bookingService.reissueBooking(req.params.id, req.body, req.user.id, req);
   res.json({ success: true, data, message: 'Booking reissued' });
@@ -190,6 +195,7 @@ export default {
   update,
   updateStatus,
   voidBooking,
+  requestRefundBooking,
   refundBooking,
   reissueBooking,
   updateApproval,

@@ -61,7 +61,7 @@ export async function syncManualBookingNotificationDefaults() {
 }
 
 export async function syncRrvNotificationDefaults() {
-  const eventTypes = ['void_done', 'reissue_done', 'refund_paid', 'upcoming_flight'];
+  const eventTypes = ['void_done', 'reissue_done', 'refund_paid', 'refund_requested', 'refund_approved', 'upcoming_flight'];
   for (const eventType of eventTypes) {
     const tpl = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === eventType);
     const rule = DEFAULT_AUTOMATION_RULES.find((r) => r.eventType === eventType);
@@ -108,6 +108,33 @@ export async function syncDailyLedgerNotificationDefaults() {
   if (tpl) {
     await NotificationTemplate.findOneAndUpdate(
       { templateKey: 'daily_ledger_summary' },
+      {
+        templateKey: tpl.templateKey,
+        name: tpl.name,
+        smsBody: tpl.smsBody,
+        whatsappBody: tpl.whatsappBody || tpl.smsBody,
+        emailSubject: tpl.emailSubject,
+        emailBody: tpl.emailBody,
+        isActive: true,
+      },
+      { upsert: true }
+    );
+  }
+}
+
+export async function syncBackupFailureNotificationDefaults() {
+  const tpl = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === 'backup_failed');
+  const rule = DEFAULT_AUTOMATION_RULES.find((r) => r.eventType === 'backup_failed');
+  if (rule) {
+    await NotificationAutomationRule.findOneAndUpdate(
+      { eventType: 'backup_failed' },
+      { eventType: 'backup_failed', ...rule },
+      { upsert: true }
+    );
+  }
+  if (tpl) {
+    await NotificationTemplate.findOneAndUpdate(
+      { templateKey: 'backup_failed' },
       {
         templateKey: tpl.templateKey,
         name: tpl.name,
@@ -224,4 +251,5 @@ export default {
   sendDailyLedgerNotifyToAdmin,
   sendDailyLedgerSmsToAdmin,
   syncDailyLedgerNotificationDefaults,
+  syncBackupFailureNotificationDefaults,
 };

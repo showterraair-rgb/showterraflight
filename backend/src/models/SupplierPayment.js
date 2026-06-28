@@ -21,6 +21,8 @@ const supplierPaymentSchema = new mongoose.Schema(
     paymentMethod: { type: String, trim: true },
     referenceNumber: { type: String, trim: true },
     notes: { type: String, default: '' },
+    receiptFilePath: { type: String, trim: true, default: '' },
+    receiptFileName: { type: String, trim: true, default: '' },
     status: {
       type: String,
       enum: PAYMENT_STATUSES,

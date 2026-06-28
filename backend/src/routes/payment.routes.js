@@ -19,6 +19,7 @@ import {
   idParamSchema,
 
 } from '../validators/payment.validator.js';
+import { paymentReceiptUpload } from '../middlewares/upload.js';
 
 import {
   listPaymentRequestQuerySchema,
@@ -67,6 +68,8 @@ router.get('/customers/:id', authorize('payments:customer'), validate(idParamSch
 
 router.post('/customers/:id/void', authorize('payments:customer'), validate(idParamSchema, 'params'), validate(voidReasonSchema), paymentController.voidCustomerPayment);
 
+router.post('/customers/:id/receipt', authorize('payments:customer'), validate(idParamSchema, 'params'), paymentReceiptUpload.single('receiptFile'), paymentController.uploadCustomerPaymentReceipt);
+
 
 
 router.get('/suppliers', authorize('payments:supplier'), validate(listQuerySchema, 'query'), paymentController.listSupplierPayments);
@@ -76,6 +79,8 @@ router.post('/suppliers', authorize('payments:supplier'), validate(createSupplie
 router.get('/suppliers/:id', authorize('payments:supplier'), validate(idParamSchema, 'params'), paymentController.getSupplierPayment);
 
 router.post('/suppliers/:id/void', authorize('payments:supplier'), validate(idParamSchema, 'params'), validate(voidReasonSchema), paymentController.voidSupplierPayment);
+
+router.post('/suppliers/:id/receipt', authorize('payments:supplier'), validate(idParamSchema, 'params'), paymentReceiptUpload.single('receiptFile'), paymentController.uploadSupplierPaymentReceipt);
 
 
 

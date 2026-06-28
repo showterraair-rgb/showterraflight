@@ -63,6 +63,9 @@ export const bookingTicketUpload = createUpload('tickets', 10, ['image/', 'appli
 /** Expense bill receipts — PDF/images up to 8MB */
 export const expenseBillUpload = createUpload('expense-bills', 8, ['image/', 'application/pdf']);
 
+/** Payment receipts — PDF/images up to 8MB */
+export const paymentReceiptUpload = createUpload('payment-receipts', 8, ['image/', 'application/pdf']);
+
 /** Staff HR documents — PDF/images up to 8MB */
 export const staffDocumentUpload = createUpload('staff-docs', 8, ['image/', 'application/pdf']);
 

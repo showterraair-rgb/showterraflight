@@ -56,6 +56,12 @@ function formatPayment(doc) {
 
     notes: doc.notes || '',
 
+    receiptFilePath: doc.receiptFilePath || '',
+
+    receiptFileName: doc.receiptFileName || '',
+
+    receiptUrl: doc.receiptFilePath ? `/uploads/${String(doc.receiptFilePath).replace(/^uploads\//, '')}` : '',
+
     status: doc.status,
 
     createdAt: doc.createdAt,
@@ -421,6 +427,50 @@ export async function voidSupplierPayment(id, { reason } = {}, userId, req) {
 
 
 
-export default { listSupplierPayments, getSupplierPaymentById, createSupplierPayment, voidSupplierPayment };
+export async function uploadSupplierPaymentReceipt(id, file, userId, req) {
+
+  const payment = await SupplierPayment.findOne({ _id: id, isVoided: false });
+
+  if (!payment) throw ApiError.notFound('Payment not found');
+
+  if (!file) throw ApiError.badRequest('No receipt file uploaded');
+
+
+
+  payment.receiptFilePath = `payment-receipts/${file.filename}`;
+
+  payment.receiptFileName = file.originalname;
+
+  await payment.save();
+
+
+
+  await logAudit({
+
+    action: 'update',
+
+    module: 'payments',
+
+    entityType: 'SupplierPayment',
+
+    entityId: payment._id,
+
+    description: `Receipt uploaded for payment ${payment.paymentNumber}`,
+
+    userId,
+
+    req,
+
+  });
+
+
+
+  return getSupplierPaymentById(id);
+
+}
+
+
+
+export default { listSupplierPayments, getSupplierPaymentById, createSupplierPayment, voidSupplierPayment, uploadSupplierPaymentReceipt };
 
 

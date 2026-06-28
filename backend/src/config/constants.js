@@ -128,8 +128,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   'void_done',
   'reissue_done',
   'refund_paid',
+  'refund_requested',
+  'refund_approved',
   'upcoming_flight',
   'daily_ledger_summary',
+  'backup_failed',
 ];
 
 export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'delivered', 'read', 'failed'];
@@ -156,8 +159,11 @@ export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   void_done: ['customerName', 'bookingNumber', 'route', 'companyName'],
   reissue_done: ['customerName', 'bookingNumber', 'newBookingNumber', 'route', 'companyName'],
   refund_paid: ['customerName', 'bookingNumber', 'refundAmount', 'penalty', 'companyName'],
+  refund_requested: ['customerName', 'bookingNumber', 'refundAmount', 'penalty', 'reason', 'companyName'],
+  refund_approved: ['customerName', 'bookingNumber', 'refundAmount', 'penalty', 'companyName'],
   upcoming_flight: ['customerName', 'bookingNumber', 'route', 'departureDate', 'pnr', 'companyName'],
   daily_ledger_summary: ['reportDate', 'totalBalance', 'bankBalance', 'cashBalance', 'mfsBalance', 'todayOrders', 'todayBookings', 'totalBookings', 'customerDue', 'supplierPayable', 'overdueDue', 'shortSummary'],
+  backup_failed: ['fileName', 'errorMessage', 'backupType', 'failedAt', 'companyName'],
 };
 
 export const DEFAULT_NOTIFICATION_TEMPLATES = [
@@ -302,12 +308,36 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     emailBody: 'Hello {{customerName}},\n\nA refund of ৳{{refundAmount}} for booking {{bookingNumber}} has been processed.\nPenalty deducted: ৳{{penalty}}\n\n— Show Terra Flight',
   },
   {
+    templateKey: 'refund_requested',
+    name: 'Refund requested',
+    smsBody: 'Hello {{customerName}}, we received your refund request for booking {{bookingNumber}}. Estimated refund: ৳{{refundAmount}} (penalty ৳{{penalty}}). — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nWe received your refund request for booking {{bookingNumber}}.\nEstimated refund: ৳{{refundAmount}}\nPenalty: ৳{{penalty}}\n\n— Show Terra Flight',
+    emailSubject: 'Refund request received — {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nWe have received your refund request for booking {{bookingNumber}}.\n\nEstimated refund: ৳{{refundAmount}}\nPenalty: ৳{{penalty}}\n\nWe will notify you when it is approved and paid.\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'refund_approved',
+    name: 'Refund approved',
+    smsBody: 'Hello {{customerName}}, your refund of ৳{{refundAmount}} for booking {{bookingNumber}} has been approved. Payment will follow shortly. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nYour refund of ৳{{refundAmount}} for booking {{bookingNumber}} has been approved.\nPenalty: ৳{{penalty}}\n\n— Show Terra Flight',
+    emailSubject: 'Refund approved — {{bookingNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nYour refund request for booking {{bookingNumber}} has been approved.\n\nRefund amount: ৳{{refundAmount}}\nPenalty: ৳{{penalty}}\n\n— Show Terra Flight',
+  },
+  {
     templateKey: 'upcoming_flight',
     name: 'Upcoming flight reminder',
     smsBody: 'Hello {{customerName}}, reminder: your flight {{bookingNumber}} ({{route}}) departs {{departureDate}}. PNR: {{pnr}}. — Show Terra Flight',
     whatsappBody: 'Hello {{customerName}},\n\nYour flight is coming up.\nBooking: {{bookingNumber}}\nRoute: {{route}}\nDeparture: {{departureDate}}\nPNR: {{pnr}}\n\n— Show Terra Flight',
     emailSubject: 'Upcoming flight — {{bookingNumber}}',
     emailBody: 'Hello {{customerName}},\n\nThis is a reminder that your flight is approaching.\n\nBooking: {{bookingNumber}}\nRoute: {{route}}\nDeparture: {{departureDate}}\nPNR: {{pnr}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'backup_failed',
+    name: 'Admin alert — backup failed',
+    smsBody: 'ALERT: MongoDB backup failed ({{backupType}}). File: {{fileName}}. Error: {{errorMessage}}',
+    whatsappBody: 'Backup failed\nType: {{backupType}}\nFile: {{fileName}}\nError: {{errorMessage}}\nTime: {{failedAt}}',
+    emailSubject: 'Backup failed — {{fileName}}',
+    emailBody: 'The scheduled or manual MongoDB backup failed.\n\nType: {{backupType}}\nFile: {{fileName}}\nFailed at: {{failedAt}}\nError: {{errorMessage}}\n\nCheck Backup & Logs in the admin panel.',
   },
 ];
 
@@ -330,8 +360,11 @@ export const DEFAULT_AUTOMATION_RULES = [
   { eventType: 'void_done', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'reissue_done', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'refund_paid', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'refund_requested', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'refund_approved', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'upcoming_flight', notifyCustomer: true, notifyAdmin: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'daily_ledger_summary', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: false, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'backup_failed', notifyCustomer: false, notifyAdmin: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
 ];
 
 export const TRANSACTION_TYPES = [

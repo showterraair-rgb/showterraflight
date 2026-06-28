@@ -62,6 +62,12 @@ function formatPayment(doc) {
 
     notes: doc.notes || '',
 
+    receiptFilePath: doc.receiptFilePath || '',
+
+    receiptFileName: doc.receiptFileName || '',
+
+    receiptUrl: doc.receiptFilePath ? `/uploads/${String(doc.receiptFilePath).replace(/^uploads\//, '')}` : '',
+
     status: doc.status,
 
     isRefund: Boolean(doc.isRefund),
@@ -566,6 +572,50 @@ export async function voidCustomerPayment(id, { reason } = {}, userId, req) {
 
 
 
-export default { listCustomerPayments, getCustomerPaymentById, createCustomerPayment, createCustomerRefund, voidCustomerPayment };
+export async function uploadCustomerPaymentReceipt(id, file, userId, req) {
+
+  const payment = await CustomerPayment.findOne({ _id: id, isVoided: false });
+
+  if (!payment) throw ApiError.notFound('Payment not found');
+
+  if (!file) throw ApiError.badRequest('No receipt file uploaded');
+
+
+
+  payment.receiptFilePath = `payment-receipts/${file.filename}`;
+
+  payment.receiptFileName = file.originalname;
+
+  await payment.save();
+
+
+
+  await logAudit({
+
+    action: 'update',
+
+    module: 'payments',
+
+    entityType: 'CustomerPayment',
+
+    entityId: payment._id,
+
+    description: `Receipt uploaded for payment ${payment.paymentNumber}`,
+
+    userId,
+
+    req,
+
+  });
+
+
+
+  return getCustomerPaymentById(id);
+
+}
+
+
+
+export default { listCustomerPayments, getCustomerPaymentById, createCustomerPayment, createCustomerRefund, voidCustomerPayment, uploadCustomerPaymentReceipt };
 
 

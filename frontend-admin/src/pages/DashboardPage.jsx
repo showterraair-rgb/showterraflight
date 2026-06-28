@@ -67,10 +67,16 @@ export default function DashboardPage() {
         <StatCard label="Active Bookings" value={s.totalActiveBookings ?? 0} accent="slate" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard label="Voided" value={s.voidedCount ?? 0} accent="red" />
         <StatCard label="Refunded" value={s.refundedCount ?? 0} accent="amber" />
         <StatCard label="Reissued" value={s.reissuedCount ?? 0} accent="blue" />
+        <StatCard
+          label="Pending Refunds"
+          value={s.pendingRefundRequests ?? 0}
+          accent={s.pendingRefundRequests > 0 ? 'amber' : 'slate'}
+          subtext="Awaiting approval"
+        />
         <StatCard label="Due Collections" value={s.dueCollectionCount ?? 0} accent="red" subtext="Bookings with customer due" />
         <StatCard label="Supplier Due" value={s.dueSupplierCount ?? 0} accent="amber" subtext="Bookings with payable" />
       </div>
@@ -191,6 +197,32 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {alerts?.pendingRefunds?.length > 0 && (
+          <div className="card lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-900">Pending Refund Requests</h3>
+              {can('bookings:view') && (
+                <Link to="/bookings?refundPending=1" className="text-xs font-semibold text-brand-600 hover:underline">View all</Link>
+              )}
+            </div>
+            <div className="space-y-2">
+              {alerts.pendingRefunds.map((b) => (
+                <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div>
+                    <Link to={`/bookings/${b.id}`} className="text-sm font-medium text-amber-900 hover:underline">{b.bookingNumber}</Link>
+                    <p className="text-xs text-amber-800">{b.customerName} · {b.route || '—'}</p>
+                    {b.rrvNote && <p className="mt-1 text-xs text-amber-700">{b.rrvNote}</p>}
+                  </div>
+                  <div className="text-right text-xs text-amber-900">
+                    <p>Paid ৳ {Number(b.amountPaid || 0).toLocaleString()}</p>
+                    {b.rrvPenalty > 0 && <p className="opacity-80">Penalty ৳ {Number(b.rrvPenalty).toLocaleString()}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="card">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-900">Supplier Payable Alerts</h3>
