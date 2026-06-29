@@ -3,6 +3,24 @@ import { DEFAULT_CURRENCIES } from '../config/currencies.js';
 const SYMBOLS = { BDT: '৳', BRL: 'R$' };
 const DEFAULT_BRL_RATE = DEFAULT_CURRENCIES.BRL.rateToBase;
 
+/** Normalize a BDT-per-BRL rate from form input or currency settings. */
+export function resolveBdtRate(bdtRate, rates) {
+  if (bdtRate != null && typeof bdtRate === 'object') {
+    const fromObject = Number(bdtRate.rateToBase);
+    if (Number.isFinite(fromObject) && fromObject > 0) return fromObject;
+  }
+  const direct = Number(bdtRate);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  const brl = rates?.BRL;
+  if (brl != null && typeof brl === 'object') {
+    const fromSettings = Number(brl.rateToBase);
+    if (Number.isFinite(fromSettings) && fromSettings > 0) return fromSettings;
+  }
+  const fromMap = Number(rates?.BRL);
+  if (Number.isFinite(fromMap) && fromMap > 0) return fromMap;
+  return DEFAULT_BRL_RATE;
+}
+
 export function normalizeRates(rates = DEFAULT_CURRENCIES) {
   const map = {};
   for (const code of ['BDT', 'BRL']) {
@@ -189,8 +207,8 @@ export function normalizeLegacyBookingPricing(doc, defaultRate = DEFAULT_BRL_RAT
 }
 
 /** Build BRL form inputs into booking currency snapshot fields */
-export function buildBookingCurrencySnapshot({ purchasePriceBRL, salePriceBRL, directCostsBRL, bdtRate }) {
-  const rate = Number(bdtRate) || DEFAULT_BRL_RATE;
+export function buildBookingCurrencySnapshot({ purchasePriceBRL, salePriceBRL, directCostsBRL, bdtRate, rates }) {
+  const rate = resolveBdtRate(bdtRate, rates);
   const purchaseBRL = Number(purchasePriceBRL) || 0;
   const saleBRL = Number(salePriceBRL) || 0;
   const costsBRL = Number(directCostsBRL) || 0;
@@ -203,6 +221,9 @@ export function buildBookingCurrencySnapshot({ purchasePriceBRL, salePriceBRL, d
     originalPurchasePrice: purchaseBRL,
     originalSalePrice: saleBRL,
     originalDirectCosts: costsBRL,
+    purchasePriceBRL: purchaseBRL,
+    salePriceBRL: saleBRL,
+    directCostsBRL: costsBRL,
     purchasePrice: purchaseBDT,
     salePrice: saleBDT,
     directCosts: costsBDT,
@@ -221,6 +242,7 @@ export default {
   normalizeBookingToPricing,
   normalizeLegacyBookingPricing,
   buildBookingCurrencySnapshot,
+  resolveBdtRate,
   bdtToBrl,
   brlToBdt,
 };

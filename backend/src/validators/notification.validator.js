@@ -91,6 +91,8 @@ export const updateTemplateSchema = z.object({
 export const updateAutomationSchema = z.object({
   notifyCustomer: z.boolean().optional(),
   notifyAdmin: z.boolean().optional(),
+  notifySupplier: z.boolean().optional(),
+  notifyAgent: z.boolean().optional(),
   smsEnabled: z.boolean().optional(),
   emailEnabled: z.boolean().optional(),
   whatsappEnabled: z.boolean().optional(),

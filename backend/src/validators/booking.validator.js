@@ -170,6 +170,14 @@ function validateInitialPayments(schema) {
         path: ['supplierPaymentAccountId'],
       });
     }
+    const customerDueBRL = Math.max(0, saleBRL - customerPaidBRL);
+    if (customerDueBRL > 0.001 && !data.duePaymentAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Due payment date is required when customer owes a balance',
+        path: ['duePaymentAt'],
+      });
+    }
   });
 }
 

@@ -28,6 +28,8 @@ function formatRule(doc) {
     eventType: doc.eventType,
     notifyCustomer: Boolean(doc.notifyCustomer),
     notifyAdmin: Boolean(doc.notifyAdmin),
+    notifySupplier: Boolean(doc.notifySupplier),
+    notifyAgent: Boolean(doc.notifyAgent),
     smsEnabled: Boolean(doc.smsEnabled),
     emailEnabled: Boolean(doc.emailEnabled),
     whatsappEnabled: Boolean(doc.whatsappEnabled),
@@ -98,6 +100,8 @@ export async function updateAutomationRule(eventType, data, userId, req) {
       $set: {
         notifyCustomer: data.notifyCustomer ?? false,
         notifyAdmin: data.notifyAdmin ?? false,
+        notifySupplier: data.notifySupplier ?? false,
+        notifyAgent: data.notifyAgent ?? false,
         smsEnabled: data.smsEnabled ?? true,
         emailEnabled: data.emailEnabled ?? true,
         whatsappEnabled: data.whatsappEnabled ?? false,

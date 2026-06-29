@@ -67,7 +67,20 @@ function parseRoute(route) {
   if (match) {
     return { fromDestination: match[1].trim(), toDestination: match[2].trim() };
   }
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  if (tokens.length >= 2) {
+    return { fromDestination: tokens[0], toDestination: tokens[tokens.length - 1] };
+  }
   return { fromDestination: trimmed, toDestination: trimmed };
+}
+
+function formatApiError(err, fallback) {
+  const data = err.response?.data;
+  const message = data?.message || fallback;
+  const details = Array.isArray(data?.errors)
+    ? data.errors.map((e) => e.message || e.field).filter(Boolean).join('; ')
+    : '';
+  return details ? `${message}: ${details}` : message;
 }
 
 function fmt(n) {
@@ -335,7 +348,7 @@ export default function BookingFormPage() {
         navigate(`/bookings/${bookingId}`);
       }
     } catch (err) {
-      setError(err.response?.data?.message || (isEdit ? 'Failed to update booking' : 'Failed to create booking'));
+      setError(formatApiError(err, isEdit ? 'Failed to update booking' : 'Failed to create booking'));
     }
   };
 

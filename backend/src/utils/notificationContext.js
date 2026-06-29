@@ -69,3 +69,19 @@ export function buildPaymentNotificationContext(payment, customer, booking, extr
     },
   };
 }
+
+export function attachSupplierToContext(ctx, supplier, booking = {}) {
+  if (!supplier) return ctx;
+  return {
+    ...ctx,
+    supplierId: supplier._id?.toString?.() || supplier.id,
+    supplierPhone: supplier.phone || '',
+    supplierWhatsapp: supplier.whatsapp || supplier.phone || '',
+    supplierEmail: supplier.email || '',
+    vars: {
+      ...ctx.vars,
+      supplierName: supplier.company || supplier.name || '',
+      payableAmount: booking.supplierPayable ?? ctx.vars?.payableAmount ?? 0,
+    },
+  };
+}

@@ -342,7 +342,9 @@ export async function triggerNotificationEventWithChannels(
 ) {
   try {
     const rule = await resolveRule(eventType);
-    if (useAutomationRule && !rule?.isEnabled) return { skipped: true, reason: 'rule disabled' };
+    if (useAutomationRule && rule?.isEnabled === false) {
+      return { skipped: true, reason: 'rule disabled' };
+    }
 
     const template = await resolveTemplate(eventType);
     if (useAutomationRule && template?.isActive === false) {
@@ -353,21 +355,27 @@ export async function triggerNotificationEventWithChannels(
     const vars = { ...companyVars, ...(context.vars || {}) };
     const admin = await getAdminContact();
     const channelSet = new Set(channels || ['sms', 'email', 'whatsapp']);
-    const isSupplier = context.recipientType === 'supplier';
+    const recipientType = context.recipientType || 'customer';
     const recipients = [];
 
-    if (!isSupplier) {
-      if ((!useAutomationRule || rule?.notifyCustomer) && context.customerPhone && channelSet.has('sms')) {
+    const notifyCustomer = !useAutomationRule || Boolean(rule?.notifyCustomer);
+    const notifySupplier = !useAutomationRule || Boolean(rule?.notifySupplier);
+    const notifyAgent = !useAutomationRule || Boolean(rule?.notifyAgent);
+
+    if (recipientType === 'customer' && notifyCustomer) {
+      if (context.customerPhone && channelSet.has('sms')) {
         recipients.push({ channel: 'sms', to: context.customerPhone, audience: 'customer' });
       }
       const customerWhatsapp = context.customerWhatsapp || context.customerPhone;
-      if ((!useAutomationRule || rule?.notifyCustomer) && customerWhatsapp && channelSet.has('whatsapp')) {
+      if (customerWhatsapp && channelSet.has('whatsapp')) {
         recipients.push({ channel: 'whatsapp', to: customerWhatsapp, audience: 'customer' });
       }
-      if ((!useAutomationRule || rule?.notifyCustomer) && context.customerEmail && channelSet.has('email')) {
+      if (context.customerEmail && channelSet.has('email')) {
         recipients.push({ channel: 'email', to: context.customerEmail, audience: 'customer' });
       }
-    } else {
+    }
+
+    if ((recipientType === 'supplier' || notifySupplier) && recipientType !== 'agent') {
       if (context.supplierPhone && channelSet.has('sms')) {
         recipients.push({ channel: 'sms', to: context.supplierPhone, audience: 'supplier' });
       }
@@ -377,6 +385,19 @@ export async function triggerNotificationEventWithChannels(
       }
       if (context.supplierEmail && channelSet.has('email')) {
         recipients.push({ channel: 'email', to: context.supplierEmail, audience: 'supplier' });
+      }
+    }
+
+    if (recipientType === 'agent' || notifyAgent) {
+      if (context.agentPhone && channelSet.has('sms')) {
+        recipients.push({ channel: 'sms', to: context.agentPhone, audience: 'agent' });
+      }
+      const agentWhatsapp = context.agentWhatsapp || context.agentPhone;
+      if (agentWhatsapp && channelSet.has('whatsapp')) {
+        recipients.push({ channel: 'whatsapp', to: agentWhatsapp, audience: 'agent' });
+      }
+      if (context.agentEmail && channelSet.has('email')) {
+        recipients.push({ channel: 'email', to: context.agentEmail, audience: 'agent' });
       }
     }
 

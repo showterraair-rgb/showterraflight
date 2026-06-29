@@ -17,6 +17,7 @@ import {
 } from '../utils/pagination.js';
 
 import { withTransaction, postDebit, postCredit, derivePaymentStatus } from './ledger.service.js';
+import { sessionOptions, withSession } from '../utils/mongoSession.js';
 
 import { generateSupplierPaymentNumber } from './numberGenerator.service.js';
 
@@ -168,7 +169,7 @@ export async function createSupplierPayment(data, userId, req) {
 
   return withTransaction(async (session) => {
 
-    const supplier = await Supplier.findById(data.supplierId).session(session);
+    const supplier = await withSession(Supplier.findById(data.supplierId), session);
 
     if (!supplier) throw ApiError.notFound('Supplier not found');
 
@@ -178,7 +179,7 @@ export async function createSupplierPayment(data, userId, req) {
 
     if (data.bookingId) {
 
-      booking = await Booking.findById(data.bookingId).session(session);
+      booking = await withSession(Booking.findById(data.bookingId), session);
 
       if (!booking) throw ApiError.notFound('Booking not found');
 
@@ -191,10 +192,11 @@ export async function createSupplierPayment(data, userId, req) {
 
 
       if (!data.onAccount) {
-        const paidAgg = await SupplierPayment.aggregate([
+        const agg = SupplierPayment.aggregate([
           { $match: { booking: booking._id, isVoided: false } },
           { $group: { _id: null, total: { $sum: '$amount' } } },
-        ]).session(session);
+        ]);
+        const paidAgg = await (session ? agg.session(session) : agg);
         const paidSoFar = paidAgg[0]?.total || 0;
         const purchaseTotal = (booking.purchasePrice || 0) + (booking.directCosts || 0);
         const payable = Math.max(0, purchaseTotal - paidSoFar);
@@ -253,7 +255,7 @@ export async function createSupplierPayment(data, userId, req) {
 
       }],
 
-      { session }
+      sessionOptions(session)
 
     );
 
@@ -293,7 +295,7 @@ export async function createSupplierPayment(data, userId, req) {
 
         booking.supplier = data.supplierId;
 
-        await booking.save({ session });
+        await booking.save(sessionOptions(session));
 
       }
 
@@ -351,7 +353,10 @@ export async function voidSupplierPayment(id, { reason } = {}, userId, req) {
 
   return withTransaction(async (session) => {
 
-    const payment = await SupplierPayment.findOne({ _id: id, isVoided: false }).session(session);
+    const payment = await withSession(
+      SupplierPayment.findOne({ _id: id, isVoided: false }),
+      session
+    );
 
     if (!payment) throw ApiError.notFound('Payment not found');
 
@@ -359,7 +364,7 @@ export async function voidSupplierPayment(id, { reason } = {}, userId, req) {
 
     payment.isVoided = true;
 
-    await payment.save({ session });
+    await payment.save(sessionOptions(session));
 
 
 

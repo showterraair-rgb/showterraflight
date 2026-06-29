@@ -11,6 +11,17 @@ import Agent from '../models/Agent.js';
 import AgentBooking from '../models/AgentBooking.js';
 import BookingOperation from '../models/BookingOperation.js';
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function nextSequence(lastNumber, fallback = 1) {
+  if (!lastNumber) return fallback;
+  const parts = String(lastNumber).split('-');
+  const seq = parseInt(parts[parts.length - 1], 10);
+  return Number.isFinite(seq) ? seq + 1 : fallback;
+}
+
 /**
  * Generate sequential document numbers: PREFIX-YYYYMM-0001
  */
@@ -20,18 +31,14 @@ export async function generateOrderNumber() {
 
   const now = new Date();
   const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const pattern = new RegExp(`^${prefix}-${yearMonth}-`);
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}-${yearMonth}-`);
 
   const lastOrder = await Order.findOne({ orderNumber: pattern })
     .sort({ orderNumber: -1 })
     .select('orderNumber')
     .lean();
 
-  let seq = 1;
-  if (lastOrder?.orderNumber) {
-    const parts = lastOrder.orderNumber.split('-');
-    seq = parseInt(parts[parts.length - 1], 10) + 1;
-  }
+  const seq = nextSequence(lastOrder?.orderNumber);
 
   return `${prefix}-${yearMonth}-${String(seq).padStart(4, '0')}`;
 }
@@ -42,18 +49,14 @@ export async function generateBookingNumber() {
 
   const now = new Date();
   const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const pattern = new RegExp(`^${prefix}-${yearMonth}-`);
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}-${yearMonth}-`);
 
   const last = await Booking.findOne({ bookingNumber: pattern })
     .sort({ bookingNumber: -1 })
     .select('bookingNumber')
     .lean();
 
-  let seq = 1;
-  if (last?.bookingNumber) {
-    const parts = last.bookingNumber.split('-');
-    seq = parseInt(parts[parts.length - 1], 10) + 1;
-  }
+  const seq = nextSequence(last?.bookingNumber);
 
   return `${prefix}-${yearMonth}-${String(seq).padStart(4, '0')}`;
 }
@@ -61,18 +64,14 @@ export async function generateBookingNumber() {
 async function generateSequentialNumber(model, field, prefix) {
   const now = new Date();
   const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const pattern = new RegExp(`^${prefix}-${yearMonth}-`);
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}-${yearMonth}-`);
 
   const last = await model.findOne({ [field]: pattern })
     .sort({ [field]: -1 })
     .select(field)
     .lean();
 
-  let seq = 1;
-  if (last?.[field]) {
-    const parts = last[field].split('-');
-    seq = parseInt(parts[parts.length - 1], 10) + 1;
-  }
+  const seq = nextSequence(last?.[field]);
 
   return `${prefix}-${yearMonth}-${String(seq).padStart(4, '0')}`;
 }

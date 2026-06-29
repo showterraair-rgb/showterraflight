@@ -3,6 +3,7 @@ import Account from '../models/Account.js';
 import AccountTransaction from '../models/AccountTransaction.js';
 import ApiError from '../utils/ApiError.js';
 import { generateTransactionNumber } from './numberGenerator.service.js';
+import { isTransactionNotSupported, sessionOptions, withSession } from '../utils/mongoSession.js';
 
 export function derivePaymentStatus(paid, total) {
   if (!paid || paid <= 0) return 'unpaid';
@@ -11,17 +12,22 @@ export function derivePaymentStatus(paid, total) {
 }
 
 /**
- * Run callback inside a MongoDB transaction.
+ * Run callback inside a MongoDB transaction when supported; otherwise run without one.
  */
 export async function withTransaction(fn) {
   const session = await mongoose.startSession();
-  session.startTransaction();
   try {
+    session.startTransaction();
     const result = await fn(session);
     await session.commitTransaction();
     return result;
   } catch (err) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    if (isTransactionNotSupported(err)) {
+      return fn(null);
+    }
     throw err;
   } finally {
     session.endSession();
@@ -29,7 +35,7 @@ export async function withTransaction(fn) {
 }
 
 async function getActiveAccount(accountId, session) {
-  const account = await Account.findById(accountId).session(session);
+  const account = await withSession(Account.findById(accountId), session);
   if (!account || !account.isActive) {
     throw ApiError.badRequest('Account not found or inactive');
   }
@@ -43,7 +49,7 @@ export async function creditAccount(accountId, amount, session) {
   if (amount <= 0) throw ApiError.badRequest('Amount must be positive');
   const account = await getActiveAccount(accountId, session);
   account.currentBalance = (account.currentBalance || 0) + amount;
-  await account.save({ session });
+  await account.save(sessionOptions(session));
   return { account, balanceAfter: account.currentBalance };
 }
 
@@ -57,7 +63,7 @@ export async function debitAccount(accountId, amount, session) {
     throw ApiError.badRequest(`Insufficient balance in ${account.name}`);
   }
   account.currentBalance -= amount;
-  await account.save({ session });
+  await account.save(sessionOptions(session));
   return { account, balanceAfter: account.currentBalance };
 }
 
@@ -89,7 +95,7 @@ export async function createLedgerEntry(data, session) {
       supplierPayment: data.supplierPaymentId,
       createdBy: data.userId,
     }],
-    { session }
+    sessionOptions(session)
   );
 
   return entry[0];

@@ -17,6 +17,7 @@ import {
 } from '../utils/pagination.js';
 
 import { withTransaction, postCredit, postDebit, derivePaymentStatus } from './ledger.service.js';
+import { sessionOptions, withSession } from '../utils/mongoSession.js';
 
 import { generateCustomerPaymentNumber } from './numberGenerator.service.js';
 
@@ -176,7 +177,7 @@ export async function createCustomerPayment(data, userId, req) {
 
   return withTransaction(async (session) => {
 
-    const customer = await Customer.findById(data.customerId).session(session);
+    const customer = await withSession(Customer.findById(data.customerId), session);
 
     if (!customer) throw ApiError.notFound('Customer not found');
 
@@ -186,7 +187,7 @@ export async function createCustomerPayment(data, userId, req) {
 
     if (data.bookingId) {
 
-      booking = await Booking.findById(data.bookingId).session(session);
+      booking = await withSession(Booking.findById(data.bookingId), session);
 
       if (!booking) throw ApiError.notFound('Booking not found');
 
@@ -199,10 +200,11 @@ export async function createCustomerPayment(data, userId, req) {
 
 
       if (!data.onAccount) {
-        const paidAgg = await CustomerPayment.aggregate([
+        const agg = CustomerPayment.aggregate([
           { $match: { booking: booking._id, isVoided: false } },
           { $group: { _id: null, total: { $sum: '$amount' } } },
-        ]).session(session);
+        ]);
+        const paidAgg = await (session ? agg.session(session) : agg);
         const paidSoFar = paidAgg[0]?.total || 0;
         const due = Math.max(0, (booking.salePrice || 0) - paidSoFar);
         if (data.amount > due + 0.001) {
@@ -256,7 +258,7 @@ export async function createCustomerPayment(data, userId, req) {
 
       }],
 
-      { session }
+      sessionOptions(session)
 
     );
 
@@ -358,13 +360,13 @@ export async function createCustomerRefund(data, userId, req) {
 
   return withTransaction(async (session) => {
 
-    const customer = await Customer.findById(data.customerId).session(session);
+    const customer = await withSession(Customer.findById(data.customerId), session);
 
     if (!customer) throw ApiError.notFound('Customer not found');
 
 
 
-    const booking = await Booking.findById(data.bookingId).session(session);
+    const booking = await withSession(Booking.findById(data.bookingId), session);
 
     if (!booking) throw ApiError.notFound('Booking not found');
 
@@ -412,7 +414,7 @@ export async function createCustomerRefund(data, userId, req) {
 
       }],
 
-      { session }
+      sessionOptions(session)
 
     );
 
@@ -470,17 +472,13 @@ export async function createCustomerRefund(data, userId, req) {
 
 
 
-    const populated = await CustomerPayment.findById(payment._id)
-
-      .populate('customer', 'name phone')
-
-      .populate('booking', 'bookingNumber')
-
-      .populate('account', 'name type')
-
-      .session(session)
-
-      .lean();
+    const populated = await withSession(
+      CustomerPayment.findById(payment._id)
+        .populate('customer', 'name phone')
+        .populate('booking', 'bookingNumber')
+        .populate('account', 'name type'),
+      session
+    ).lean();
 
 
 
@@ -496,7 +494,10 @@ export async function voidCustomerPayment(id, { reason } = {}, userId, req) {
 
   return withTransaction(async (session) => {
 
-    const payment = await CustomerPayment.findOne({ _id: id, isVoided: false }).session(session);
+    const payment = await withSession(
+      CustomerPayment.findOne({ _id: id, isVoided: false }),
+      session
+    );
 
     if (!payment) throw ApiError.notFound('Payment not found');
 
@@ -504,7 +505,7 @@ export async function voidCustomerPayment(id, { reason } = {}, userId, req) {
 
     payment.isVoided = true;
 
-    await payment.save({ session });
+    await payment.save(sessionOptions(session));
 
 
 

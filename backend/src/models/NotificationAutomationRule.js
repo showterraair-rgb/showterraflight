@@ -11,6 +11,8 @@ const notificationAutomationRuleSchema = new mongoose.Schema(
     },
     notifyCustomer: { type: Boolean, default: false },
     notifyAdmin: { type: Boolean, default: false },
+    notifySupplier: { type: Boolean, default: false },
+    notifyAgent: { type: Boolean, default: false },
     smsEnabled: { type: Boolean, default: true },
     emailEnabled: { type: Boolean, default: true },
     whatsappEnabled: { type: Boolean, default: false },

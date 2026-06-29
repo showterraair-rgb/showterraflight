@@ -8,6 +8,7 @@ import { parsePaginationQuery, buildPaginationResponse } from '../utils/paginati
 import { sendNotification, resolveReminderChannel } from './notification.service.js';
 import { triggerNotificationEvent } from './notificationOrchestrator.service.js';
 import { buildBookingNotificationContext } from '../utils/notificationContext.js';
+import { buildSupplierBookingNotificationContext } from '../utils/supplierNotificationContext.js';
 import { logAudit } from './audit.service.js';
 
 function formatReminder(doc) {
@@ -294,11 +295,37 @@ export async function sendPendingReminders() {
           reminder.customer,
           { dueAmount: reminder.booking.customerDue ?? 0 }
         ));
-        if (result?.sent > 0 || result?.results?.some((r) => r.success)) {
+        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
           reminder.status = 'sent';
           reminder.sentAt = new Date();
           sent += 1;
-        } else if (result?.skipped) {
+        } else {
+          reminder.status = 'failed';
+          reminder.failedAt = new Date();
+          reminder.failureReason = result?.error || 'No notification channels available';
+          failed += 1;
+        }
+      } catch (err) {
+        reminder.status = 'failed';
+        reminder.failedAt = new Date();
+        reminder.failureReason = err.message;
+        failed += 1;
+      }
+      await reminder.save();
+      continue;
+    }
+
+    if (reminder.type === 'supplier_payable' && reminder.booking && reminder.supplier) {
+      reminder.attemptCount = (reminder.attemptCount || 0) + 1;
+      try {
+        const bookingDoc = reminder.booking?.bookingNumber
+          ? reminder.booking
+          : await Booking.findById(reminder.booking).lean();
+        const result = await triggerNotificationEvent(
+          'supplier_payable_reminder',
+          buildSupplierBookingNotificationContext(bookingDoc, reminder.supplier)
+        );
+        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
           reminder.status = 'sent';
           reminder.sentAt = new Date();
           sent += 1;

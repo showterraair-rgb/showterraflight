@@ -11,11 +11,31 @@ const EVENT_LABELS = {
   website_order_created: 'Website order received (customer)',
   manual_order_created: 'Manual booking created',
   admin_new_booking_alert: 'New website order (admin alert)',
-  booking_approved: 'Booking approved',
+  admin_manual_order_alert: 'Manual order (admin alert)',
+  admin_manual_booking_alert: 'Manual booking (admin alert)',
+  approval_pending: 'Approval — pending',
+  approval_checking: 'Approval — checking',
+  approval_processing: 'Approval — processing',
+  approval_approved: 'Approval — approved',
+  booking_approved: 'Booking confirmed',
   ticket_issued: 'Ticket issued',
   payment_received: 'Payment received',
   payment_due_reminder: 'Payment due reminder',
+  supplier_payable_reminder: 'Supplier payable reminder',
+  schedule_change: 'Schedule / route change',
   booking_canceled: 'Booking canceled',
+  void_done: 'Booking voided',
+  reissue_done: 'Ticket reissued',
+  refund_requested: 'Refund requested',
+  refund_approved: 'Refund approved',
+  refund_paid: 'Refund paid',
+  upcoming_flight: 'Upcoming flight reminder',
+  daily_ledger_summary: 'Daily ledger (admin)',
+  backup_failed: 'Backup failed (admin)',
+  agent_booking_submitted: 'Agent booking submitted (admin)',
+  agent_booking_confirmed: 'Agent booking confirmed',
+  agent_booking_cancelled: 'Agent booking cancelled',
+  agent_booking_ticket_ready: 'Agent ticket ready',
 };
 
 export default function NotificationTemplatesPage() {
@@ -137,6 +157,8 @@ export default function NotificationTemplatesPage() {
               <tr className="border-b border-slate-200 text-left text-slate-500">
                 <th className="py-2 pr-4">Event</th>
                 <th className="py-2 pr-4">Customer</th>
+                <th className="py-2 pr-4">Supplier</th>
+                <th className="py-2 pr-4">Agent</th>
                 <th className="py-2 pr-4">Admin</th>
                 <th className="py-2 pr-4">SMS</th>
                 <th className="py-2 pr-4">Email</th>
@@ -148,7 +170,7 @@ export default function NotificationTemplatesPage() {
               {rules.map((rule) => (
                 <tr key={rule.eventType} className="border-b border-slate-100">
                   <td className="py-2 pr-4 font-medium">{EVENT_LABELS[rule.eventType] || rule.eventType}</td>
-                  {['notifyCustomer', 'notifyAdmin', 'smsEnabled', 'emailEnabled', 'whatsappEnabled', 'isEnabled'].map((field) => (
+                  {['notifyCustomer', 'notifySupplier', 'notifyAgent', 'notifyAdmin', 'smsEnabled', 'emailEnabled', 'whatsappEnabled', 'isEnabled'].map((field) => (
                     <td key={field} className="py-2 pr-4">
                       <input
                         type="checkbox"

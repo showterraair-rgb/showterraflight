@@ -13,7 +13,9 @@
     "recalculate-financials": "node src/scripts/recalculateFinancials.js",
     "backfill-booking-operations": "node src/scripts/backfillBookingOperations.js",
     "configure-sms": "node src/scripts/configureSms.js",
+    "configure-messaging": "node src/scripts/configureMessaging.js",
     "configure-notifications": "node src/scripts/configureNotifications.js",
+    "sync-notification-defaults": "node src/scripts/syncNotificationDefaults.js",
     "create-demo-user": "node src/scripts/createDemoUser.js",
     "create-admin-user": "node src/scripts/createAdminUser.js"
   },

@@ -9,7 +9,8 @@ import {
   buildSearchFilter,
 } from '../utils/pagination.js';
 import { generateAgentBookingRef } from './numberGenerator.service.js';
-import { sendEmailMessage } from './notificationOrchestrator.service.js';
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildAgentBookingNotificationContext } from '../utils/agentNotificationContext.js';
 import { getCurrencyRatesMap } from './currency.service.js';
 import { buildBRLPricing, normalizeBookingToPricing, formatCurrency } from '../utils/currencyUtils.js';
 
@@ -100,36 +101,28 @@ function buildBookingFilter(query, agentId = null) {
 }
 
 async function notifyAdminNewBooking(booking, agent) {
-  try {
-    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || 'showterraair@gmail.com';
-    await sendEmailMessage({
-      to: adminEmail,
-      subject: `New agent booking ${booking.bookingRef}`,
-      message: `Agent ${agent.companyName} (${agent.agentId}) submitted booking ${booking.bookingRef}.\nRoute: ${booking.fromCity} → ${booking.toCity}\nAirline: ${booking.airline}\nTotal: ${formatCurrency(booking.totalFareBRL ?? booking.originalTotalFare ?? booking.totalFare, 'BRL')} (${formatCurrency(booking.totalFareBDT ?? booking.totalFare, 'BDT')})`,
-    });
-  } catch (err) {
-    console.error('[agent-booking] admin notify failed', err.message);
-  }
+  triggerNotificationEventSafe(
+    'agent_booking_submitted',
+    buildAgentBookingNotificationContext(agent, booking)
+  );
 }
 
-async function notifyAgentBooking(agent, booking, title, message, type) {
+async function notifyAgentBooking(agent, booking, eventType, extraVars = {}) {
   await AgentNotification.create({
     agent: agent._id,
-    title,
-    message,
-    type,
+    title: extraVars.title || 'Booking update',
+    message: extraVars.message || '',
+    type: eventType,
     relatedBooking: booking._id,
   });
 
-  try {
-    await sendEmailMessage({
-      to: agent.email,
-      subject: title,
-      message,
-    });
-  } catch (err) {
-    console.error('[agent-booking] agent email failed', err.message);
-  }
+  triggerNotificationEventSafe(
+    eventType,
+    buildAgentBookingNotificationContext(agent, booking, {
+      recipientType: 'agent',
+      vars: extraVars,
+    })
+  );
 }
 
 export async function createAgentBooking(agentId, data, file = null) {
@@ -269,17 +262,15 @@ export async function updateAgentBookingStatus(id, { status, adminNotes }, userI
     await notifyAgentBooking(
       booking.agent,
       booking,
-      'Booking confirmed',
-      `Booking ${booking.bookingRef} has been confirmed. ${adminNotes || ''}`.trim(),
-      'booking_confirmed'
+      'agent_booking_confirmed',
+      { title: 'Booking confirmed', message: `Booking ${booking.bookingRef} has been confirmed. ${adminNotes || ''}`.trim() }
     );
   } else if (status === 'cancelled') {
     await notifyAgentBooking(
       booking.agent,
       booking,
-      'Booking cancelled',
-      `Booking ${booking.bookingRef} was cancelled by admin. ${adminNotes || ''}`.trim(),
-      'booking_cancelled'
+      'agent_booking_cancelled',
+      { title: 'Booking cancelled', message: `Booking ${booking.bookingRef} was cancelled by admin. ${adminNotes || ''}`.trim() }
     );
   }
 
@@ -301,9 +292,8 @@ export async function uploadAgentBookingTicket(id, file, userId) {
     await notifyAgentBooking(
       booking.agent,
       booking,
-      'Ticket available',
-      `Ticket for booking ${booking.bookingRef} is now available for download.`,
-      'booking_confirmed'
+      'agent_booking_ticket_ready',
+      { title: 'Ticket available', message: `Ticket for booking ${booking.bookingRef} is now available for download.` }
     );
   }
 

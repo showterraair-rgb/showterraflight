@@ -1,6 +1,7 @@
 import Booking from '../models/Booking.js';
 import Order from '../models/Order.js';
 import Customer from '../models/Customer.js';
+import Supplier from '../models/Supplier.js';
 import CustomerPayment from '../models/CustomerPayment.js';
 import SupplierPayment from '../models/SupplierPayment.js';
 import ApiError from '../utils/ApiError.js';
@@ -13,7 +14,7 @@ import { generateBookingNumber } from './numberGenerator.service.js';
 import { findOrCreateFromOrder } from './customer.service.js';
 import { logAudit } from './audit.service.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
-import { buildBookingNotificationContext } from '../utils/notificationContext.js';
+import { buildBookingNotificationContext, attachSupplierToContext } from '../utils/notificationContext.js';
 import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from './financialSync.service.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
@@ -154,10 +155,20 @@ async function resolveBookingCurrencyFields(data) {
       purchasePriceBRL: data.purchasePriceBRL ?? data.originalPurchasePrice ?? 0,
       salePriceBRL: data.salePriceBRL ?? data.originalSalePrice ?? 0,
       directCostsBRL: data.directCostsBRL ?? data.originalDirectCosts ?? 0,
-      bdtRate: data.bdtRate ?? data.bdtRateAtBooking ?? rates.BRL,
+      bdtRate: data.bdtRate ?? data.bdtRateAtBooking,
+      rates,
     });
   }
   return {};
+}
+
+function toBookingDate(value, label) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw ApiError.badRequest(`Invalid ${label}`);
+  }
+  return date;
 }
 
 function buildBookingFilter(query) {
@@ -265,7 +276,15 @@ async function fireBookingNotification(eventType, booking, customerDoc = null, e
     const customer = customerDoc || (booking.customer
       ? await Customer.findById(booking.customer).lean()
       : null);
-    triggerNotificationEventSafe(eventType, buildBookingNotificationContext(booking, customer, extra));
+    let ctx = buildBookingNotificationContext(booking, customer, extra);
+    const supplierId = booking.supplier?._id || booking.supplier;
+    if (supplierId) {
+      const supplier = booking.supplier?.phone || booking.supplier?.name
+        ? (typeof booking.supplier.toObject === 'function' ? booking.supplier.toObject() : booking.supplier)
+        : await Supplier.findById(supplierId).lean();
+      ctx = attachSupplierToContext(ctx, supplier, booking);
+    }
+    triggerNotificationEventSafe(eventType, ctx);
   } catch (err) {
     console.error('[notification] booking context failed', eventType, err.message);
   }
@@ -465,14 +484,23 @@ async function recordInitialBookingPayments(booking, data, userId, req) {
 }
 
 async function createBookingRecord(data, userId, req, orderDoc = null) {
+  const customerDoc = await Customer.findById(data.customerId).select('name').lean();
+  if (!customerDoc) {
+    throw ApiError.badRequest('Customer not found');
+  }
+
   const bookingNumber = await generateBookingNumber();
   const currencyFields = await resolveBookingCurrencyFields(data);
+  const departureDate = toBookingDate(data.departureDate, 'departure date');
+  const returnDate = data.returnDate ? toBookingDate(data.returnDate, 'return date') : undefined;
+  const duePaymentAt = data.duePaymentAt ? toBookingDate(data.duePaymentAt, 'due payment date') : undefined;
 
   const booking = new Booking({
     bookingNumber,
     order: orderDoc?._id || data.orderId,
     customer: data.customerId,
     supplier: data.supplierId,
+    passengerName: data.passengers?.[0]?.fullName || customerDoc.name || '',
     journeyType: data.journeyType || 'one_way',
     fromDestination: data.fromDestination || '',
     toDestination: data.toDestination || '',
@@ -480,8 +508,8 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     airline: data.airline,
     route: data.route,
     sector: data.sector,
-    departureDate: new Date(data.departureDate),
-    returnDate: data.returnDate ? new Date(data.returnDate) : undefined,
+    departureDate,
+    returnDate,
     passengerCount: data.passengers?.length || data.passengerCount,
     passengers: data.passengers?.length ? data.passengers : undefined,
     flightSegment: data.flightSegment || undefined,
@@ -490,7 +518,7 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     farePurchase: data.farePurchase,
     fareCosts: data.fareCosts,
     usdRateAtBooking: data.usdRateAtBooking,
-    duePaymentAt: data.duePaymentAt ? new Date(data.duePaymentAt) : undefined,
+    duePaymentAt,
     pnr: data.pnr,
     ticketNumber: data.ticketNumber,
     purchasePrice: currencyFields.purchasePrice ?? data.purchasePrice ?? 0,
@@ -1212,14 +1240,13 @@ export async function recordScheduleChange(id, data, userId, req) {
   pushTimeline(booking, booking.status, data.note || 'Schedule changed', userId);
   await booking.save();
 
-  const ctx = buildBookingNotificationContext(booking, booking.customer, {
+  await fireBookingNotification('schedule_change', booking, null, {
     vars: {
       previousDate: previousDepartureDate?.toISOString?.()?.slice(0, 10) || '',
       newDate: booking.departureDate?.toISOString?.()?.slice(0, 10) || '',
       route: booking.route,
     },
   });
-  triggerNotificationEventSafe('schedule_change', ctx);
 
   await logAudit({
     action: 'update',
