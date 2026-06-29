@@ -203,6 +203,23 @@ export const createBookingFromOrderSchema = validateInitialPayments(
 export const updateBookingSchema = roundTripRefine(
   createBookingBaseSchema.partial().omit({ orderId: true }).extend({
     customerId: optionalObjectId,
+    purchasePriceBRL: z.coerce.number().min(0).optional(),
+    salePriceBRL: z.coerce.number().min(0).optional(),
+    directCostsBRL: z.coerce.number().min(0).optional(),
+    bdtRate: z.coerce.number().positive().optional(),
+    duePaymentAt: z.string().optional(),
+  }).superRefine((data, ctx) => {
+    const saleBRL = data.salePriceBRL ?? data.salePrice;
+    if (saleBRL == null) return;
+    const customerPaidBRL = Number(data.customerPaidAmountBRL) || 0;
+    const customerDueBRL = Math.max(0, Number(saleBRL) - customerPaidBRL);
+    if (customerDueBRL > 0.001 && !data.duePaymentAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Due payment date is required when customer owes a balance',
+        path: ['duePaymentAt'],
+      });
+    }
   })
 );
 

@@ -16,16 +16,18 @@ export function derivePaymentStatus(paid, total) {
  */
 export async function withTransaction(fn) {
   const session = await mongoose.startSession();
+  let fnCompleted = false;
   try {
     session.startTransaction();
     const result = await fn(session);
+    fnCompleted = true;
     await session.commitTransaction();
     return result;
   } catch (err) {
     if (session.inTransaction()) {
       await session.abortTransaction();
     }
-    if (isTransactionNotSupported(err)) {
+    if (!fnCompleted && isTransactionNotSupported(err)) {
       return fn(null);
     }
     throw err;

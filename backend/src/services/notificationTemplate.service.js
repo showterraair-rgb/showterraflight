@@ -17,9 +17,28 @@ function formatTemplate(doc) {
     whatsappTemplateLanguage: doc.whatsappTemplateLanguage || 'en',
     whatsappParamKeys: doc.whatsappParamKeys || '',
     whatsappBody: doc.whatsappBody || '',
+    supplierSmsBody: doc.supplierSmsBody || '',
+    supplierEmailSubject: doc.supplierEmailSubject || '',
+    supplierEmailBody: doc.supplierEmailBody || '',
+    supplierWhatsappBody: doc.supplierWhatsappBody || '',
+    agentSmsBody: doc.agentSmsBody || '',
+    agentEmailSubject: doc.agentEmailSubject || '',
+    agentEmailBody: doc.agentEmailBody || '',
+    agentWhatsappBody: doc.agentWhatsappBody || '',
     isActive: Boolean(doc.isActive),
     updatedAt: doc.updatedAt,
   };
+}
+
+function mergeDefaultAudienceFields(formatted, fallback) {
+  if (!fallback) return formatted;
+  const merged = { ...formatted };
+  for (const key of Object.keys(fallback)) {
+    if ((key.startsWith('supplier') || key.startsWith('agent')) && !merged[key]) {
+      merged[key] = fallback[key];
+    }
+  }
+  return merged;
 }
 
 function formatRule(doc) {
@@ -45,12 +64,12 @@ export async function listTemplates() {
 
 export async function getTemplateByKey(templateKey) {
   const doc = await NotificationTemplate.findOne({ templateKey }).lean();
+  const fallback = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === templateKey);
   if (!doc) {
-    const fallback = DEFAULT_NOTIFICATION_TEMPLATES.find((t) => t.templateKey === templateKey);
     if (!fallback) throw ApiError.notFound('Template not found');
     return { ...fallback, id: null, isActive: true, description: '' };
   }
-  return formatTemplate(doc);
+  return mergeDefaultAudienceFields(formatTemplate(doc), fallback);
 }
 
 export async function updateTemplate(templateKey, data, userId, req) {
@@ -67,6 +86,14 @@ export async function updateTemplate(templateKey, data, userId, req) {
         whatsappTemplateLanguage: data.whatsappTemplateLanguage ?? 'en',
         whatsappParamKeys: data.whatsappParamKeys ?? '',
         whatsappBody: data.whatsappBody ?? '',
+        supplierSmsBody: data.supplierSmsBody ?? '',
+        supplierEmailSubject: data.supplierEmailSubject ?? '',
+        supplierEmailBody: data.supplierEmailBody ?? '',
+        supplierWhatsappBody: data.supplierWhatsappBody ?? '',
+        agentSmsBody: data.agentSmsBody ?? '',
+        agentEmailSubject: data.agentEmailSubject ?? '',
+        agentEmailBody: data.agentEmailBody ?? '',
+        agentWhatsappBody: data.agentWhatsappBody ?? '',
         isActive: data.isActive ?? true,
         updatedBy: userId,
       },

@@ -26,6 +26,18 @@ async function run() {
         isActive: true,
       });
       templates += 1;
+      continue;
+    }
+    const patch = {};
+    for (const key of Object.keys(tpl)) {
+      if (key === 'templateKey') continue;
+      if (key.startsWith('supplier') || key.startsWith('agent')) {
+        if (!existing[key] && tpl[key]) patch[key] = tpl[key];
+      }
+    }
+    if (Object.keys(patch).length) {
+      await NotificationTemplate.updateOne({ templateKey: tpl.templateKey }, { $set: patch });
+      templates += 1;
     }
   }
 

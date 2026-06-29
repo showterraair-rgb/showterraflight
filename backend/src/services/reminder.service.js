@@ -295,7 +295,7 @@ export async function sendPendingReminders() {
           reminder.customer,
           { dueAmount: reminder.booking.customerDue ?? 0 }
         ));
-        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
+        if (result?.sent > 0 || result?.results?.some((r) => r.success)) {
           reminder.status = 'sent';
           reminder.sentAt = new Date();
           sent += 1;
@@ -325,7 +325,7 @@ export async function sendPendingReminders() {
           'supplier_payable_reminder',
           buildSupplierBookingNotificationContext(bookingDoc, reminder.supplier)
         );
-        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
+        if (result?.sent > 0 || result?.results?.some((r) => r.success)) {
           reminder.status = 'sent';
           reminder.sentAt = new Date();
           sent += 1;
@@ -355,7 +355,7 @@ export async function sendPendingReminders() {
           'upcoming_flight',
           buildBookingNotificationContext(bookingDoc, reminder.customer)
         );
-        if (result?.sent > 0 || result?.results?.some((r) => r.success) || result?.skipped) {
+        if (result?.sent > 0 || result?.results?.some((r) => r.success)) {
           reminder.status = 'sent';
           reminder.sentAt = new Date();
           sent += 1;

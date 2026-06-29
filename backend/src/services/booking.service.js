@@ -19,7 +19,7 @@ import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from '.
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
 import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
 import { getCurrencyRatesMap } from './currency.service.js';
-import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing } from '../utils/currencyUtils.js';
+import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing, brlToBdtRounded } from '../utils/currencyUtils.js';
 import { buildFareRates, computeFareTotals } from '../utils/fareCurrency.js';
 import { extractTicketFromFile } from './ticketExtract.service.js';
 import Account from '../models/Account.js';
@@ -434,7 +434,7 @@ async function recordInitialBookingPayments(booking, data, userId, req) {
 
   const customerPaidBRL = Number(data.customerPaidAmountBRL) || 0;
   if (customerPaidBRL > 0.001) {
-    const amountBDT = Math.round(customerPaidBRL * rate * 100) / 100;
+    const amountBDT = brlToBdtRounded(customerPaidBRL, rate);
     if (amountBDT > (booking.salePrice || 0) + 0.01) {
       throw ApiError.badRequest('Customer paid amount exceeds booking sale price');
     }
@@ -461,7 +461,7 @@ async function recordInitialBookingPayments(booking, data, userId, req) {
       throw ApiError.badRequest('Supplier is required to record a supplier payment');
     }
     const purchaseTotalBDT = (booking.purchasePrice || 0) + (booking.directCosts || 0);
-    const amountBDT = Math.round(supplierPaidBRL * rate * 100) / 100;
+    const amountBDT = brlToBdtRounded(supplierPaidBRL, rate);
     if (amountBDT > purchaseTotalBDT + 0.01) {
       throw ApiError.badRequest('Supplier paid amount exceeds purchase total');
     }
@@ -566,25 +566,29 @@ async function createBookingRecord(data, userId, req, orderDoc = null) {
     req,
   });
 
-  await fireBookingNotification('admin_manual_booking_alert', booking, null, {
-    vars: { approvalStatus: APPROVAL_STATUS_LABELS[booking.approvalStatus || 'pending'] },
-  });
-  if (!orderDoc) {
-    fireApprovalSms(booking, 'booking');
-  }
-
   const hasInitialPayment =
     (Number(data.customerPaidAmountBRL) || 0) > 0
     || (Number(data.supplierPaidAmountBRL) || 0) > 0;
 
-  if (hasInitialPayment) {
-    await recordInitialBookingPayments(booking, data, userId, req);
-  } else {
-    await syncBookingFinancials(booking._id);
+  try {
+    if (hasInitialPayment) {
+      await recordInitialBookingPayments(booking, data, userId, req);
+    } else {
+      await syncBookingFinancials(booking._id);
+    }
+  } catch (paymentErr) {
+    await Booking.findByIdAndDelete(booking._id);
+    throw paymentErr;
   }
 
+  await fireBookingNotification('admin_manual_booking_alert', booking, null, {
+    vars: { approvalStatus: APPROVAL_STATUS_LABELS[booking.approvalStatus || 'pending'] },
+  });
+
+  const refreshed = await Booking.findById(booking._id).lean();
   if (!orderDoc) {
-    const refreshed = await Booking.findById(booking._id).lean();
+    await fireBookingNotification('manual_order_created', refreshed);
+  } else if (refreshed.status !== 'draft') {
     await fireBookingNotification('manual_order_created', refreshed);
   }
 
@@ -671,8 +675,10 @@ export async function updateBooking(id, data, userId, req) {
   if (data.airline) booking.airline = data.airline;
   if (data.route) booking.route = data.route;
   if (data.sector !== undefined) booking.sector = data.sector;
-  if (data.departureDate) booking.departureDate = new Date(data.departureDate);
-  if (data.returnDate !== undefined) booking.returnDate = data.returnDate ? new Date(data.returnDate) : undefined;
+  if (data.departureDate) booking.departureDate = toBookingDate(data.departureDate, 'departure date');
+  if (data.returnDate !== undefined) {
+    booking.returnDate = data.returnDate ? toBookingDate(data.returnDate, 'return date') : undefined;
+  }
   if (data.pnr !== undefined) booking.pnr = data.pnr;
   if (data.ticketNumber !== undefined) booking.ticketNumber = data.ticketNumber;
   const currencyFields = await resolveBookingCurrencyFields(data);
@@ -698,7 +704,9 @@ export async function updateBooking(id, data, userId, req) {
   if (data.fareCosts !== undefined) booking.fareCosts = data.fareCosts;
   if (data.farePaid !== undefined) booking.farePaid = data.farePaid;
   if (data.usdRateAtBooking !== undefined) booking.usdRateAtBooking = data.usdRateAtBooking;
-  if (data.duePaymentAt !== undefined) booking.duePaymentAt = data.duePaymentAt ? new Date(data.duePaymentAt) : undefined;
+  if (data.duePaymentAt !== undefined) {
+    booking.duePaymentAt = data.duePaymentAt ? toBookingDate(data.duePaymentAt, 'due payment date') : undefined;
+  }
 
   if (data.status && data.status !== booking.status) {
     pushTimeline(booking, data.status, 'Updated via edit form', userId);

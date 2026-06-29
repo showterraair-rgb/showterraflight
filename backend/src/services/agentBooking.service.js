@@ -242,7 +242,10 @@ export async function cancelAgentBooking(id, agentId) {
 
   const agent = await Agent.findById(agentId);
   if (agent) {
-    await notifyAgentBooking(agent, booking, 'Booking cancelled', `Your booking ${booking.bookingRef} was cancelled.`, 'booking_cancelled');
+    await notifyAgentBooking(agent, booking, 'agent_booking_cancelled', {
+      title: 'Booking cancelled',
+      message: `Your booking ${booking.bookingRef} was cancelled.`,
+    });
   }
 
   return getAgentBookingById(id, agentId);

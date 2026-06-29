@@ -153,6 +153,11 @@ export function brlToBdt(amountBRL, bdtRate) {
   return Number(amountBRL || 0) * (Number(bdtRate) || DEFAULT_BRL_RATE);
 }
 
+/** BRL → BDT with 2-decimal rounding (matches payment ledger amounts). */
+export function brlToBdtRounded(amountBRL, bdtRate) {
+  return Math.round(brlToBdt(amountBRL, bdtRate) * 100) / 100;
+}
+
 /** Normalize admin Booking doc to BRL-primary pricing (legacy BDT records converted) */
 export function normalizeLegacyBookingPricing(doc, defaultRate = DEFAULT_BRL_RATE) {
   const rate = Number(doc.bdtRateAtBooking ?? doc.exchangeRateAtBooking ?? defaultRate) || defaultRate;
@@ -212,9 +217,9 @@ export function buildBookingCurrencySnapshot({ purchasePriceBRL, salePriceBRL, d
   const purchaseBRL = Number(purchasePriceBRL) || 0;
   const saleBRL = Number(salePriceBRL) || 0;
   const costsBRL = Number(directCostsBRL) || 0;
-  const purchaseBDT = purchaseBRL * rate;
-  const saleBDT = saleBRL * rate;
-  const costsBDT = costsBRL * rate;
+  const purchaseBDT = brlToBdtRounded(purchaseBRL, rate);
+  const saleBDT = brlToBdtRounded(saleBRL, rate);
+  const costsBDT = brlToBdtRounded(costsBRL, rate);
 
   return {
     originalCurrency: 'BRL',
@@ -245,4 +250,5 @@ export default {
   resolveBdtRate,
   bdtToBrl,
   brlToBdt,
+  brlToBdtRounded,
 };

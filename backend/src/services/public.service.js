@@ -112,10 +112,6 @@ export async function createBookingRequest(data) {
 
   triggerNotificationEventSafe('admin_new_booking_alert', ctx);
   triggerNotificationEventSafe('website_order_created', ctx);
-  triggerNotificationEventSafe('approval_pending', {
-    ...ctx,
-    vars: { ...ctx.vars, referenceNumber: order.orderNumber, approvalStatus: 'Pending' },
-  });
 
   return {
     orderId: order._id.toString(),

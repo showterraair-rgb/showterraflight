@@ -190,6 +190,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     whatsappBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is confirmed.\nRoute: {{route}}\nTotal: ৳{{salePrice}}\nDue: ৳{{dueAmount}}\nPay before: {{duePaymentDate}}\n\n— Show Terra Flight',
     emailSubject: 'Your booking {{bookingNumber}} has been created',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} is confirmed.\n\nRoute: {{route}}\nTotal: ৳{{salePrice}}\nAmount due: ৳{{dueAmount}}\nDue date: {{duePaymentDate}}\n\n— Show Terra Flight',
+    supplierSmsBody: 'New booking {{bookingNumber}} — {{route}}. Customer: {{customerName}}. Payable: ৳{{payableAmount}}. — Show Terra Flight',
+    supplierEmailSubject: 'New booking {{bookingNumber}}',
+    supplierEmailBody: 'A new booking was created.\n\nBooking: {{bookingNumber}}\nRoute: {{route}}\nCustomer: {{customerName}}\nPayable: ৳{{payableAmount}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'admin_new_booking_alert',
@@ -254,6 +257,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     smsBody: 'Good news {{customerName}}! Booking {{bookingNumber}} is approved. We will issue your ticket soon. — Show Terra Flight',
     emailSubject: 'Booking {{bookingNumber}} approved',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been approved.\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} approved — {{route}}. Payable: ৳{{payableAmount}}. — Show Terra Flight',
+    supplierEmailSubject: 'Booking {{bookingNumber}} approved',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been approved.\nRoute: {{route}}\nPayable: ৳{{payableAmount}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'ticket_issued',
@@ -261,6 +267,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     smsBody: 'Ticket issued for booking {{bookingNumber}}. PNR: {{pnr}}. Contact us for delivery. — Show Terra Flight',
     emailSubject: 'Ticket issued — {{bookingNumber}}',
     emailBody: 'Hello {{customerName}},\n\nYour ticket for booking {{bookingNumber}} has been issued.\nPNR: {{pnr}}\n\n— Show Terra Flight',
+    supplierSmsBody: 'Ticket issued for booking {{bookingNumber}}. PNR: {{pnr}}. Route: {{route}}. — Show Terra Flight',
+    supplierEmailSubject: 'Ticket issued — {{bookingNumber}}',
+    supplierEmailBody: 'Ticket issued for booking {{bookingNumber}}.\nPNR: {{pnr}}\nRoute: {{route}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'payment_received',
@@ -291,6 +300,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     smsBody: 'Booking {{bookingNumber}} has been canceled. Contact Show Terra Flight if you have questions.',
     emailSubject: 'Booking {{bookingNumber}} canceled',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been canceled.\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} canceled — {{route}}. — Show Terra Flight',
+    supplierEmailSubject: 'Booking {{bookingNumber}} canceled',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been canceled.\nRoute: {{route}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'void_done',
@@ -299,6 +311,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     whatsappBody: 'Hello {{customerName}},\n\nBooking {{bookingNumber}} for {{route}} has been voided.\n\n— Show Terra Flight',
     emailSubject: 'Booking {{bookingNumber}} voided',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} ({{route}}) has been voided.\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} voided — {{route}}. — Show Terra Flight',
+    supplierEmailSubject: 'Booking {{bookingNumber}} voided',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been voided.\nRoute: {{route}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'reissue_done',
@@ -307,6 +322,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     whatsappBody: 'Hello {{customerName}},\n\nYour ticket {{bookingNumber}} has been reissued.\nNew booking: {{newBookingNumber}}\nRoute: {{route}}\n\n— Show Terra Flight',
     emailSubject: 'Ticket reissued — {{newBookingNumber}}',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been reissued as {{newBookingNumber}}.\nRoute: {{route}}\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} reissued as {{newBookingNumber}} — {{route}}. — Show Terra Flight',
+    supplierEmailSubject: 'Ticket reissued — {{newBookingNumber}}',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been reissued as {{newBookingNumber}}.\nRoute: {{route}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'refund_paid',
@@ -355,6 +373,9 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     whatsappBody: 'Hello {{customerName}},\n\nBooking {{bookingNumber}} schedule updated.\nRoute: {{route}}\nNew date: {{newDate}}\nPrevious: {{previousDate}}\n\n— Show Terra Flight',
     emailSubject: 'Schedule update — {{bookingNumber}}',
     emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has a schedule change.\n\nRoute: {{route}}\nNew departure: {{newDate}}\nPrevious: {{previousDate}}\n\n— Show Terra Flight',
+    supplierSmsBody: 'Schedule change for booking {{bookingNumber}} — {{route}}. New date: {{newDate}} (was {{previousDate}}). — Show Terra Flight',
+    supplierEmailSubject: 'Schedule update — {{bookingNumber}}',
+    supplierEmailBody: 'Booking {{bookingNumber}} schedule updated.\nRoute: {{route}}\nNew departure: {{newDate}}\nPrevious: {{previousDate}}\n\n— Show Terra Flight',
   },
   {
     templateKey: 'agent_booking_submitted',

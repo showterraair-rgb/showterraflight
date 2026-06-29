@@ -323,6 +323,42 @@ async function resolveRule(eventType) {
   return rule || DEFAULT_AUTOMATION_RULES.find((r) => r.eventType === eventType) || null;
 }
 
+function audiencePrefix(audience) {
+  if (audience === 'supplier') return 'supplier';
+  if (audience === 'agent') return 'agent';
+  if (audience === 'admin') return 'admin';
+  return null;
+}
+
+function renderAudienceSmsBody(template, vars, audience) {
+  const prefix = audiencePrefix(audience);
+  const raw = (prefix && template?.[`${prefix}SmsBody`]) || template?.smsBody || '';
+  return renderTemplate(raw, vars);
+}
+
+function renderAudienceEmail(template, vars, audience) {
+  const prefix = audiencePrefix(audience);
+  return {
+    subject: renderTemplate(
+      (prefix && template?.[`${prefix}EmailSubject`]) || template?.emailSubject || '',
+      vars
+    ),
+    body: renderTemplate(
+      (prefix && template?.[`${prefix}EmailBody`]) || template?.emailBody || '',
+      vars
+    ),
+  };
+}
+
+function renderAudienceWhatsappBody(template, vars, audience) {
+  const prefix = audiencePrefix(audience);
+  const raw = (prefix && template?.[`${prefix}WhatsappBody`])
+    || template?.whatsappBody
+    || template?.smsBody
+    || '';
+  return renderTemplate(raw, vars);
+}
+
 /**
  * Fire notification for an event — never throws to caller.
  */
@@ -409,13 +445,9 @@ export async function triggerNotificationEventWithChannels(
       recipients.push({ channel: 'email', to: admin.adminEmail, audience: 'admin' });
     }
 
-    const smsBody = renderTemplate(template?.smsBody || '', vars);
-    const emailSubject = renderTemplate(template?.emailSubject || '', vars);
-    const emailBody = renderTemplate(template?.emailBody || '', vars);
     const whatsappTemplateName = template?.whatsappTemplateName || '';
     const whatsappTemplateLanguage = template?.whatsappTemplateLanguage || 'en';
     const whatsappBodyParams = buildWhatsAppBodyParams(template, eventType, vars);
-    const whatsappTextFallback = renderTemplate(template?.whatsappBody || template?.smsBody || '', vars);
 
     const results = [];
     for (const r of recipients) {
@@ -425,19 +457,23 @@ export async function triggerNotificationEventWithChannels(
         if (r.channel === 'whatsapp' && !rule.whatsappEnabled) continue;
       }
 
+      const smsBody = renderAudienceSmsBody(template, vars, r.audience);
+      const emailRendered = renderAudienceEmail(template, vars, r.audience);
+      const whatsappTextFallback = renderAudienceWhatsappBody(template, vars, r.audience);
+
       if (r.channel === 'sms' && !smsBody) continue;
       if (r.channel === 'whatsapp' && !whatsappTemplateName && !whatsappTextFallback) continue;
 
       const body = r.channel === 'sms'
         ? smsBody
         : r.channel === 'email'
-          ? emailBody
+          ? emailRendered.body
           : whatsappTextFallback;
 
       const result = await dispatchChannel({
         channel: r.channel,
         recipient: r.to,
-        subject: emailSubject,
+        subject: emailRendered.subject,
         body,
         meta: {
           eventType,
@@ -469,8 +505,9 @@ export async function triggerNotificationEventWithChannels(
 }
 
 export function triggerNotificationEventSafe(eventType, context) {
-  triggerNotificationEvent(eventType, context).catch((err) => {
+  return triggerNotificationEvent(eventType, context).catch((err) => {
     console.error('[notification] unhandled', eventType, err.message);
+    return { error: err.message };
   });
 }
 
