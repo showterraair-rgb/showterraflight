@@ -40,7 +40,7 @@ export const env = {
   apiPublicUrl: (process.env.API_PUBLIC_URL || `http://localhost:${parseInt(process.env.PORT || '5000', 10)}`).replace(/\/$/, ''),
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-    max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+    max: parseInt(process.env.RATE_LIMIT_MAX || '300', 10),
   },
   inactivityTimeoutMinutes: parseInt(process.env.INACTIVITY_TIMEOUT_MINUTES || '30', 10),
   backup: {
