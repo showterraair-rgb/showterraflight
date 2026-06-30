@@ -62,13 +62,16 @@ export default function ReminderChannelButtons({
     setSending(channel);
     setMsg('');
     try {
-      await onSend([channel]);
-      setMsg('Sent');
+      const response = await onSend([channel]);
+      const apiMessage = response?.data?.message;
+      setMsg(apiMessage || 'Sent');
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Failed');
+      const apiMessage = err.response?.data?.message;
+      const channelError = err.response?.data?.data?.results?.find((r) => !r.success)?.error;
+      setMsg(apiMessage || channelError || 'Failed');
     } finally {
       setSending(null);
-      setTimeout(() => setMsg(''), 3000);
+      setTimeout(() => setMsg(''), 4000);
     }
   };
 
@@ -105,7 +108,16 @@ export default function ReminderChannelButtons({
           </button>
         );
       })}
-      {msg && <span className={`text-[10px] ${msg === 'Sent' ? 'text-green-600' : 'text-red-600'}`}>{msg}</span>}
+      {msg && (
+        <span
+          className={`max-w-[9rem] truncate text-[10px] ${
+            msg === 'Sent' || msg === 'Reminder sent' ? 'text-green-600' : 'text-red-600'
+          }`}
+          title={msg}
+        >
+          {msg}
+        </span>
+      )}
     </div>
   );
 }

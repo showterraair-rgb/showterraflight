@@ -31,6 +31,7 @@ router.post('/settings/email/test', authorize('notifications:manage', 'settings:
 router.get('/settings/whatsapp', authorize('notifications:view', 'settings:manage'), notificationController.getWhatsAppSettings);
 router.put('/settings/whatsapp', authorize('notifications:manage', 'settings:manage'), validate(updateWhatsAppSettingsSchema), notificationController.updateWhatsAppSettings);
 router.post('/settings/whatsapp/test', authorize('notifications:manage', 'settings:manage'), validate(testWhatsAppSchema), notificationController.testWhatsApp);
+router.get('/settings/whatsapp/wasender-status', authorize('notifications:view', 'settings:manage'), notificationController.getWasenderStatus);
 
 router.get('/templates', authorize('notifications:view', 'settings:manage'), notificationController.listTemplates);
 router.get('/templates/:templateKey', authorize('notifications:view', 'settings:manage'), validate(templateKeyParamSchema, 'params'), notificationController.getTemplate);

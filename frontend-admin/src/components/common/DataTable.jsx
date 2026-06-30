@@ -1,8 +1,13 @@
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
 
-const stickyHead = 'sticky right-0 z-20 bg-slate-50 shadow-[-6px_0_10px_-6px_rgba(15,23,42,0.15)] dark:bg-slate-800 dark:shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]';
-const stickyCell = 'sticky right-0 z-10 bg-white shadow-[-6px_0_10px_-6px_rgba(15,23,42,0.12)] group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800 dark:shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.3)]';
+const stickyHead = 'sticky z-20 bg-slate-50 shadow-[-6px_0_10px_-6px_rgba(15,23,42,0.15)] dark:bg-slate-800 dark:shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]';
+const stickyCell = 'sticky z-10 bg-white shadow-[-6px_0_10px_-6px_rgba(15,23,42,0.12)] group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800 dark:shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.3)]';
+
+function stickyStyle(offset) {
+  if (!offset && offset !== 0) return { right: 0 };
+  return { right: typeof offset === 'number' ? `${offset}px` : offset };
+}
 
 export default function DataTable({
   columns,
@@ -39,6 +44,7 @@ export default function DataTable({
             {columns.map((col) => (
               <th
                 key={col.key}
+                style={col.stickyRight ? stickyStyle(col.stickyRightOffset) : undefined}
                 className={`${headPad} text-left font-semibold uppercase tracking-wide text-muted ${col.stickyRight ? stickyHead : ''}`}
               >
                 {col.label}
@@ -52,6 +58,7 @@ export default function DataTable({
               {columns.map((col) => (
                 <td
                   key={col.key}
+                  style={col.stickyRight ? stickyStyle(col.stickyRightOffset) : undefined}
                   className={`${cellPad} tabular-nums text-slate-700 dark:text-slate-200 ${col.stickyRight ? stickyCell : col.cellClassName || 'whitespace-nowrap'}`}
                 >
                   {col.render ? col.render(row) : row[col.key]}

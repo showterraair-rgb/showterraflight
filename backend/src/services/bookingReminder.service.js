@@ -7,6 +7,34 @@ import { buildSupplierBookingNotificationContext } from '../utils/supplierNotifi
 import { triggerNotificationEventWithChannels } from './notificationOrchestrator.service.js';
 
 const ACTIVE_BOOKING_FILTER = { status: { $nin: ['voided', 'cancelled', 'refunded'] } };
+const MANUAL_REMINDER_OPTIONS = { useAutomationRule: false, strictDelivery: true };
+
+function hasContactChannels(party) {
+  return Boolean(party?.phone || party?.whatsapp || party?.email);
+}
+
+function formatReminderApiResult(result) {
+  if (result.error || result.skipped) {
+    const failed = result.results?.find((r) => !r.success);
+    return {
+      ok: false,
+      message: result.reason || result.error || failed?.error || 'Reminder could not be sent',
+      data: result,
+    };
+  }
+
+  const delivered = (result.results || []).filter((r) => r.success && !r.mocked);
+  if (!delivered.length) {
+    const failed = result.results?.find((r) => !r.success || r.mocked);
+    return {
+      ok: false,
+      message: failed?.error || 'Reminder could not be sent',
+      data: result,
+    };
+  }
+
+  return { ok: true, data: result, message: 'Reminder sent' };
+}
 
 function formatBookingAccountRow(doc, party) {
   const purchaseTotal = (doc.purchasePrice || 0) + (doc.directCosts || 0);
@@ -93,14 +121,23 @@ export async function sendCustomerBookingReminder(customerId, bookingId, channel
     .populate('customer', 'name phone whatsapp email')
     .lean();
   if (!booking) throw ApiError.notFound('Booking not found for this customer');
-  if (!booking.customer?.phone && !booking.customer?.email) {
-    throw ApiError.badRequest('Customer has no phone or email for reminders');
+  if (!hasContactChannels(booking.customer)) {
+    throw ApiError.badRequest('Customer has no phone, WhatsApp or email for reminders');
   }
 
-  const ctx = buildBookingNotificationContext(booking, booking.customer, {
-    vars: { dueAmount: booking.customerDue ?? 0 },
-  });
-  return triggerNotificationEventWithChannels('payment_due_reminder', ctx, channels);
+  const ctx = {
+    ...buildBookingNotificationContext(booking, booking.customer, {
+      vars: { dueAmount: booking.customerDue ?? 0 },
+    }),
+    recipientType: 'customer',
+  };
+  const result = await triggerNotificationEventWithChannels(
+    'payment_due_reminder',
+    ctx,
+    channels,
+    MANUAL_REMINDER_OPTIONS
+  );
+  return formatReminderApiResult(result);
 }
 
 export async function sendSupplierBookingReminder(supplierId, bookingId, channels) {
@@ -108,12 +145,21 @@ export async function sendSupplierBookingReminder(supplierId, bookingId, channel
     .populate('supplier', 'name company phone whatsapp email')
     .lean();
   if (!booking) throw ApiError.notFound('Booking not found for this supplier');
-  if (!booking.supplier?.phone && !booking.supplier?.email) {
-    throw ApiError.badRequest('Supplier has no phone or email for reminders');
+  if (!hasContactChannels(booking.supplier)) {
+    throw ApiError.badRequest('Supplier has no phone, WhatsApp or email for reminders');
   }
 
-  const ctx = buildSupplierBookingNotificationContext(booking, booking.supplier);
-  return triggerNotificationEventWithChannels('supplier_payable_reminder', ctx, channels);
+  const ctx = {
+    ...buildSupplierBookingNotificationContext(booking, booking.supplier),
+    recipientType: 'supplier',
+  };
+  const result = await triggerNotificationEventWithChannels(
+    'supplier_payable_reminder',
+    ctx,
+    channels,
+    MANUAL_REMINDER_OPTIONS
+  );
+  return formatReminderApiResult(result);
 }
 
 export async function sendBookingReminder(bookingId, channels, target = 'customer') {

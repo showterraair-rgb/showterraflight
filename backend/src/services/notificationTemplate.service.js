@@ -30,11 +30,30 @@ function formatTemplate(doc) {
   };
 }
 
-function mergeDefaultAudienceFields(formatted, fallback) {
+const TEMPLATE_CONTENT_KEYS = [
+  'name',
+  'smsBody',
+  'emailSubject',
+  'emailBody',
+  'whatsappTemplateName',
+  'whatsappTemplateLanguage',
+  'whatsappParamKeys',
+  'whatsappBody',
+  'supplierSmsBody',
+  'supplierEmailSubject',
+  'supplierEmailBody',
+  'supplierWhatsappBody',
+  'agentSmsBody',
+  'agentEmailSubject',
+  'agentEmailBody',
+  'agentWhatsappBody',
+];
+
+function mergeTemplateDefaults(formatted, fallback) {
   if (!fallback) return formatted;
   const merged = { ...formatted };
-  for (const key of Object.keys(fallback)) {
-    if ((key.startsWith('supplier') || key.startsWith('agent')) && !merged[key]) {
+  for (const key of TEMPLATE_CONTENT_KEYS) {
+    if (!merged[key] && fallback[key]) {
       merged[key] = fallback[key];
     }
   }
@@ -69,7 +88,7 @@ export async function getTemplateByKey(templateKey) {
     if (!fallback) throw ApiError.notFound('Template not found');
     return { ...fallback, id: null, isActive: true, description: '' };
   }
-  return mergeDefaultAudienceFields(formatTemplate(doc), fallback);
+  return mergeTemplateDefaults(formatTemplate(doc), fallback);
 }
 
 export async function updateTemplate(templateKey, data, userId, req) {

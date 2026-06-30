@@ -23,7 +23,7 @@ import {
 } from '../config/constants.js';
 import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
 import { sendMetaWhatsAppTemplate, sendMetaWhatsAppText } from './whatsapp/metaCloud.provider.js';
-import { sendWasenderMessage, isWasenderConfigured } from './whatsapp/wasender.provider.js';
+import { sendWasenderMessage, isWasenderConfiguredAsync } from './whatsapp/wasender.provider.js';
 import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
@@ -180,14 +180,15 @@ export async function sendWhatsAppMessage({
     return { success: false, error: 'Missing recipient phone', channel: 'whatsapp' };
   }
 
-  const waEnabled = settings.isEnabled || isWasenderConfigured();
+  const wasenderReady = await isWasenderConfiguredAsync();
+  const waEnabled = settings.isEnabled || wasenderReady;
   if (!waEnabled) {
     console.log('[NOTIFICATION:whatsapp:disabled]', recipient, templateName || messageText?.slice(0, 80));
     return { success: true, channel: 'whatsapp', messageId: `wa-disabled-${Date.now()}`, mocked: true };
   }
 
   // Wasender API — primary provider for all WhatsApp text notifications
-  if (isWasenderConfigured()) {
+  if (wasenderReady) {
     if (!messageText) {
       return { success: false, channel: 'whatsapp', error: 'WhatsApp message text required' };
     }
@@ -374,7 +375,7 @@ export async function triggerNotificationEventWithChannels(
   eventType,
   context = {},
   channels = ['sms', 'email', 'whatsapp'],
-  { useAutomationRule = false } = {}
+  { useAutomationRule = false, strictDelivery = false } = {}
 ) {
   try {
     const rule = await resolveRule(eventType);
@@ -394,11 +395,20 @@ export async function triggerNotificationEventWithChannels(
     const recipientType = context.recipientType || 'customer';
     const recipients = [];
 
-    const notifyCustomer = !useAutomationRule || Boolean(rule?.notifyCustomer);
-    const notifySupplier = !useAutomationRule || Boolean(rule?.notifySupplier);
-    const notifyAgent = !useAutomationRule || Boolean(rule?.notifyAgent);
+    const notifyCustomer = useAutomationRule
+      ? Boolean(rule?.notifyCustomer)
+      : recipientType === 'customer';
+    const notifySupplier = useAutomationRule
+      ? Boolean(rule?.notifySupplier)
+      : recipientType === 'supplier';
+    const notifyAgent = useAutomationRule
+      ? Boolean(rule?.notifyAgent)
+      : recipientType === 'agent';
 
-    if (recipientType === 'customer' && notifyCustomer) {
+    const shouldNotifyCustomer = useAutomationRule ? notifyCustomer : recipientType === 'customer';
+    const shouldNotifySupplier = useAutomationRule ? notifySupplier : recipientType === 'supplier';
+
+    if (shouldNotifyCustomer) {
       if (context.customerPhone && channelSet.has('sms')) {
         recipients.push({ channel: 'sms', to: context.customerPhone, audience: 'customer' });
       }
@@ -411,7 +421,7 @@ export async function triggerNotificationEventWithChannels(
       }
     }
 
-    if ((recipientType === 'supplier' || notifySupplier) && recipientType !== 'agent') {
+    if (shouldNotifySupplier) {
       if (context.supplierPhone && channelSet.has('sms')) {
         recipients.push({ channel: 'sms', to: context.supplierPhone, audience: 'supplier' });
       }
@@ -424,7 +434,7 @@ export async function triggerNotificationEventWithChannels(
       }
     }
 
-    if (recipientType === 'agent' || notifyAgent) {
+    if ((useAutomationRule && notifyAgent) || recipientType === 'agent') {
       if (context.agentPhone && channelSet.has('sms')) {
         recipients.push({ channel: 'sms', to: context.agentPhone, audience: 'agent' });
       }
@@ -448,6 +458,7 @@ export async function triggerNotificationEventWithChannels(
     const whatsappTemplateName = template?.whatsappTemplateName || '';
     const whatsappTemplateLanguage = template?.whatsappTemplateLanguage || 'en';
     const whatsappBodyParams = buildWhatsAppBodyParams(template, eventType, vars);
+    const wasenderReady = await isWasenderConfiguredAsync();
 
     const results = [];
     for (const r of recipients) {
@@ -470,7 +481,7 @@ export async function triggerNotificationEventWithChannels(
           ? emailRendered.body
           : whatsappTextFallback;
 
-      const result = await dispatchChannel({
+      let result = await dispatchChannel({
         channel: r.channel,
         recipient: r.to,
         subject: emailRendered.subject,
@@ -484,12 +495,19 @@ export async function triggerNotificationEventWithChannels(
           customerPaymentId: context.customerPaymentId,
           replyTo: admin.adminEmail,
           vars,
-          whatsappTemplateName: isWasenderConfigured() ? '' : whatsappTemplateName,
+          whatsappTemplateName: wasenderReady ? '' : whatsappTemplateName,
           whatsappTemplateLanguage,
           whatsappBodyParams,
           whatsappTextFallback: r.channel === 'whatsapp' ? whatsappTextFallback : '',
         },
       });
+      if (strictDelivery && result.success && result.mocked) {
+        result = {
+          ...result,
+          success: false,
+          error: result.error || `${r.channel} is disabled or not configured`,
+        };
+      }
       results.push({ ...result, audience: r.audience, channel: r.channel });
     }
 
@@ -497,7 +515,8 @@ export async function triggerNotificationEventWithChannels(
       return { skipped: true, reason: 'no recipients or channels available', results: [] };
     }
 
-    return { sent: results.filter((r) => r.success).length, results };
+    const delivered = results.filter((r) => r.success && !r.mocked);
+    return { sent: delivered.length, results };
   } catch (err) {
     console.error('[notification] trigger failed', eventType, err.message);
     return { error: err.message };
@@ -525,7 +544,7 @@ export async function sendTestEmail({ to, subject, message }) {
 
 export async function sendTestWhatsApp({ to, templateName, message }) {
   const text = message || 'Test WhatsApp from Show Terra Flight admin panel.';
-  if (isWasenderConfigured()) {
+  if (await isWasenderConfiguredAsync()) {
     return sendWasenderMessage({ to, message: text });
   }
 

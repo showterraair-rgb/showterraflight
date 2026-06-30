@@ -58,6 +58,10 @@ export const testEmailSchema = z.object({
 });
 
 export const updateWhatsAppSettingsSchema = z.object({
+  provider: z.enum(['wasender', 'meta']).optional(),
+  wasenderApiKey: z.string().max(500).optional(),
+  wasenderApiUrl: z.string().max(500).optional(),
+  wasenderSessionId: z.string().max(50).optional(),
   accessToken: z.string().max(2000).optional(),
   phoneNumberId: z.string().max(80).optional(),
   businessAccountId: z.string().max(80).optional(),

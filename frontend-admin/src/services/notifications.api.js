@@ -13,6 +13,7 @@ export const notificationsApi = {
   getWhatsAppSettings: () => api.get('/notifications/settings/whatsapp'),
   updateWhatsAppSettings: (data) => api.put('/notifications/settings/whatsapp', data),
   testWhatsApp: (data) => api.post('/notifications/settings/whatsapp/test', data),
+  getWasenderStatus: () => api.get('/notifications/settings/whatsapp/wasender-status'),
 
   listTemplates: () => api.get('/notifications/templates'),
   getTemplate: (key) => api.get(`/notifications/templates/${key}`),

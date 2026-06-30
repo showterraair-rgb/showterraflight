@@ -9,29 +9,40 @@ export default function WhatsAppSettingsPage() {
   const { can } = usePermission();
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  const [testTo, setTestTo] = useState('');
-  const [testTemplate, setTestTemplate] = useState('hello_world');
+  const [testTo, setTestTo] = useState('01741148529');
+  const [testMessage, setTestMessage] = useState('Test WhatsApp from Show Terra Flight admin.');
+  const [sessionStatus, setSessionStatus] = useState(null);
 
   const form = useForm({
     defaultValues: {
+      provider: 'wasender',
+      wasenderApiKey: '',
+      wasenderApiUrl: 'https://www.wasenderapi.com/api/send-message',
+      wasenderSessionId: '96259',
+      defaultCountryCode: '880',
+      defaultLanguageCode: 'en',
+      isEnabled: true,
       accessToken: '',
       phoneNumberId: '',
       businessAccountId: '',
       webhookVerifyToken: '',
       apiVersion: 'v21.0',
-      defaultCountryCode: '880',
-      defaultLanguageCode: 'en',
       testTemplateName: 'hello_world',
-      isEnabled: false,
     },
   });
+
+  const provider = form.watch('provider');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await notificationsApi.getWhatsAppSettings();
-      form.reset(data.data);
-      setTestTemplate(data.data?.testTemplateName || 'hello_world');
+      form.reset({
+        ...form.getValues(),
+        ...data.data,
+        wasenderApiKey: data.data?.wasenderApiKey || '',
+        accessToken: data.data?.accessToken || '',
+      });
     } finally {
       setLoading(false);
     }
@@ -53,20 +64,31 @@ export default function WhatsAppSettingsPage() {
   const sendTest = async () => {
     setMsg('');
     try {
-      const { data } = await notificationsApi.testWhatsApp({ to: testTo, templateName: testTemplate });
-      setMsg(data.mocked ? 'WhatsApp logged only (enable gateway or check config)' : 'Test WhatsApp sent');
+      const { data } = await notificationsApi.testWhatsApp({
+        to: testTo,
+        message: testMessage,
+      });
+      if (!data.success) throw new Error(data.message || 'Test failed');
+      setMsg(data.mocked ? 'Logged only — enable Wasender or check API key' : `Test sent (ID: ${data.data?.messageId || 'ok'})`);
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Test failed');
+      setMsg(err.response?.data?.message || err.message || 'Test failed');
+    }
+  };
+
+  const checkStatus = async () => {
+    setMsg('');
+    try {
+      const { data } = await notificationsApi.getWasenderStatus();
+      setSessionStatus(data.data);
+      setMsg(data.data?.status ? `Session: ${data.data.status}` : 'Status checked');
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Could not check session status');
     }
   };
 
   if (loading) return <LoadingSpinner className="py-20" />;
 
   const editable = can('notifications:manage') || can('settings:manage');
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-  const webhookUrl = apiBase.startsWith('http')
-    ? `${apiBase.replace(/\/$/, '')}/webhooks/whatsapp`
-    : `${window.location.origin}${apiBase.replace(/\/$/, '')}/webhooks/whatsapp`;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -74,14 +96,19 @@ export default function WhatsAppSettingsPage() {
         <Link to="/settings/notifications" className="text-xs font-medium text-brand-600 hover:underline">← All notification settings</Link>
         <h2 className="mt-2 text-xl font-bold text-slate-900">WhatsApp Settings</h2>
         <p className="text-sm text-slate-500">
-          Meta WhatsApp Business Cloud API for transactional booking and payment messages.
+          WasenderAPI for booking reminders, payment alerts, and customer notifications.
         </p>
       </div>
 
-      <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        <p className="font-medium">Webhook URL (Meta Developer Console)</p>
-        <p className="mt-1 break-all font-mono text-xs">{webhookUrl}</p>
-        <p className="mt-2 text-xs">Use the same verify token you save below. Subscribe to <strong>messages</strong> field.</p>
+      <div className="rounded-lg border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-900">
+        <p className="font-medium">Wasender session: Show Terra Air</p>
+        <p className="mt-1 text-xs">
+          Copy the <strong>API Access Token</strong> from your{' '}
+          <a href="https://wasenderapi.com/whatsapp/manage/96259" target="_blank" rel="noreferrer" className="underline">
+            Wasender session page
+          </a>{' '}
+          (🔑 icon). Phone: +8801741148529
+        </p>
       </div>
 
       {msg && <p className="text-sm text-brand-700">{msg}</p>}
@@ -93,67 +120,94 @@ export default function WhatsAppSettingsPage() {
         </label>
 
         <label className="block text-sm">
-          <span className="text-slate-600">Access token *</span>
-          <input {...form.register('accessToken')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" autoComplete="off" placeholder="EAA..." />
+          <span className="text-slate-600">Provider</span>
+          <select {...form.register('provider')} disabled={!editable} className="input mt-1 w-full">
+            <option value="wasender">WasenderAPI (recommended)</option>
+            <option value="meta">Meta Cloud API (legacy)</option>
+          </select>
         </label>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="text-slate-600">Phone number ID *</span>
-            <input {...form.register('phoneNumberId')} disabled={!editable} className="input mt-1 w-full" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-slate-600">Business account ID</span>
-            <input {...form.register('businessAccountId')} disabled={!editable} className="input mt-1 w-full" />
-          </label>
-        </div>
+        {provider === 'wasender' && (
+          <>
+            <label className="block text-sm">
+              <span className="text-slate-600">Wasender session API key *</span>
+              <input
+                {...form.register('wasenderApiKey')}
+                disabled={!editable}
+                className="input mt-1 w-full font-mono text-xs"
+                autoComplete="off"
+                placeholder="Paste API access token from session page"
+              />
+            </label>
 
-        <label className="block text-sm">
-          <span className="text-slate-600">Webhook verify token *</span>
-          <input {...form.register('webhookVerifyToken')} disabled={!editable} className="input mt-1 w-full" autoComplete="off" />
-        </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-slate-600">API URL</span>
+                <input {...form.register('wasenderApiUrl')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" />
+              </label>
+              <label className="block text-sm">
+                <span className="text-slate-600">Session ID</span>
+                <input {...form.register('wasenderSessionId')} disabled={!editable} className="input mt-1 w-full" placeholder="96259" />
+              </label>
+            </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block text-sm">
-            <span className="text-slate-600">API version</span>
-            <input {...form.register('apiVersion')} disabled={!editable} className="input mt-1 w-full" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-slate-600">Country code</span>
-            <input {...form.register('defaultCountryCode')} disabled={!editable} className="input mt-1 w-full" placeholder="880" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-slate-600">Language</span>
-            <input {...form.register('defaultLanguageCode')} disabled={!editable} className="input mt-1 w-full" placeholder="en" />
-          </label>
-        </div>
+            <label className="block text-sm">
+              <span className="text-slate-600">Default country code</span>
+              <input {...form.register('defaultCountryCode')} disabled={!editable} className="input mt-1 w-full max-w-[120px]" placeholder="880" />
+            </label>
+          </>
+        )}
 
-        <label className="block text-sm">
-          <span className="text-slate-600">Default test template</span>
-          <input {...form.register('testTemplateName')} disabled={!editable} className="input mt-1 w-full" placeholder="hello_world" />
-        </label>
+        {provider === 'meta' && (
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-medium text-slate-600">Meta WhatsApp Business Cloud API</p>
+            <label className="block text-sm">
+              <span className="text-slate-600">Access token</span>
+              <input {...form.register('accessToken')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" autoComplete="off" />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-slate-600">Phone number ID</span>
+                <input {...form.register('phoneNumberId')} disabled={!editable} className="input mt-1 w-full" />
+              </label>
+              <label className="block text-sm">
+                <span className="text-slate-600">Business account ID</span>
+                <input {...form.register('businessAccountId')} disabled={!editable} className="input mt-1 w-full" />
+              </label>
+            </div>
+          </div>
+        )}
 
         {editable && (
-          <button type="submit" className="btn-primary">Save settings</button>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className="btn-primary">Save settings</button>
+            <button type="button" onClick={checkStatus} className="btn-secondary">Check session status</button>
+          </div>
         )}
       </form>
+
+      {sessionStatus && (
+        <div className="card text-xs text-slate-600">
+          <pre className="overflow-x-auto whitespace-pre-wrap">{JSON.stringify(sessionStatus, null, 2)}</pre>
+        </div>
+      )}
 
       {editable && (
         <div className="card space-y-3">
           <h3 className="text-sm font-semibold text-slate-900">Test WhatsApp</h3>
-          <p className="text-xs text-slate-500">Uses approved template (default: hello_world). Phone: 017XXXXXXXX or 88017XXXXXXXX</p>
+          <p className="text-xs text-slate-500">Sends a plain text message via Wasender. Use 017XXXXXXXX or +88017XXXXXXXX</p>
           <div className="flex flex-wrap gap-2">
             <input
               value={testTo}
               onChange={(e) => setTestTo(e.target.value)}
               className="input min-w-[200px] flex-1"
-              placeholder="017XXXXXXXX"
+              placeholder="01741148529"
             />
             <input
-              value={testTemplate}
-              onChange={(e) => setTestTemplate(e.target.value)}
-              className="input min-w-[140px]"
-              placeholder="hello_world"
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              className="input min-w-[200px] flex-[2]"
+              placeholder="Test message"
             />
             <button type="button" onClick={sendTest} className="btn-secondary">Send test</button>
           </div>

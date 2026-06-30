@@ -29,6 +29,10 @@ const EMAIL_DEFAULTS = {
 };
 
 const WHATSAPP_DEFAULTS = {
+  provider: 'wasender',
+  wasenderApiKey: '',
+  wasenderApiUrl: 'https://www.wasenderapi.com/api/send-message',
+  wasenderSessionId: '',
   accessToken: '',
   phoneNumberId: '',
   businessAccountId: '',
@@ -74,6 +78,10 @@ function formatEmail(doc) {
 function formatWhatsApp(doc) {
   if (!doc) return { ...WHATSAPP_DEFAULTS };
   return {
+    provider: doc.provider || 'wasender',
+    wasenderApiKey: doc.wasenderApiKey ? '********' : '',
+    wasenderApiUrl: doc.wasenderApiUrl || WHATSAPP_DEFAULTS.wasenderApiUrl,
+    wasenderSessionId: doc.wasenderSessionId || '',
     accessToken: doc.accessToken ? '********' : '',
     phoneNumberId: doc.phoneNumberId || '',
     businessAccountId: doc.businessAccountId || '',
@@ -151,6 +159,8 @@ export async function getWhatsAppSettings() {
 export async function updateWhatsAppSettings(data, userId, req) {
   const existing = await WhatsAppSetting.findOne({ key: 'whatsapp' }).lean();
   const update = { ...data, updatedBy: userId };
+  if (update.wasenderApiKey === '********') delete update.wasenderApiKey;
+  else if (!update.wasenderApiKey && existing?.wasenderApiKey) delete update.wasenderApiKey;
   if (update.accessToken === '********') delete update.accessToken;
   else if (!update.accessToken && existing?.accessToken) delete update.accessToken;
   if (update.webhookVerifyToken === '********') delete update.webhookVerifyToken;

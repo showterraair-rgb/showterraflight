@@ -31,10 +31,11 @@ const DEFAULT_FILTERS = {
 };
 
 function customerReminderChannels(row) {
+  const phone = row.customerPhone || row.customerWhatsapp;
   return {
-    sms: Boolean(row.customerPhone),
+    sms: Boolean(row.customerPhone || row.customerWhatsapp),
     email: Boolean(row.customerEmail),
-    whatsapp: Boolean(row.customerPhone || row.customerWhatsapp),
+    whatsapp: Boolean(phone),
   };
 }
 
@@ -236,6 +237,7 @@ export function BookingsListView({
       key: 'remind',
       label: 'Remind',
       stickyRight: true,
+      stickyRightOffset: '17.5rem',
       cellClassName: 'bg-white dark:bg-slate-900',
       render: (r) => (
         <ReminderChannelButtons

@@ -3,6 +3,10 @@ import mongoose from 'mongoose';
 const whatsAppSettingSchema = new mongoose.Schema(
   {
     key: { type: String, required: true, unique: true, default: 'whatsapp' },
+    provider: { type: String, enum: ['wasender', 'meta'], default: 'wasender' },
+    wasenderApiKey: { type: String, default: '', trim: true },
+    wasenderApiUrl: { type: String, default: 'https://www.wasenderapi.com/api/send-message', trim: true },
+    wasenderSessionId: { type: String, default: '', trim: true },
     accessToken: { type: String, default: '', trim: true },
     phoneNumberId: { type: String, default: '', trim: true },
     businessAccountId: { type: String, default: '', trim: true },

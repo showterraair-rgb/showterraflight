@@ -28,6 +28,9 @@ async function run() {
       {
         $set: {
           key: 'whatsapp',
+          provider: 'wasender',
+          wasenderApiKey: wasenderKey,
+          wasenderApiUrl: env.wasender.apiUrl,
           isEnabled: true,
           defaultCountryCode: env.whatsapp.defaultCountryCode || '880',
           defaultLanguageCode: env.whatsapp.defaultLanguageCode || 'en',
@@ -35,8 +38,9 @@ async function run() {
       },
       { upsert: true, new: true }
     ).lean();
-    console.log('WhatsApp enabled (Wasender API):', wa.isEnabled);
-    console.log('Wasender API URL:', env.wasender.apiUrl);
+    console.log('WhatsApp enabled (Wasender):', wa.isEnabled);
+    console.log('Wasender API URL:', wa.wasenderApiUrl || env.wasender.apiUrl);
+    console.log('Session key stored in DB (masked):', wasenderKey.slice(0, 6) + '...');
   }
 
   if (smtpUser && smtpPass) {

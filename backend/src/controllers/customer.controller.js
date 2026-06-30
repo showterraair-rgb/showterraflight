@@ -38,15 +38,14 @@ export const remindBooking = asyncHandler(async (req, res) => {
     req.params.bookingId,
     req.body.channels
   );
-  if (result.error || result.skipped || !result.sent) {
-    const failed = result.results?.find((r) => !r.success);
+  if (!result.ok) {
     return res.status(400).json({
       success: false,
-      message: result.reason || result.error || failed?.error || 'Reminder could not be sent',
-      data: result,
+      message: result.message,
+      data: result.data,
     });
   }
-  res.json({ success: true, data: result, message: 'Reminder sent' });
+  res.json({ success: true, data: result.data, message: result.message });
 });
 
 export default { list, getById, create, update, remove, getAccount, remindBooking };

@@ -12,6 +12,7 @@ import {
   buildDailyLedgerSummary,
   sendDailyLedgerNotifyToAdmin,
 } from '../services/ledgerSummary.service.js';
+import { getWasenderSessionStatus } from '../services/whatsapp/wasender.provider.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -67,6 +68,12 @@ export const testWhatsApp = asyncHandler(async (req, res) => {
   const result = await sendTestWhatsApp(req.body);
   if (!result.success) throw ApiError.badRequest(result.error || 'Test WhatsApp failed');
   res.json({ success: true, data: result, message: 'Test WhatsApp dispatched', mocked: result.mocked });
+});
+
+export const getWasenderStatus = asyncHandler(async (_req, res) => {
+  const data = await getWasenderSessionStatus();
+  if (!data.success) throw ApiError.badRequest(data.error || 'Could not fetch Wasender status');
+  res.json({ success: true, data: data.data });
 });
 
 export const listTemplates = asyncHandler(async (_req, res) => {
@@ -140,6 +147,7 @@ export default {
   getWhatsAppSettings,
   updateWhatsAppSettings,
   testWhatsApp,
+  getWasenderStatus,
   listTemplates,
   getTemplate,
   updateTemplate,
