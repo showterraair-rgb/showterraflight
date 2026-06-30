@@ -1,4 +1,5 @@
 import env from '../../config/env.js';
+import { normalizeWaPhone } from '../../utils/phoneUtils.js';
 
 export function getWasenderConfig() {
   const apiKey = process.env.WASENDER_API_KEY || env.wasender?.apiKey || '';
@@ -21,10 +22,10 @@ export function isWasenderConfigured() {
  */
 export async function sendWasenderMessage({ to, message }) {
   const config = getWasenderConfig();
-  const phone = String(to || '').replace(/\D/g, '');
+  const phone = normalizeWaPhone(to);
 
   if (!phone) {
-    return { success: false, error: 'Missing phone number', channel: 'whatsapp' };
+    return { success: false, error: 'Invalid phone number', channel: 'whatsapp' };
   }
 
   if (!config.enabled || !config.apiKey) {

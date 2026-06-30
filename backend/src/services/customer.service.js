@@ -2,13 +2,19 @@ import Customer from '../models/Customer.js';
 import Order from '../models/Order.js';
 import Booking from '../models/Booking.js';
 import CustomerPayment from '../models/CustomerPayment.js';
+import { logAudit } from './audit.service.js';
+import {
+  isValidBdMobile,
+  localBdPhone,
+  normalizePartyPhoneFields,
+  phoneMatchQuery,
+} from '../utils/phoneUtils.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
   buildPaginationResponse,
   buildSearchFilter,
 } from '../utils/pagination.js';
-import { logAudit } from './audit.service.js';
 
 function formatCustomer(doc) {
   return {
@@ -66,15 +72,31 @@ export async function getCustomerById(id) {
   };
 }
 
+function prepareCustomerPhones(data) {
+  const normalized = normalizePartyPhoneFields({
+    phone: data.phone,
+    whatsapp: data.whatsapp,
+  });
+  if (!normalized.valid) {
+    throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+  }
+  return {
+    ...data,
+    phone: normalized.phone,
+    whatsapp: normalized.whatsapp || undefined,
+  };
+}
+
 export async function createCustomer(data, userId, req) {
-  const existing = await Customer.findOne({ phone: data.phone });
+  const payload = prepareCustomerPhones(data);
+  const existing = await Customer.findOne(phoneMatchQuery('phone', payload.phone));
   if (existing) {
     throw ApiError.badRequest('A customer with this phone number already exists');
   }
 
   const customer = await Customer.create({
-    ...data,
-    email: data.email || undefined,
+    ...payload,
+    email: payload.email || undefined,
     createdBy: userId,
   });
 
@@ -95,15 +117,28 @@ export async function updateCustomer(id, data, userId, req) {
   const customer = await Customer.findById(id);
   if (!customer) throw ApiError.notFound('Customer not found');
 
-  if (data.phone && data.phone !== customer.phone) {
-    const dup = await Customer.findOne({ phone: data.phone, _id: { $ne: id } });
+  const patch = { ...data };
+  if (data.phone !== undefined || data.whatsapp !== undefined) {
+    const normalized = normalizePartyPhoneFields({
+      phone: data.phone ?? customer.phone,
+      whatsapp: data.whatsapp ?? customer.whatsapp,
+    });
+    if (!normalized.valid) {
+      throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+    }
+    patch.phone = normalized.phone;
+    patch.whatsapp = normalized.whatsapp || undefined;
+  }
+
+  if (patch.phone && patch.phone !== customer.phone) {
+    const dup = await Customer.findOne({ ...phoneMatchQuery('phone', patch.phone), _id: { $ne: id } });
     if (dup) throw ApiError.badRequest('Phone number already in use');
   }
 
   const before = customer.toObject();
   Object.assign(customer, {
-    ...data,
-    email: data.email === '' ? undefined : data.email ?? customer.email,
+    ...patch,
+    email: patch.email === '' ? undefined : patch.email ?? customer.email,
   });
   await customer.save();
 
@@ -177,12 +212,17 @@ export async function deleteCustomer(id, userId, req) {
 
 /** Find by phone or create from order snapshot fields */
 export async function findOrCreateFromOrder({ name, phone, email }, userId) {
-  let customer = await Customer.findOne({ phone });
+  const localPhone = localBdPhone(phone);
+  if (!localPhone || !isValidBdMobile(localPhone)) {
+    throw ApiError.badRequest('Valid customer phone is required');
+  }
+
+  let customer = await Customer.findOne(phoneMatchQuery('phone', localPhone));
   if (customer) return customer;
 
   customer = await Customer.create({
     name,
-    phone,
+    phone: localPhone,
     email: email || undefined,
     createdBy: userId,
   });

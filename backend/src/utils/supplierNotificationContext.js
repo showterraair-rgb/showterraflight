@@ -1,15 +1,20 @@
 import { formatDateValue } from './notificationContext.js';
+import { resolveContactChannels } from './phoneUtils.js';
 
 export function buildSupplierBookingNotificationContext(booking, supplier, extra = {}) {
   const purchaseTotal = (booking.purchasePrice || 0) + (booking.directCosts || 0);
   const supplierName = supplier?.company || supplier?.name || '';
+  const { smsPhone, waPhone } = resolveContactChannels({
+    phone: supplier?.phone,
+    whatsapp: supplier?.whatsapp,
+  });
 
   return {
     recipientType: 'supplier',
     bookingId: booking._id?.toString?.() || booking.id,
     supplierId: booking.supplier?._id?.toString?.() || booking.supplier?.toString?.() || supplier?._id?.toString?.(),
-    supplierPhone: supplier?.phone || '',
-    supplierWhatsapp: supplier?.whatsapp || supplier?.phone || '',
+    supplierPhone: smsPhone,
+    supplierWhatsapp: waPhone,
     supplierEmail: supplier?.email || '',
     vars: {
       supplierName,
@@ -25,11 +30,16 @@ export function buildSupplierBookingNotificationContext(booking, supplier, extra
 }
 
 export function buildSupplierPaymentNotificationContext(payment, supplier, booking, extra = {}) {
+  const { smsPhone, waPhone } = resolveContactChannels({
+    phone: supplier?.phone,
+    whatsapp: supplier?.whatsapp,
+  });
+
   return {
     recipientType: 'supplier',
     supplierId: supplier?._id?.toString?.() || supplier?.id || payment.supplier?.toString?.(),
-    supplierPhone: supplier?.phone || '',
-    supplierWhatsapp: supplier?.whatsapp || supplier?.phone || '',
+    supplierPhone: smsPhone,
+    supplierWhatsapp: waPhone,
     supplierEmail: supplier?.email || '',
     bookingId: booking?._id?.toString?.() || booking?.id || payment.booking?.toString?.(),
     vars: {

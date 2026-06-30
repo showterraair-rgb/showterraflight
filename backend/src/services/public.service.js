@@ -6,6 +6,7 @@ import { generateOrderNumber } from './numberGenerator.service.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 import { buildOrderNotificationContext } from '../utils/notificationContext.js';
 import { mergeHomeCmsContent } from '../utils/mergeHomeCmsContent.js';
+import { localBdPhone, isValidBdMobile } from '../utils/phoneUtils.js';
 import ApiError from '../utils/ApiError.js';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
 
@@ -81,12 +82,17 @@ export async function getPublishedNotices({ type } = {}) {
 }
 
 export async function createBookingRequest(data) {
+  const customerPhone = localBdPhone(data.customerPhone);
+  if (!isValidBdMobile(customerPhone)) {
+    throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+  }
+
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
     orderNumber,
     customerName: data.customerName,
-    customerPhone: data.customerPhone,
+    customerPhone,
     customerEmail: data.customerEmail || undefined,
     source: 'website',
     status: 'inquiry',
@@ -106,7 +112,7 @@ export async function createBookingRequest(data) {
   });
 
   const ctx = buildOrderNotificationContext(order, {
-    customerPhone: data.customerPhone,
+    customerPhone,
     customerEmail: data.customerEmail,
   });
 

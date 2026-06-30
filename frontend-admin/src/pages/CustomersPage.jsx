@@ -204,14 +204,15 @@ export default function CustomersPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Phone *</label>
-              <input className="input-field" {...register('phone')} />
+              <input className="input-field" placeholder="e.g. 01674533303" {...register('phone')} />
               {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
+              <p className="mt-1 text-xs text-slate-500">Bangladesh mobile (01XXXXXXXXX). Used for SMS.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">WhatsApp Number</label>
-              <input className="input-field" placeholder="e.g. 88017XXXXXXXX" {...register('whatsapp')} />
+              <input className="input-field" placeholder="e.g. 01674533303 (optional)" {...register('whatsapp')} />
               {errors.whatsapp && <p className="mt-1 text-xs text-red-600">{errors.whatsapp.message}</p>}
-              <p className="mt-1 text-xs text-slate-500">Used for WhatsApp notifications. Leave blank to use phone number.</p>
+              <p className="mt-1 text-xs text-slate-500">Leave blank to use phone number for WhatsApp.</p>
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-sm font-medium">Email</label>

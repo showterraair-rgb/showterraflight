@@ -168,12 +168,14 @@ export default function SuppliersPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Phone</label>
-              <input className="input-field" {...register('phone')} />
+              <input className="input-field" placeholder="e.g. 01674533303" {...register('phone')} />
+              <p className="mt-1 text-xs text-slate-500">Bangladesh mobile (01XXXXXXXXX).</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">WhatsApp Number</label>
-              <input className="input-field" placeholder="e.g. 88017XXXXXXXX" {...register('whatsapp')} />
+              <input className="input-field" placeholder="e.g. 01674533303 (optional)" {...register('whatsapp')} />
               {errors.whatsapp && <p className="mt-1 text-xs text-red-600">{errors.whatsapp.message}</p>}
+              <p className="mt-1 text-xs text-slate-500">Leave blank to use phone for WhatsApp.</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Email</label>

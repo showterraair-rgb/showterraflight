@@ -27,7 +27,7 @@ import { sendWasenderMessage, isWasenderConfigured } from './whatsapp/wasender.p
 import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
-import { normalizeWaPhone } from '../utils/phoneUtils.js';
+import { normalizeWaPhone, canonicalBdPhone } from '../utils/phoneUtils.js';
 import ApiError from '../utils/ApiError.js';
 
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
@@ -92,10 +92,10 @@ function buildWhatsAppBodyParams(template, eventType, vars) {
 
 export async function sendSmsMessage({ to, message }) {
   const settings = resolveSmsConfig(await getSmsSettingsRaw());
-  const recipient = String(to || '').replace(/\D/g, '');
+  const recipient = canonicalBdPhone(to);
 
   if (!recipient) {
-    return { success: false, error: 'Missing recipient phone', channel: 'sms' };
+    return { success: false, error: 'Invalid or missing recipient phone', channel: 'sms' };
   }
 
   if (!settings.isEnabled) {

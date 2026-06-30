@@ -14,6 +14,7 @@ import { triggerNotificationEventSafe } from './notificationOrchestrator.service
 import { buildOrderNotificationContext } from '../utils/notificationContext.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
 import { APPROVAL_STATUS_LABELS, ORDER_STATUS_LABELS } from '../config/constants.js';
+import { localBdPhone, isValidBdMobile } from '../utils/phoneUtils.js';
 
 async function fireOrderNotification(eventType, order, extra = {}) {
   try {
@@ -156,19 +157,25 @@ export async function createOrder(data, userId, req) {
   const orderNumber = await generateOrderNumber();
 
   let customerId = data.customerId;
-  if (!customerId && data.customerPhone) {
+  let customerPhone = data.customerPhone ? localBdPhone(data.customerPhone) : undefined;
+  if (customerPhone && !isValidBdMobile(customerPhone)) {
+    throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+  }
+
+  if (!customerId && customerPhone) {
     const customer = await findOrCreateFromOrder(
-      { name: data.customerName, phone: data.customerPhone, email: data.customerEmail },
+      { name: data.customerName, phone: customerPhone, email: data.customerEmail },
       userId
     );
     customerId = customer._id;
+    customerPhone = customer.phone;
   }
 
   const order = await Order.create({
     orderNumber,
     customer: customerId,
     customerName: data.customerName,
-    customerPhone: data.customerPhone,
+    customerPhone,
     customerEmail: data.customerEmail || undefined,
     source: data.source,
     status: data.status,
@@ -219,7 +226,13 @@ export async function updateOrder(id, data, userId, req) {
 
   if (data.customerId) order.customer = data.customerId;
   if (data.customerName) order.customerName = data.customerName;
-  if (data.customerPhone) order.customerPhone = data.customerPhone;
+  if (data.customerPhone) {
+    const customerPhone = localBdPhone(data.customerPhone);
+    if (!isValidBdMobile(customerPhone)) {
+      throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+    }
+    order.customerPhone = customerPhone;
+  }
   if (data.customerEmail !== undefined) order.customerEmail = data.customerEmail || undefined;
   if (data.journeyType) order.journeyType = data.journeyType;
   if (data.fromDestination) order.fromDestination = data.fromDestination;

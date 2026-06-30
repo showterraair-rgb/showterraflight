@@ -8,6 +8,10 @@ import {
   buildSearchFilter,
 } from '../utils/pagination.js';
 import { logAudit } from './audit.service.js';
+import {
+  normalizePartyPhoneFields,
+  phoneMatchQuery,
+} from '../utils/phoneUtils.js';
 
 function formatSupplier(doc) {
   return {
@@ -62,10 +66,35 @@ export async function getSupplierById(id) {
   };
 }
 
-export async function createSupplier(data, userId, req) {
-  const supplier = await Supplier.create({
+function prepareSupplierPhones(data) {
+  if (!data.phone && !data.whatsapp) {
+    return { ...data, phone: data.phone || undefined, whatsapp: data.whatsapp || undefined };
+  }
+  const phone = data.phone || data.whatsapp;
+  const normalized = normalizePartyPhoneFields({
+    phone,
+    whatsapp: data.whatsapp,
+  });
+  if (!normalized.valid) {
+    throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+  }
+  return {
     ...data,
-    email: data.email || undefined,
+    phone: normalized.phone,
+    whatsapp: normalized.whatsapp || undefined,
+  };
+}
+
+export async function createSupplier(data, userId, req) {
+  const payload = prepareSupplierPhones(data);
+  if (payload.phone) {
+    const dup = await Supplier.findOne(phoneMatchQuery('phone', payload.phone));
+    if (dup) throw ApiError.badRequest('A supplier with this phone number already exists');
+  }
+
+  const supplier = await Supplier.create({
+    ...payload,
+    email: payload.email || undefined,
     createdBy: userId,
   });
 
@@ -86,9 +115,29 @@ export async function updateSupplier(id, data, userId, req) {
   const supplier = await Supplier.findById(id);
   if (!supplier) throw ApiError.notFound('Supplier not found');
 
+  const patch = { ...data };
+  if (data.phone !== undefined || data.whatsapp !== undefined) {
+    const normalized = normalizePartyPhoneFields({
+      phone: data.phone ?? supplier.phone ?? data.whatsapp,
+      whatsapp: data.whatsapp ?? supplier.whatsapp,
+    });
+    if ((data.phone || data.whatsapp) && !normalized.valid) {
+      throw ApiError.badRequest('Enter a valid Bangladesh mobile number (e.g. 01674533303)');
+    }
+    if (normalized.valid) {
+      patch.phone = normalized.phone;
+      patch.whatsapp = normalized.whatsapp || undefined;
+    }
+  }
+
+  if (patch.phone && patch.phone !== supplier.phone) {
+    const dup = await Supplier.findOne({ ...phoneMatchQuery('phone', patch.phone), _id: { $ne: id } });
+    if (dup) throw ApiError.badRequest('Phone number already in use');
+  }
+
   Object.assign(supplier, {
-    ...data,
-    email: data.email === '' ? undefined : data.email ?? supplier.email,
+    ...patch,
+    email: patch.email === '' ? undefined : patch.email ?? supplier.email,
   });
   await supplier.save();
 

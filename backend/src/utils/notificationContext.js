@@ -1,3 +1,5 @@
+import { resolveContactChannels } from './phoneUtils.js';
+
 export function formatDateValue(value) {
   if (!value) return '';
   const d = value instanceof Date ? value : new Date(value);
@@ -5,24 +7,63 @@ export function formatDateValue(value) {
   return d.toISOString().slice(0, 10);
 }
 
+export { resolveContactChannels };
+
+function withCustomerContacts(ctx, phone, whatsapp, email) {
+  const { smsPhone, waPhone } = resolveContactChannels({ phone, whatsapp });
+  return {
+    ...ctx,
+    customerPhone: smsPhone,
+    customerWhatsapp: waPhone,
+    customerEmail: email || ctx.customerEmail || '',
+    vars: {
+      ...ctx.vars,
+      customerPhone: phone || ctx.vars?.customerPhone || '',
+    },
+  };
+}
+
+function withSupplierContacts(ctx, supplier) {
+  if (!supplier) return ctx;
+  const { smsPhone, waPhone } = resolveContactChannels({
+    phone: supplier.phone,
+    whatsapp: supplier.whatsapp,
+  });
+  return {
+    ...ctx,
+    supplierId: supplier._id?.toString?.() || supplier.id,
+    supplierPhone: smsPhone,
+    supplierWhatsapp: waPhone,
+    supplierEmail: supplier.email || '',
+    vars: {
+      ...ctx.vars,
+      supplierName: supplier.company || supplier.name || '',
+    },
+  };
+}
+
 export function buildOrderNotificationContext(order, extra = {}) {
   const route = order.fromDestination && order.toDestination
     ? `${order.fromDestination} → ${order.toDestination}`
     : extra.route || '';
 
-  return {
+  const base = {
     orderId: order._id?.toString?.() || order.id,
-    customerPhone: order.customerPhone || extra.customerPhone,
-    customerWhatsapp: extra.customerWhatsapp || order.customerPhone || extra.customerPhone,
     customerEmail: order.customerEmail || extra.customerEmail,
     vars: {
       orderNumber: order.orderNumber || '',
       customerName: order.customerName || '',
-      customerPhone: order.customerPhone || '',
       route,
       ...extra.vars,
     },
   };
+
+  return withCustomerContacts(
+    base,
+    order.customerPhone || extra.customerPhone,
+    extra.customerWhatsapp || order.customerPhone || extra.customerPhone,
+    order.customerEmail || extra.customerEmail
+  );
 }
 
 export function buildBookingNotificationContext(booking, customer, extra = {}) {
@@ -31,12 +72,10 @@ export function buildBookingNotificationContext(booking, customer, extra = {}) {
       ? `${booking.fromDestination} → ${booking.toDestination}`
       : '');
 
-  return {
+  const base = {
     bookingId: booking._id?.toString?.() || booking.id,
     orderId: booking.order?._id?.toString?.() || booking.order?.toString?.() || null,
     customerId: booking.customer?._id?.toString?.() || booking.customer?.toString?.() || customer?._id?.toString?.(),
-    customerPhone: customer?.phone || booking.customerPhone || '',
-    customerWhatsapp: customer?.whatsapp || customer?.phone || booking.customerPhone || '',
     customerEmail: customer?.email || '',
     vars: {
       customerName: customer?.name || booking.customerName || '',
@@ -52,16 +91,20 @@ export function buildBookingNotificationContext(booking, customer, extra = {}) {
       ...extra.vars,
     },
   };
+
+  return withCustomerContacts(
+    base,
+    customer?.phone || booking.customerPhone || '',
+    customer?.whatsapp || customer?.phone || booking.customerPhone || '',
+    customer?.email || ''
+  );
 }
 
 export function buildPaymentNotificationContext(payment, customer, booking, extra = {}) {
-  return {
+  const base = {
     customerPaymentId: payment._id?.toString?.() || payment.id,
     bookingId: booking?._id?.toString?.() || booking?.id || payment.booking?.toString?.(),
     customerId: customer?._id?.toString?.() || customer?.id || payment.customer?.toString?.(),
-    customerPhone: customer?.phone || '',
-    customerWhatsapp: customer?.whatsapp || customer?.phone || '',
-    customerEmail: customer?.email || '',
     vars: {
       customerName: customer?.name || '',
       bookingNumber: booking?.bookingNumber || payment.bookingNumber || '',
@@ -70,19 +113,21 @@ export function buildPaymentNotificationContext(payment, customer, booking, extr
       ...extra.vars,
     },
   };
+
+  return withCustomerContacts(
+    base,
+    customer?.phone || '',
+    customer?.whatsapp || customer?.phone || '',
+    customer?.email || ''
+  );
 }
 
 export function attachSupplierToContext(ctx, supplier, booking = {}) {
-  if (!supplier) return ctx;
+  const next = withSupplierContacts(ctx, supplier);
   return {
-    ...ctx,
-    supplierId: supplier._id?.toString?.() || supplier.id,
-    supplierPhone: supplier.phone || '',
-    supplierWhatsapp: supplier.whatsapp || supplier.phone || '',
-    supplierEmail: supplier.email || '',
+    ...next,
     vars: {
-      ...ctx.vars,
-      supplierName: supplier.company || supplier.name || '',
+      ...next.vars,
       payableAmount: booking.supplierPayable ?? ctx.vars?.payableAmount ?? 0,
     },
   };
