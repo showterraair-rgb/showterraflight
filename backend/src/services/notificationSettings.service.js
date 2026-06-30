@@ -5,9 +5,11 @@ import Setting from '../models/Setting.js';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
 import { logAudit } from './audit.service.js';
 
+import { BULKSMSBD_DEFAULTS } from '../services/sms/bulksmsbd.provider.js';
+
 const SMS_DEFAULTS = {
-  providerName: 'BulkSMSBD',
-  apiUrl: 'http://bulksmsbd.net/api/smsapi',
+  providerName: BULKSMSBD_DEFAULTS.providerName,
+  apiUrl: BULKSMSBD_DEFAULTS.apiUrl,
   apiKey: '',
   apiToken: '',
   senderId: '',
@@ -47,9 +49,9 @@ const WHATSAPP_DEFAULTS = {
 function formatSms(doc) {
   if (!doc) return { ...SMS_DEFAULTS };
   return {
-    providerName: doc.providerName || '',
-    apiUrl: doc.apiUrl || '',
-    apiKey: doc.apiKey || '',
+    providerName: doc.providerName || BULKSMSBD_DEFAULTS.providerName,
+    apiUrl: doc.apiUrl || SMS_DEFAULTS.apiUrl,
+    apiKey: doc.apiKey ? '********' : '',
     apiToken: doc.apiToken || '',
     senderId: doc.senderId || '',
     username: doc.username || '',
@@ -101,7 +103,10 @@ export async function getSmsSettings() {
 }
 
 export async function updateSmsSettings(data, userId, req) {
+  const existing = await SmsSetting.findOne({ key: 'sms' }).lean();
   const update = { ...data, updatedBy: userId };
+  if (update.apiKey === '********') delete update.apiKey;
+  else if (!update.apiKey && existing?.apiKey) delete update.apiKey;
   if (update.password === '********') delete update.password;
 
   const doc = await SmsSetting.findOneAndUpdate(

@@ -57,17 +57,21 @@ async function sendOtpViaChannel(channel, identifier, code, userName) {
 
   const raw = await getSmsSettingsRaw();
   const sms = resolveSmsConfig(raw);
-  if (sms.isEnabled && sms.apiKey) {
-    await sendBulkSmsBd({
+  if (sms.isEnabled && sms.isConfigured) {
+    const result = await sendBulkSmsBd({
       apiKey: sms.apiKey,
       senderId: sms.senderId,
       apiUrl: sms.apiUrl,
-      to: identifier,
+      number: identifier,
       message,
     });
-  } else {
-    console.log('[OTP:SMS:stub]', identifier, code);
+    if (!result.success) {
+      console.error('[OTP:SMS:failed]', identifier, result.error);
+    }
+    return;
   }
+
+  console.log('[OTP:SMS:stub]', identifier, code);
 }
 
 export async function requestStaffOtp({ email, phone }, ipAddress, userAgent) {

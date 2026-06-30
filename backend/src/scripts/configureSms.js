@@ -1,7 +1,7 @@
 /**
  * Apply BulkSMSBD credentials from environment to MongoDB SMS settings.
  * Usage (on VPS):
- *   BULKSMSBD_API_KEY=xxx BULKSMSBD_SENDER_ID=8809617626936 BULKSMSBD_ENABLED=true node src/scripts/configureSms.js
+ *   BULKSMSBD_API_KEY=your_key BULKSMSBD_SENDER_ID=8809648909214 BULKSMSBD_ENABLED=true node src/scripts/configureSms.js
  */
 import mongoose from 'mongoose';
 import { env } from '../config/env.js';

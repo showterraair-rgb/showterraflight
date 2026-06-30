@@ -105,7 +105,7 @@ export async function sendSmsMessage({ to, message }) {
 
   if (!settings.isConfigured) {
     console.log('[NOTIFICATION:sms:no-config]', recipient, message?.slice(0, 100));
-    return { success: false, channel: 'sms', error: 'SMS gateway not configured (API key and sender ID required)' };
+    return { success: false, channel: 'sms', error: 'SMS gateway not configured (BulkSMSBD API key and sender ID required)' };
   }
 
   try {

@@ -1,9 +1,20 @@
-import { normalizeBdPhone } from '../../utils/phoneUtils.js';
+import { canonicalBdPhone } from '../../utils/phoneUtils.js';
 
 export const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
   apiUrl: 'http://bulksmsbd.net/api/smsapi',
   balanceUrl: 'http://bulksmsbd.net/api/getBalanceApi',
+};
+
+/** BulkSMSBD response_code 202 = accepted/sent */
+const SUCCESS_CODES = new Set([202, '202']);
+
+const ERROR_HINTS = {
+  1032: 'Server IP not whitelisted — add your VPS IP in BulkSMSBD Phonebook',
+  1001: 'Invalid API key',
+  1002: 'Invalid sender ID',
+  1003: 'Invalid phone number',
+  1004: 'Insufficient balance',
 };
 
 function parseProviderResponse(text) {
@@ -15,16 +26,25 @@ function parseProviderResponse(text) {
   try {
     const json = JSON.parse(trimmed);
     const code = json.response_code ?? json.responseCode ?? json.code ?? json.status;
-    const messageId = json.message_id ?? json.messageId ?? json.sms_id ?? '';
-    const message = json.message ?? json.error_message ?? json.error ?? '';
+    const messageId = json.message_id ?? json.messageId ?? json.sms_id ?? json.success_message ?? '';
+    const errorMessage = json.error_message ?? json.error ?? json.message ?? '';
+    const successMessage = json.success_message ?? '';
 
-    if (code === 202 || code === '202' || json.success === true) {
-      return { success: true, messageId: String(messageId || ''), raw: json };
+    if (SUCCESS_CODES.has(code) || json.success === true) {
+      return {
+        success: true,
+        messageId: String(messageId || successMessage || code || ''),
+        raw: json,
+      };
     }
+
+    const hint = ERROR_HINTS[code] || ERROR_HINTS[String(code)];
+    const detail = errorMessage || hint || `SMS provider error (code ${code ?? 'unknown'})`;
 
     return {
       success: false,
-      error: message || `SMS provider error (code ${code ?? 'unknown'})`,
+      error: detail,
+      code,
       raw: json,
     };
   } catch {
@@ -35,17 +55,43 @@ function parseProviderResponse(text) {
   }
 }
 
-async function requestUrl(url, timeoutMs = 30000) {
+function buildSmsParams({ apiKey, senderId, number, message }) {
+  return {
+    api_key: apiKey,
+    type: 'text',
+    number,
+    senderid: senderId,
+    message: String(message || '').trim(),
+  };
+}
+
+async function requestGet(url, timeoutMs = 30000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
     const text = await res.text();
-    if (!res.ok) {
-      return { ok: false, text, error: `HTTP ${res.status}: ${text.slice(0, 200)}` };
-    }
-    return { ok: true, text };
+    return { ok: res.ok, text, status: res.status };
+  } catch (err) {
+    const message = err.name === 'AbortError' ? 'SMS provider request timed out' : err.message;
+    return { ok: false, error: message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function requestPost(url, params, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params).toString(),
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    return { ok: res.ok, text, status: res.status };
   } catch (err) {
     const message = err.name === 'AbortError' ? 'SMS provider request timed out' : err.message;
     return { ok: false, error: message };
@@ -55,12 +101,29 @@ async function requestUrl(url, timeoutMs = 30000) {
 }
 
 /**
- * @param {{ apiUrl?: string, apiKey: string, senderId: string, number: string, message: string }} params
+ * Build BulkSMSBD request URL (for debugging).
+ * @see http://bulksmsbd.net/api/smsapi?api_key=...&type=text&number=...&senderid=...&message=...
  */
-export async function sendBulkSmsBd({ apiUrl, apiKey, senderId, number, message }) {
-  const normalized = normalizeBdPhone(number);
+export function buildBulkSmsBdUrl({ apiUrl, apiKey, senderId, number, message }) {
+  const baseUrl = apiUrl || BULKSMSBD_DEFAULTS.apiUrl;
+  const params = new URLSearchParams(buildSmsParams({ apiKey, senderId, number, message }));
+  return `${baseUrl}?${params.toString()}`;
+}
+
+/**
+ * @param {{ apiUrl?: string, apiKey: string, senderId: string, number: string, message: string, method?: 'POST'|'GET' }} params
+ */
+export async function sendBulkSmsBd({
+  apiUrl,
+  apiKey,
+  senderId,
+  number,
+  message,
+  method = 'POST',
+}) {
+  const normalized = canonicalBdPhone(number);
   if (!normalized) {
-    return { success: false, error: 'Invalid phone number' };
+    return { success: false, error: 'Invalid Bangladesh mobile number (use 01XXXXXXXXX or 8801XXXXXXXXX)' };
   }
   if (!apiKey) {
     return { success: false, error: 'SMS API key is not configured' };
@@ -73,17 +136,25 @@ export async function sendBulkSmsBd({ apiUrl, apiKey, senderId, number, message 
   }
 
   const baseUrl = apiUrl || BULKSMSBD_DEFAULTS.apiUrl;
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    type: 'text',
+  const params = buildSmsParams({
+    apiKey,
+    senderId,
     number: normalized,
-    senderid: senderId,
-    message: message.trim(),
+    message,
   });
 
-  const result = await requestUrl(`${baseUrl}?${params.toString()}`);
-  if (!result.ok) {
-    return { success: false, error: result.error || 'SMS request failed' };
+  let result;
+  if (method === 'GET') {
+    result = await requestGet(buildBulkSmsBdUrl({ apiUrl: baseUrl, ...params, apiKey, senderId, number: normalized, message }));
+  } else {
+    result = await requestPost(baseUrl, params);
+    if (!result.ok && !result.text) {
+      result = await requestGet(buildBulkSmsBdUrl({ apiUrl: baseUrl, apiKey, senderId, number: normalized, message }));
+    }
+  }
+
+  if (result.error) {
+    return { success: false, error: result.error, channel: 'sms' };
   }
 
   const parsed = parseProviderResponse(result.text);
@@ -105,15 +176,22 @@ export async function getBulkSmsBdBalance({ apiKey, balanceUrl }) {
 
   const baseUrl = balanceUrl || BULKSMSBD_DEFAULTS.balanceUrl;
   const params = new URLSearchParams({ api_key: apiKey });
-  const result = await requestUrl(`${baseUrl}?${params.toString()}`);
+  const result = await requestGet(`${baseUrl}?${params.toString()}`);
 
-  if (!result.ok) {
+  if (!result.ok && result.error) {
     return { success: false, error: result.error || 'Balance request failed' };
   }
 
   const trimmed = String(result.text || '').trim();
   try {
     const json = JSON.parse(trimmed);
+    if (json.response_code && !SUCCESS_CODES.has(json.response_code) && json.success !== true) {
+      return {
+        success: false,
+        error: json.error_message || json.message || `Balance error (code ${json.response_code})`,
+        raw: json,
+      };
+    }
     return {
       success: true,
       balance: json.balance ?? json.credit ?? json.data ?? json,
@@ -124,4 +202,4 @@ export async function getBulkSmsBdBalance({ apiKey, balanceUrl }) {
   }
 }
 
-export default { sendBulkSmsBd, getBulkSmsBdBalance, BULKSMSBD_DEFAULTS };
+export default { sendBulkSmsBd, getBulkSmsBdBalance, buildBulkSmsBdUrl, BULKSMSBD_DEFAULTS };
