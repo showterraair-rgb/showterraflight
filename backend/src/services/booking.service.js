@@ -17,7 +17,7 @@ import { triggerNotificationEventSafe } from './notificationOrchestrator.service
 import { buildBookingNotificationContext, attachSupplierToContext } from '../utils/notificationContext.js';
 import { syncBookingFinancials, syncCustomerTotals, syncSupplierTotals } from './financialSync.service.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
-import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
+import { APPROVAL_STATUS_LABELS, BOOKING_STATUS_LABELS } from '../config/constants.js';
 import { getCurrencyRatesMap } from './currency.service.js';
 import { buildBookingCurrencySnapshot, normalizeLegacyBookingPricing, brlToBdtRounded } from '../utils/currencyUtils.js';
 import { buildFareRates, computeFareTotals } from '../utils/fareCurrency.js';
@@ -288,6 +288,36 @@ async function fireBookingNotification(eventType, booking, customerDoc = null, e
   } catch (err) {
     console.error('[notification] booking context failed', eventType, err.message);
   }
+}
+
+const BOOKING_STATUS_EVENTS = {
+  cancelled: 'booking_canceled',
+  confirmed: 'booking_approved',
+  ticket_issued: 'ticket_issued',
+  delivered: 'booking_delivered',
+  completed: 'booking_delivered',
+};
+
+async function fireBookingStatusNotification(status, prevStatus, booking, extra = {}) {
+  if (!status || status === prevStatus) return;
+  const eventType = BOOKING_STATUS_EVENTS[status];
+  if (!eventType) return;
+  const statusLabel = BOOKING_STATUS_LABELS[status] || status;
+  await fireBookingNotification(eventType, booking, null, {
+    vars: { statusLabel, ...extra.vars },
+  });
+}
+
+const BOOKING_UPDATE_NOTIFY_FIELDS = new Set([
+  'supplierId', 'customerId', 'journeyType', 'fromDestination', 'toDestination',
+  'travelClass', 'airline', 'route', 'sector', 'departureDate', 'returnDate',
+  'pnr', 'ticketNumber', 'purchasePrice', 'salePrice', 'directCosts',
+  'purchasePriceBRL', 'salePriceBRL', 'directCostsBRL', 'notes',
+  'passengerCount', 'passengers', 'duePaymentAt',
+]);
+
+function hasMeaningfulBookingUpdate(data) {
+  return Object.keys(data).some((key) => BOOKING_UPDATE_NOTIFY_FIELDS.has(key));
 }
 
 export async function listBookings(query) {
@@ -664,6 +694,7 @@ export async function updateBooking(id, data, userId, req) {
 
   const prevCustomer = booking.customer?.toString();
   const prevSupplier = booking.supplier?.toString();
+  const prevStatus = booking.status;
   const hadTicket = Boolean(booking.ticketCopyPath);
 
   if (data.supplierId !== undefined) booking.supplier = data.supplierId || undefined;
@@ -730,6 +761,10 @@ export async function updateBooking(id, data, userId, req) {
 
   if (data.ticketCopyPath && !hadTicket) {
     await fireBookingNotification('ticket_issued', booking);
+  } else if (data.status && data.status !== prevStatus) {
+    await fireBookingStatusNotification(data.status, prevStatus, booking);
+  } else if (hasMeaningfulBookingUpdate(data)) {
+    await fireBookingNotification('booking_updated', booking);
   }
 
   await syncBookingFinancials(id);
@@ -777,6 +812,9 @@ export async function updateBookingStatus(id, { status, note }, userId, req) {
   }
   if (status === 'ticket_issued' && prev !== 'ticket_issued') {
     await fireBookingNotification('ticket_issued', booking);
+  }
+  if ((status === 'delivered' || status === 'completed') && !['delivered', 'completed'].includes(prev)) {
+    await fireBookingStatusNotification(status, prev, booking);
   }
 
   return getBookingById(id);
@@ -1134,6 +1172,10 @@ export async function uploadBookingPassport(id, file, userId, req) {
     description: `Passport uploaded for booking ${booking.bookingNumber}`,
     userId,
     req,
+  });
+
+  await fireBookingNotification('passport_received', booking, null, {
+    vars: { referenceNumber: booking.bookingNumber },
   });
 
   return getBookingById(id);

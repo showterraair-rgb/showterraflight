@@ -1,5 +1,6 @@
 import Order from '../models/Order.js';
 import Booking from '../models/Booking.js';
+import Customer from '../models/Customer.js';
 import ApiError from '../utils/ApiError.js';
 import {
   parsePaginationQuery,
@@ -12,7 +13,31 @@ import { logAudit } from './audit.service.js';
 import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
 import { buildOrderNotificationContext } from '../utils/notificationContext.js';
 import { applyApprovalUpdate, applyPassportFile, fireApprovalSms } from './approval.service.js';
-import { APPROVAL_STATUS_LABELS } from '../config/constants.js';
+import { APPROVAL_STATUS_LABELS, ORDER_STATUS_LABELS } from '../config/constants.js';
+
+async function fireOrderNotification(eventType, order, extra = {}) {
+  try {
+    let ctx = buildOrderNotificationContext(order, extra);
+    if (order.customer) {
+      const customer = await Customer.findById(order.customer).select('name phone whatsapp email').lean();
+      if (customer) {
+        ctx = {
+          ...ctx,
+          customerPhone: customer.phone || ctx.customerPhone,
+          customerWhatsapp: customer.whatsapp || customer.phone || ctx.customerPhone,
+          customerEmail: customer.email || ctx.customerEmail,
+          vars: {
+            ...ctx.vars,
+            customerName: customer.name || ctx.vars.customerName,
+          },
+        };
+      }
+    }
+    triggerNotificationEventSafe(eventType, ctx);
+  } catch (err) {
+    console.error('[notification] order context failed', eventType, err.message);
+  }
+}
 
 function formatOrder(doc, linkedBooking = null) {
   return {
@@ -223,6 +248,10 @@ export async function updateOrder(id, data, userId, req) {
     req,
   });
 
+  await fireOrderNotification('order_updated', order, {
+    vars: { statusLabel: ORDER_STATUS_LABELS[order.status] || order.status },
+  });
+
   return formatOrder(order.toObject());
 }
 
@@ -257,6 +286,13 @@ export async function updateOrderStatus(id, { status, note, cancelReason }, user
     changes: { from: prevStatus, to: status },
     userId,
     req,
+  });
+
+  await fireOrderNotification('order_updated', order, {
+    vars: {
+      statusLabel: ORDER_STATUS_LABELS[status] || status,
+      previousStatusLabel: ORDER_STATUS_LABELS[prevStatus] || prevStatus,
+    },
   });
 
   return formatOrder(order.toObject());
@@ -313,6 +349,10 @@ export async function linkOrderCustomer(id, { customerId, createCustomer }, user
     description: `Linked customer to order ${order.orderNumber}`,
     userId,
     req,
+  });
+
+  await fireOrderNotification('order_updated', order, {
+    vars: { statusLabel: ORDER_STATUS_LABELS[order.status] || order.status },
   });
 
   return formatOrder(order.toObject());
@@ -384,6 +424,10 @@ export async function uploadOrderPassport(id, file, userId, req) {
     description: `Passport uploaded for order ${order.orderNumber}`,
     userId,
     req,
+  });
+
+  await fireOrderNotification('passport_received', order, {
+    vars: { referenceNumber: order.orderNumber },
   });
 
   return formatOrder(order.toObject());

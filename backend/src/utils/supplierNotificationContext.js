@@ -23,3 +23,22 @@ export function buildSupplierBookingNotificationContext(booking, supplier, extra
     },
   };
 }
+
+export function buildSupplierPaymentNotificationContext(payment, supplier, booking, extra = {}) {
+  return {
+    recipientType: 'supplier',
+    supplierId: supplier?._id?.toString?.() || supplier?.id || payment.supplier?.toString?.(),
+    supplierPhone: supplier?.phone || '',
+    supplierWhatsapp: supplier?.whatsapp || supplier?.phone || '',
+    supplierEmail: supplier?.email || '',
+    bookingId: booking?._id?.toString?.() || booking?.id || payment.booking?.toString?.(),
+    vars: {
+      supplierName: supplier?.company || supplier?.name || '',
+      paymentNumber: payment.paymentNumber || '',
+      amount: payment.amount ?? 0,
+      bookingNumber: booking?.bookingNumber || payment.bookingNumber || '',
+      route: booking?.route || '',
+      ...extra.vars,
+    },
+  };
+}

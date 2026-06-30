@@ -132,6 +132,13 @@ export async function uploadPassportByOrderNumber(orderNumber, file) {
   order.passportUploadedAt = new Date();
   await order.save();
 
+  const ctx = buildOrderNotificationContext(order, {
+    customerPhone: order.customerPhone,
+    customerEmail: order.customerEmail,
+    vars: { referenceNumber: order.orderNumber },
+  });
+  triggerNotificationEventSafe('passport_received', ctx);
+
   return {
     orderNumber: order.orderNumber,
     passportFileName: order.passportFileName,

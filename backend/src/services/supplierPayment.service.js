@@ -24,11 +24,10 @@ import { generateSupplierPaymentNumber } from './numberGenerator.service.js';
 import { syncBookingFinancials, syncSupplierTotals } from './financialSync.service.js';
 
 import { logAudit } from './audit.service.js';
-
-
+import { triggerNotificationEventSafe } from './notificationOrchestrator.service.js';
+import { buildSupplierPaymentNotificationContext } from '../utils/supplierNotificationContext.js';
 
 function formatPayment(doc) {
-
   return {
 
     id: doc._id.toString(),
@@ -331,13 +330,22 @@ export async function createSupplierPayment(data, userId, req) {
 
     const populated = await SupplierPayment.findById(payment._id)
 
-      .populate('supplier', 'name')
+      .populate('supplier', 'name company phone whatsapp email')
 
-      .populate('booking', 'bookingNumber')
+      .populate('booking', 'bookingNumber route')
 
       .populate('account', 'name')
 
       .lean();
+
+
+
+    if (populated.supplier) {
+      triggerNotificationEventSafe(
+        'supplier_payment_received',
+        buildSupplierPaymentNotificationContext(populated, populated.supplier, populated.booking)
+      );
+    }
 
 
 

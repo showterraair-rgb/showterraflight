@@ -13,6 +13,7 @@ export function buildOrderNotificationContext(order, extra = {}) {
   return {
     orderId: order._id?.toString?.() || order.id,
     customerPhone: order.customerPhone || extra.customerPhone,
+    customerWhatsapp: extra.customerWhatsapp || order.customerPhone || extra.customerPhone,
     customerEmail: order.customerEmail || extra.customerEmail,
     vars: {
       orderNumber: order.orderNumber || '',
@@ -59,6 +60,7 @@ export function buildPaymentNotificationContext(payment, customer, booking, extr
     bookingId: booking?._id?.toString?.() || booking?.id || payment.booking?.toString?.(),
     customerId: customer?._id?.toString?.() || customer?.id || payment.customer?.toString?.(),
     customerPhone: customer?.phone || '',
+    customerWhatsapp: customer?.whatsapp || customer?.phone || '',
     customerEmail: customer?.email || '',
     vars: {
       customerName: customer?.name || '',

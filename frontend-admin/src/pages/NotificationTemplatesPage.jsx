@@ -36,6 +36,11 @@ const EVENT_LABELS = {
   agent_booking_confirmed: 'Agent booking confirmed',
   agent_booking_cancelled: 'Agent booking cancelled',
   agent_booking_ticket_ready: 'Agent ticket ready',
+  booking_updated: 'Booking updated',
+  order_updated: 'Order updated',
+  supplier_payment_received: 'Supplier payment received',
+  booking_delivered: 'Booking delivered / completed',
+  passport_received: 'Passport received',
 };
 
 export default function NotificationTemplatesPage() {

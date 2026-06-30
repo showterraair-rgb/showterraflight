@@ -43,6 +43,17 @@ export const ORDER_STATUSES = [
   'cancelled',
 ];
 
+export const ORDER_STATUS_LABELS = {
+  inquiry: 'Inquiry',
+  quoted: 'Quoted',
+  pending_purchase: 'Pending purchase',
+  purchased: 'Purchased',
+  ticket_added: 'Ticket added',
+  delivered: 'Delivered',
+  closed: 'Closed',
+  cancelled: 'Cancelled',
+};
+
 export const BOOKING_STATUSES = [
   'draft',
   'confirmed',
@@ -54,6 +65,18 @@ export const BOOKING_STATUSES = [
   'refunded',
   'reissued',
 ];
+
+export const BOOKING_STATUS_LABELS = {
+  draft: 'Draft',
+  confirmed: 'Confirmed',
+  ticket_issued: 'Ticket issued',
+  delivered: 'Delivered',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  voided: 'Voided',
+  refunded: 'Refunded',
+  reissued: 'Reissued',
+};
 
 export const BOOKING_TYPES = ['standard', 'reissue', 'refund', 'void'];
 
@@ -137,6 +160,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   'agent_booking_confirmed',
   'agent_booking_cancelled',
   'agent_booking_ticket_ready',
+  'booking_updated',
+  'order_updated',
+  'supplier_payment_received',
+  'booking_delivered',
+  'passport_received',
 ];
 
 export const NOTIFICATION_LOG_STATUSES = ['pending', 'sent', 'delivered', 'read', 'failed'];
@@ -173,6 +201,11 @@ export const DEFAULT_WHATSAPP_PARAM_KEYS = {
   agent_booking_confirmed: ['agentName', 'bookingRef', 'route', 'departureDate', 'companyName'],
   agent_booking_cancelled: ['agentName', 'bookingRef', 'route', 'companyName'],
   agent_booking_ticket_ready: ['agentName', 'bookingRef', 'route', 'pnr', 'companyName'],
+  booking_updated: ['customerName', 'bookingNumber', 'route', 'pnr', 'dueAmount', 'companyName'],
+  order_updated: ['customerName', 'orderNumber', 'route', 'statusLabel', 'companyName'],
+  supplier_payment_received: ['supplierName', 'amount', 'bookingNumber', 'paymentNumber', 'companyName'],
+  booking_delivered: ['customerName', 'bookingNumber', 'route', 'statusLabel', 'companyName'],
+  passport_received: ['customerName', 'referenceNumber', 'companyName'],
 };
 
 export const DEFAULT_NOTIFICATION_TEMPLATES = [
@@ -378,6 +411,53 @@ export const DEFAULT_NOTIFICATION_TEMPLATES = [
     supplierEmailBody: 'Booking {{bookingNumber}} schedule updated.\nRoute: {{route}}\nNew departure: {{newDate}}\nPrevious: {{previousDate}}\n\n— Show Terra Flight',
   },
   {
+    templateKey: 'booking_updated',
+    name: 'Booking updated',
+    smsBody: 'Hello {{customerName}}, booking {{bookingNumber}} ({{route}}) has been updated. PNR: {{pnr}}. Due: ৳{{dueAmount}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nBooking {{bookingNumber}} has been updated.\nRoute: {{route}}\nPNR: {{pnr}}\nDue: ৳{{dueAmount}}\n\n— Show Terra Flight',
+    emailSubject: 'Booking {{bookingNumber}} updated',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} has been updated.\n\nRoute: {{route}}\nPNR: {{pnr}}\nAmount due: ৳{{dueAmount}}\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} updated — {{route}}. Payable: ৳{{payableAmount}}. — Show Terra Flight',
+    supplierWhatsappBody: 'Booking {{bookingNumber}} updated.\nRoute: {{route}}\nPayable: ৳{{payableAmount}}\n\n— Show Terra Flight',
+    supplierEmailSubject: 'Booking {{bookingNumber}} updated',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been updated.\nRoute: {{route}}\nPayable: ৳{{payableAmount}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'order_updated',
+    name: 'Order updated',
+    smsBody: 'Hello {{customerName}}, order {{orderNumber}} ({{route}}) updated. Status: {{statusLabel}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nOrder {{orderNumber}} has been updated.\nRoute: {{route}}\nStatus: {{statusLabel}}\n\n— Show Terra Flight',
+    emailSubject: 'Order {{orderNumber}} updated',
+    emailBody: 'Hello {{customerName}},\n\nYour order {{orderNumber}} has been updated.\n\nRoute: {{route}}\nStatus: {{statusLabel}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'supplier_payment_received',
+    name: 'Supplier payment received',
+    smsBody: 'Payment of ৳{{amount}} received for booking {{bookingNumber}}. Ref: {{paymentNumber}}. — Show Terra Flight',
+    whatsappBody: 'Hello {{supplierName}},\n\nPayment of ৳{{amount}} received for booking {{bookingNumber}}.\nReference: {{paymentNumber}}\n\n— Show Terra Flight',
+    emailSubject: 'Payment received — ৳{{amount}}',
+    emailBody: 'Hello {{supplierName}},\n\nWe recorded a payment of ৳{{amount}} for booking {{bookingNumber}}.\nReference: {{paymentNumber}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'booking_delivered',
+    name: 'Booking delivered / completed',
+    smsBody: 'Hello {{customerName}}, booking {{bookingNumber}} ({{route}}) is now {{statusLabel}}. Thank you — Show Terra Flight',
+    whatsappBody: 'Hello {{customerName}},\n\nBooking {{bookingNumber}} is now {{statusLabel}}.\nRoute: {{route}}\n\nThank you for choosing Show Terra Flight.',
+    emailSubject: 'Booking {{bookingNumber}} — {{statusLabel}}',
+    emailBody: 'Hello {{customerName}},\n\nYour booking {{bookingNumber}} ({{route}}) is now {{statusLabel}}.\n\n— Show Terra Flight',
+    supplierSmsBody: 'Booking {{bookingNumber}} marked {{statusLabel}} — {{route}}. — Show Terra Flight',
+    supplierEmailSubject: 'Booking {{bookingNumber}} — {{statusLabel}}',
+    supplierEmailBody: 'Booking {{bookingNumber}} has been marked {{statusLabel}}.\nRoute: {{route}}\n\n— Show Terra Flight',
+  },
+  {
+    templateKey: 'passport_received',
+    name: 'Passport received',
+    smsBody: 'Thank you {{customerName}}. We received your passport for {{referenceNumber}}. Our team is reviewing it. — Show Terra Flight',
+    whatsappBody: 'Thank you {{customerName}},\n\nWe received your passport for {{referenceNumber}}.\nOur team is reviewing your documents.\n\n— Show Terra Flight',
+    emailSubject: 'Passport received — {{referenceNumber}}',
+    emailBody: 'Hello {{customerName}},\n\nWe received your passport for {{referenceNumber}} and our team is reviewing it.\n\n— Show Terra Flight',
+  },
+  {
     templateKey: 'agent_booking_submitted',
     name: 'Agent booking submitted (admin alert)',
     smsBody: 'New agent booking {{bookingRef}} from {{agentName}}. Route: {{route}}. Total: {{totalFare}}. — Show Terra Flight',
@@ -439,6 +519,11 @@ export const DEFAULT_AUTOMATION_RULES = [
   { eventType: 'agent_booking_confirmed', notifyCustomer: false, notifyAdmin: false, notifySupplier: false, notifyAgent: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'agent_booking_cancelled', notifyCustomer: false, notifyAdmin: false, notifySupplier: false, notifyAgent: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
   { eventType: 'agent_booking_ticket_ready', notifyCustomer: false, notifyAdmin: false, notifySupplier: false, notifyAgent: true, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'booking_updated', notifyCustomer: true, notifyAdmin: false, notifySupplier: true, notifyAgent: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'order_updated', notifyCustomer: true, notifyAdmin: false, notifySupplier: false, notifyAgent: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'supplier_payment_received', notifyCustomer: false, notifyAdmin: false, notifySupplier: true, notifyAgent: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'booking_delivered', notifyCustomer: true, notifyAdmin: false, notifySupplier: true, notifyAgent: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
+  { eventType: 'passport_received', notifyCustomer: true, notifyAdmin: false, notifySupplier: false, notifyAgent: false, smsEnabled: true, emailEnabled: true, whatsappEnabled: true, isEnabled: true },
 ];
 
 export const TRANSACTION_TYPES = [
