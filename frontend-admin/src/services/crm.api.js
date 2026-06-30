@@ -60,6 +60,7 @@ export const bookingsApi = {
   getTimeline: (id) => api.get(`/bookings/${id}/timeline`),
   getOperations: (id) => api.get(`/bookings/${id}/operations`),
   delete: (id) => api.delete(`/bookings/${id}`),
+  remind: (id, body) => api.post(`/bookings/${id}/remind`, body),
   downloadInvoicePdf: (id) => api.get(`/bookings/${id}/invoice/pdf`, { responseType: 'blob' }),
   downloadETicketPdf: (id) => api.get(`/bookings/${id}/e-ticket/pdf`, { responseType: 'blob' }),
   void: (id, data) => api.post(`/bookings/${id}/void`, data),

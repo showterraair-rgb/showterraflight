@@ -77,6 +77,9 @@ export const listQuerySchema = z.object({
   bookingDateFrom: z.string().optional(),
   bookingDateTo: z.string().optional(),
   productCategory: z.enum(PRODUCT_CATEGORIES).optional(),
+  supplierPaymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
+  hasCustomerDue: z.enum(['true', 'false']).optional(),
+  hasSupplierDue: z.enum(['true', 'false']).optional(),
   refundPending: z.enum(['true', 'false']).optional(),
 });
 
@@ -324,6 +327,11 @@ export const bulkImportExecuteSchema = z.object({
   rows: z.array(bulkImportRowSchema).min(1).max(100),
 });
 
+export const bookingRemindSchema = z.object({
+  channels: z.array(z.enum(['sms', 'email', 'whatsapp'])).min(1, 'Select at least one channel'),
+  target: z.enum(['customer', 'supplier']).optional().default('customer'),
+});
+
 export default {
   listQuerySchema,
   createBookingSchema,
@@ -338,4 +346,5 @@ export default {
   refundRequestSchema,
   reissueBookingSchema,
   bulkImportExecuteSchema,
+  bookingRemindSchema,
 };

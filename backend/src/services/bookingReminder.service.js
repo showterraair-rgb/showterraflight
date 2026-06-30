@@ -93,12 +93,12 @@ export async function sendCustomerBookingReminder(customerId, bookingId, channel
     .populate('customer', 'name phone whatsapp email')
     .lean();
   if (!booking) throw ApiError.notFound('Booking not found for this customer');
-  if ((booking.customerDue || 0) <= 0) {
-    throw ApiError.badRequest('No customer due on this booking');
+  if (!booking.customer?.phone && !booking.customer?.email) {
+    throw ApiError.badRequest('Customer has no phone or email for reminders');
   }
 
   const ctx = buildBookingNotificationContext(booking, booking.customer, {
-    vars: { dueAmount: booking.customerDue },
+    vars: { dueAmount: booking.customerDue ?? 0 },
   });
   return triggerNotificationEventWithChannels('payment_due_reminder', ctx, channels);
 }
@@ -108,10 +108,34 @@ export async function sendSupplierBookingReminder(supplierId, bookingId, channel
     .populate('supplier', 'name company phone whatsapp email')
     .lean();
   if (!booking) throw ApiError.notFound('Booking not found for this supplier');
-  if ((booking.supplierPayable || 0) <= 0) {
-    throw ApiError.badRequest('No supplier payable on this booking');
+  if (!booking.supplier?.phone && !booking.supplier?.email) {
+    throw ApiError.badRequest('Supplier has no phone or email for reminders');
   }
 
   const ctx = buildSupplierBookingNotificationContext(booking, booking.supplier);
   return triggerNotificationEventWithChannels('supplier_payable_reminder', ctx, channels);
+}
+
+export async function sendBookingReminder(bookingId, channels, target = 'customer') {
+  const booking = await Booking.findById(bookingId)
+    .populate('customer', 'name phone whatsapp email')
+    .populate('supplier', 'name company phone whatsapp email')
+    .lean();
+  if (!booking) throw ApiError.notFound('Booking not found');
+
+  if (target === 'supplier') {
+    if (!booking.supplier) throw ApiError.badRequest('No supplier on this booking');
+    return sendSupplierBookingReminder(
+      booking.supplier._id?.toString() || booking.supplier,
+      bookingId,
+      channels
+    );
+  }
+
+  if (!booking.customer) throw ApiError.badRequest('No customer on this booking');
+  return sendCustomerBookingReminder(
+    booking.customer._id?.toString() || booking.customer,
+    bookingId,
+    channels
+  );
 }

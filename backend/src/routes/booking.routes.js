@@ -17,6 +17,7 @@ import {
   reissueBookingSchema,
   scheduleChangeSchema,
   bulkImportExecuteSchema,
+  bookingRemindSchema,
 } from '../validators/booking.validator.js';
 import { updateApprovalSchema } from '../validators/approval.validator.js';
 import { passportUpload, bookingTicketUpload, csvImportUpload } from '../middlewares/upload.js';
@@ -61,6 +62,13 @@ router.post('/:id/ticket', authorize('bookings:update'), validate(idParamSchema,
 router.post('/:id/schedule-change', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(scheduleChangeSchema), bookingController.scheduleChange);
 router.post('/:id/schedule-change/ticket', authorize('bookings:update'), validate(idParamSchema, 'params'), bookingTicketUpload.single('ticketFile'), bookingController.scheduleChangeWithTicket);
 router.post('/:id/notes', authorize('bookings:update'), validate(idParamSchema, 'params'), validate(addBookingNoteSchema), bookingController.addNote);
+router.post(
+  '/:id/remind',
+  authorize('reminders:manage', 'notifications:manage'),
+  validate(idParamSchema, 'params'),
+  validate(bookingRemindSchema),
+  bookingController.remind
+);
 router.get('/:id/operations', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getOperations);
 router.get('/:id/timeline', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.getTimeline);
 router.get('/:id/invoice/pdf', authorize('bookings:view'), validate(idParamSchema, 'params'), bookingController.downloadInvoicePdf);

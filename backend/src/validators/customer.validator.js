@@ -32,6 +32,7 @@ export const idParamSchema = z.object({
 
 export const bookingRemindSchema = z.object({
   channels: z.array(z.enum(['sms', 'email', 'whatsapp'])).min(1, 'Select at least one channel'),
+  target: z.enum(['customer', 'supplier']).optional().default('customer'),
 });
 
 export const customerBookingParamSchema = z.object({

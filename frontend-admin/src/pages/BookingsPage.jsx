@@ -11,7 +11,32 @@ import { useFieldPermission } from '../hooks/useFieldPermission';
 import { formatDate, formatDateTime } from '../utils/date';
 import MoneyAmount, { getBookingMoney } from '../components/common/MoneyAmount';
 import { downloadBlob } from '../utils/download';
+import ReminderChannelButtons from '../components/common/ReminderChannelButtons';
 import { BOOKING_STATUS_LABELS, APPROVAL_STATUS_LABELS } from '../utils/constants';
+
+const DEFAULT_FILTERS = {
+  search: '',
+  status: '',
+  paymentStatus: '',
+  supplierPaymentStatus: '',
+  approvalStatus: '',
+  dateFrom: '',
+  dateTo: '',
+  bookingDateFrom: '',
+  bookingDateTo: '',
+  hasCustomerDue: '',
+  hasSupplierDue: '',
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
+};
+
+function customerReminderChannels(row) {
+  return {
+    sms: Boolean(row.customerPhone),
+    email: Boolean(row.customerEmail),
+    whatsapp: Boolean(row.customerPhone || row.customerWhatsapp),
+  };
+}
 
 const STATUS_TABS = [
   { key: '', label: 'All' },
@@ -54,13 +79,15 @@ export function BookingsListView({
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    search: '',
+    ...DEFAULT_FILTERS,
     status: fixedStatus || '',
-    paymentStatus: '',
-    dateFrom: '',
-    dateTo: '',
   });
   const [page, setPage] = useState(1);
+
+  const resetFilters = () => {
+    setFilters({ ...DEFAULT_FILTERS, status: fixedStatus || '' });
+    setPage(1);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -205,6 +232,21 @@ export function BookingsListView({
     { key: 'approvalStatus', label: 'Approval', render: (r) => (
       <StatusBadge status={r.approvalStatus || 'pending'} label={APPROVAL_STATUS_LABELS[r.approvalStatus || 'pending']} />
     ) },
+    ...(ledgerColumns ? [{
+      key: 'remind',
+      label: 'Remind',
+      stickyRight: true,
+      cellClassName: 'bg-white dark:bg-slate-900',
+      render: (r) => (
+        <ReminderChannelButtons
+          variant="icons"
+          size="sm"
+          channelAvailability={customerReminderChannels(r)}
+          disabled={!r.customer}
+          onSend={(channels) => bookingsApi.remind(r.id, { channels, target: 'customer' })}
+        />
+      ),
+    }] : []),
     {
       key: 'actions',
       label: 'Actions',
@@ -291,22 +333,97 @@ export function BookingsListView({
           ))}
         </div>
         )}
-        <div className="flex flex-wrap gap-3 border-b border-slate-200 p-4">
-          <input
-            type="search"
-            placeholder="Booking #, PNR, ticket, passenger..."
-            className="input-field max-w-[200px]"
-            value={filters.search}
-            onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1); }}
-          />
-          <select className="input-field w-auto" value={filters.paymentStatus} onChange={(e) => { setFilters((f) => ({ ...f, paymentStatus: e.target.value })); setPage(1); }}>
-            <option value="">All payments</option>
-            <option value="paid">Fully paid</option>
-            <option value="partial">Partial</option>
-            <option value="unpaid">Due</option>
-          </select>
-          <input type="date" className="input-field w-auto" value={filters.dateFrom} onChange={(e) => { setFilters((f) => ({ ...f, dateFrom: e.target.value })); setPage(1); }} title="Flight from" />
-          <input type="date" className="input-field w-auto" value={filters.dateTo} onChange={(e) => { setFilters((f) => ({ ...f, dateTo: e.target.value })); setPage(1); }} title="Flight to" />
+        <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
+          <div className="min-w-[200px] flex-1">
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Search</label>
+            <input
+              type="search"
+              placeholder="Booking #, PNR, ticket, passenger..."
+              className="input-field w-full"
+              value={filters.search}
+              onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1); }}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Customer pay</label>
+            <select className="input-field w-auto min-w-[8rem]" value={filters.paymentStatus} onChange={(e) => { setFilters((f) => ({ ...f, paymentStatus: e.target.value })); setPage(1); }}>
+              <option value="">All</option>
+              <option value="paid">Fully paid</option>
+              <option value="partial">Partial</option>
+              <option value="unpaid">Due</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Supplier pay</label>
+            <select className="input-field w-auto min-w-[8rem]" value={filters.supplierPaymentStatus} onChange={(e) => { setFilters((f) => ({ ...f, supplierPaymentStatus: e.target.value })); setPage(1); }}>
+              <option value="">All</option>
+              <option value="paid">Paid</option>
+              <option value="partial">Partial</option>
+              <option value="unpaid">Due</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Approval</label>
+            <select className="input-field w-auto min-w-[8rem]" value={filters.approvalStatus} onChange={(e) => { setFilters((f) => ({ ...f, approvalStatus: e.target.value })); setPage(1); }}>
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="checking">Checking</option>
+              <option value="processing">Processing</option>
+              <option value="approved">Approved</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Sort</label>
+            <select
+              className="input-field w-auto min-w-[10rem]"
+              value={`${filters.sortBy}:${filters.sortOrder}`}
+              onChange={(e) => {
+                const [sortBy, sortOrder] = e.target.value.split(':');
+                setFilters((f) => ({ ...f, sortBy, sortOrder }));
+                setPage(1);
+              }}
+            >
+              <option value="createdAt:desc">Newest first</option>
+              <option value="createdAt:asc">Oldest first</option>
+              <option value="departureDate:desc">Flight date ↓</option>
+              <option value="departureDate:asc">Flight date ↑</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Flight from</label>
+            <input type="date" className="input-field w-auto" value={filters.dateFrom} onChange={(e) => { setFilters((f) => ({ ...f, dateFrom: e.target.value })); setPage(1); }} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Flight to</label>
+            <input type="date" className="input-field w-auto" value={filters.dateTo} onChange={(e) => { setFilters((f) => ({ ...f, dateTo: e.target.value })); setPage(1); }} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Booked from</label>
+            <input type="date" className="input-field w-auto" value={filters.bookingDateFrom} onChange={(e) => { setFilters((f) => ({ ...f, bookingDateFrom: e.target.value })); setPage(1); }} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Booked to</label>
+            <input type="date" className="input-field w-auto" value={filters.bookingDateTo} onChange={(e) => { setFilters((f) => ({ ...f, bookingDateTo: e.target.value })); setPage(1); }} />
+          </div>
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={filters.hasCustomerDue === 'true'}
+              onChange={(e) => { setFilters((f) => ({ ...f, hasCustomerDue: e.target.checked ? 'true' : '' })); setPage(1); }}
+            />
+            Customer due only
+          </label>
+          <label className="flex items-center gap-2 pb-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={filters.hasSupplierDue === 'true'}
+              onChange={(e) => { setFilters((f) => ({ ...f, hasSupplierDue: e.target.checked ? 'true' : '' })); setPage(1); }}
+            />
+            Supplier due only
+          </label>
+          <button type="button" className="btn-secondary mb-0.5 text-sm" onClick={resetFilters}>Clear filters</button>
         </div>
         <DataTable columns={columns} data={items} loading={loading} emptyTitle="No bookings" emptyDescription="Create a booking or adjust filters." />
         {pagination && <div className="border-t border-slate-200 p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}

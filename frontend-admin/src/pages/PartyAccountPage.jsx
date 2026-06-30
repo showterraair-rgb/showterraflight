@@ -149,7 +149,11 @@ function PartyAccountPage({ party }) {
                       <td className="px-4 py-3">
                         <ReminderChannelButtons
                           onSend={sendReminder(row.bookingId)}
-                          disabled={!hasDue}
+                          channelAvailability={{
+                            sms: Boolean(data.customer?.phone),
+                            email: Boolean(data.customer?.email),
+                            whatsapp: Boolean(data.customer?.phone || data.customer?.whatsapp),
+                          }}
                         />
                       </td>
                     </tr>

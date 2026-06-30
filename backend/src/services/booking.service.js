@@ -55,8 +55,12 @@ function formatBooking(doc) {
     customer: doc.customer?._id?.toString() || doc.customer?.toString(),
     customerName: doc.customer?.name,
     customerPhone: doc.customer?.phone,
+    customerWhatsapp: doc.customer?.whatsapp || '',
+    customerEmail: doc.customer?.email || '',
     supplier: doc.supplier?._id?.toString() || doc.supplier?.toString() || null,
     supplierName: doc.supplier?.name,
+    supplierPhone: doc.supplier?.phone || '',
+    supplierEmail: doc.supplier?.email || '',
     journeyType: doc.journeyType || 'one_way',
     fromDestination: doc.fromDestination || '',
     toDestination: doc.toDestination || '',
@@ -189,6 +193,14 @@ function buildBookingFilter(query) {
   if (query.orderId) filter.order = query.orderId;
 
   if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
+  if (query.supplierPaymentStatus) filter.supplierPaymentStatus = query.supplierPaymentStatus;
+
+  if (query.hasCustomerDue === 'true' || query.hasCustomerDue === true) {
+    filter.customerDue = { $gt: 0 };
+  }
+  if (query.hasSupplierDue === 'true' || query.hasSupplierDue === true) {
+    filter.supplierPayable = { $gt: 0 };
+  }
 
   if (query.productCategory) {
     if (query.productCategory === 'air') {
@@ -321,7 +333,7 @@ function hasMeaningfulBookingUpdate(data) {
 }
 
 export async function listBookings(query) {
-  const { page, limit, skip, sort } = parsePaginationQuery(query, 'departureDate');
+  const { page, limit, skip, sort } = parsePaginationQuery(query, 'createdAt');
   const filter = buildBookingFilter(query);
 
   const [items, total] = await Promise.all([
@@ -329,8 +341,8 @@ export async function listBookings(query) {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .populate('customer', 'name phone')
-      .populate('supplier', 'name')
+      .populate('customer', 'name phone whatsapp email')
+      .populate('supplier', 'name phone email')
       .populate('order', 'orderNumber')
       .lean(),
     Booking.countDocuments(filter),

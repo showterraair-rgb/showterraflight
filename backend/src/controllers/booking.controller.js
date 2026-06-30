@@ -1,6 +1,7 @@
 import * as bookingService from '../services/booking.service.js';
 import * as bookingOperationService from '../services/bookingOperation.service.js';
 import * as bulkImportService from '../services/bulkImport.service.js';
+import * as bookingReminderService from '../services/bookingReminder.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import fs from 'fs';
 
@@ -187,6 +188,23 @@ export const scheduleChangeWithTicket = asyncHandler(async (req, res) => {
   res.json({ success: true, data, extracted, message: 'Schedule change recorded with new ticket' });
 });
 
+export const remind = asyncHandler(async (req, res) => {
+  const result = await bookingReminderService.sendBookingReminder(
+    req.params.id,
+    req.body.channels,
+    req.body.target || 'customer'
+  );
+  if (result.error || result.skipped || !result.sent) {
+    const failed = result.results?.find((r) => !r.success);
+    return res.status(400).json({
+      success: false,
+      message: result.reason || result.error || failed?.error || 'Reminder could not be sent',
+      data: result,
+    });
+  }
+  res.json({ success: true, data: result, message: 'Reminder sent' });
+});
+
 export default {
   list,
   getById,
@@ -209,6 +227,7 @@ export default {
   bulkImportTickets,
   scheduleChange,
   scheduleChangeWithTicket,
+  remind,
   addNote,
   getTimeline,
   getOperations,
