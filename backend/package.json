@@ -17,6 +17,7 @@
     "configure-notifications": "node src/scripts/configureNotifications.js",
     "sync-notification-defaults": "node src/scripts/syncNotificationDefaults.js",
     "normalize-party-phones": "node src/scripts/normalizePartyPhones.js",
+    "clear-business-data": "node src/scripts/clearBusinessData.js",
     "create-demo-user": "node src/scripts/createDemoUser.js",
     "create-admin-user": "node src/scripts/createAdminUser.js"
   },
