@@ -13,6 +13,7 @@ import {
   sendDailyLedgerNotifyToAdmin,
 } from '../services/ledgerSummary.service.js';
 import { getWasenderSessionStatus } from '../services/whatsapp/wasender.provider.js';
+import { getServerOutboundIp } from '../utils/serverIp.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -35,6 +36,12 @@ export const testSms = asyncHandler(async (req, res) => {
 export const smsBalance = asyncHandler(async (_req, res) => {
   const result = await getSmsBalance();
   if (!result.success) throw ApiError.badRequest(result.error || 'Could not fetch SMS balance');
+  res.json({ success: true, data: result });
+});
+
+export const smsServerIp = asyncHandler(async (_req, res) => {
+  const result = await getServerOutboundIp();
+  if (!result.success) throw ApiError.badRequest(result.error || 'Could not detect server IP');
   res.json({ success: true, data: result });
 });
 
@@ -141,6 +148,7 @@ export default {
   updateSmsSettings,
   testSms,
   smsBalance,
+  smsServerIp,
   getEmailSettings,
   updateEmailSettings,
   testEmail,

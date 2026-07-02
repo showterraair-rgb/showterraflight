@@ -20,6 +20,8 @@ export default function SmsSettingsPage() {
   const [testTo, setTestTo] = useState('01741148529');
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [serverIp, setServerIp] = useState('');
+  const [serverIpLoading, setServerIpLoading] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -47,6 +49,22 @@ export default function SmsSettingsPage() {
   }, [form]);
 
   useEffect(() => { load(); }, [load]);
+
+  const fetchServerIp = useCallback(async () => {
+    setServerIpLoading(true);
+    try {
+      const { data } = await notificationsApi.getSmsServerIp();
+      setServerIp(data.data?.ip || '');
+    } catch {
+      setServerIp('');
+    } finally {
+      setServerIpLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loading) fetchServerIp();
+  }, [loading, fetchServerIp]);
 
   const onSubmit = async (values) => {
     setMsg('');
@@ -101,6 +119,30 @@ export default function SmsSettingsPage() {
         <p className="text-sm text-slate-500">
           BulkSMSBD gateway for booking reminders and payment alerts.
         </p>
+      </div>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <p className="font-medium">IP whitelist required (error 1032)</p>
+        <p className="mt-1 text-xs text-amber-900">
+          BulkSMSBD blocks SMS until your <strong>server outbound IP</strong> is whitelisted. Balance checks work without this; sending does not.
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-amber-900">
+          <li>Log in at <strong>bulksmsbd.net</strong></li>
+          <li>Open <strong>Phonebook → IP White List</strong></li>
+          <li>Set <strong>Source IP Checking</strong> to <strong>Enable</strong></li>
+          <li>Type: <strong>API</strong></li>
+          <li>Add IP: <strong className="font-mono">{serverIp || '187.77.144.38'}</strong> (must match error message exactly)</li>
+          <li>Confirm row status is <strong>Active</strong>, then retry test SMS</li>
+        </ol>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs">
+            Server outbound IP:{' '}
+            <strong className="font-mono">{serverIpLoading ? '…' : (serverIp || 'unknown')}</strong>
+          </span>
+          <button type="button" onClick={fetchServerIp} disabled={serverIpLoading} className="btn-secondary text-xs py-1">
+            Refresh IP
+          </button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">

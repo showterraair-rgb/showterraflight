@@ -23,6 +23,7 @@ router.get('/settings/sms', authorize('notifications:view', 'settings:manage'), 
 router.put('/settings/sms', authorize('notifications:manage', 'settings:manage'), validate(updateSmsSettingsSchema), notificationController.updateSmsSettings);
 router.post('/settings/sms/test', authorize('notifications:manage', 'settings:manage'), validate(testSmsSchema), notificationController.testSms);
 router.get('/settings/sms/balance', authorize('notifications:view', 'settings:manage'), notificationController.smsBalance);
+router.get('/settings/sms/server-ip', authorize('notifications:view', 'settings:manage'), notificationController.smsServerIp);
 
 router.get('/settings/email', authorize('notifications:view', 'settings:manage'), notificationController.getEmailSettings);
 router.put('/settings/email', authorize('notifications:manage', 'settings:manage'), validate(updateEmailSettingsSchema), notificationController.updateEmailSettings);

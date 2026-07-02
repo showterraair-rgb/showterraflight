@@ -1,4 +1,5 @@
 import { canonicalBdPhone } from '../../utils/phoneUtils.js';
+import { extractIpFromBulkSmsBdError } from '../../utils/serverIp.js';
 
 export const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
@@ -39,12 +40,20 @@ function parseProviderResponse(text) {
     }
 
     const hint = ERROR_HINTS[code] || ERROR_HINTS[String(code)];
-    const detail = errorMessage || hint || `SMS provider error (code ${code ?? 'unknown'})`;
+    let detail = errorMessage || hint || `SMS provider error (code ${code ?? 'unknown'})`;
+
+    if (String(code) === '1032' || code === 1032) {
+      const blockedIp = extractIpFromBulkSmsBdError(errorMessage) || extractIpFromBulkSmsBdError(detail);
+      detail = blockedIp
+        ? `BulkSMSBD blocked server IP ${blockedIp}. Whitelist it in Phonebook → IP White List (Type: API, Status: Active).`
+        : (hint || detail);
+    }
 
     return {
       success: false,
       error: detail,
       code,
+      blockedIp: extractIpFromBulkSmsBdError(errorMessage),
       raw: json,
     };
   } catch {
