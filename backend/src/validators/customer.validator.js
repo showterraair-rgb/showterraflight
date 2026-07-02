@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { bdPhoneString } from '../utils/bdPhoneSchema.js';
 
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -12,8 +13,8 @@ export const listQuerySchema = z.object({
 
 export const createCustomerSchema = z.object({
   name: z.string().min(2).max(100).trim(),
-  phone: z.string().min(10).max(20).trim(),
-  whatsapp: z.string().min(10).max(20).trim().optional().or(z.literal('')),
+  phone: bdPhoneString(),
+  whatsapp: bdPhoneString({ optional: true }),
   email: z.string().email().trim().toLowerCase().optional().or(z.literal('')),
   address: z.string().max(500).optional(),
   nid: z.string().max(50).optional(),

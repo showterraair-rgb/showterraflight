@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { JOURNEY_TYPES, TRAVEL_CLASSES } from '../config/constants.js';
+import { bdPhoneString } from '../utils/bdPhoneSchema.js';
 
 export const bookingRequestSchema = z
   .object({
     customerName: z.string().min(2, 'Name is required').max(100).trim(),
-    customerPhone: z.string().min(10, 'Valid phone number required').max(20).trim(),
+    customerPhone: bdPhoneString(),
     customerEmail: z.string().email('Invalid email').trim().toLowerCase().optional().or(z.literal('')),
     journeyType: z.enum(JOURNEY_TYPES),
     fromDestination: z.string().min(2, 'From destination is required').max(100).trim(),

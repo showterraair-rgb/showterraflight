@@ -34,6 +34,7 @@ async function run() {
           key: 'sms',
           providerName: BULKSMSBD_DEFAULTS.providerName,
           apiUrl: env.sms.apiUrl,
+          balanceUrl: env.sms.balanceUrl,
           apiKey: smsKey,
           senderId: smsSender,
           isEnabled: env.sms.enabled !== false,

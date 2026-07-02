@@ -6,6 +6,7 @@ import {
   TRAVEL_CLASSES,
   APPROVAL_STATUSES,
 } from '../config/constants.js';
+import { bdPhoneString } from '../utils/bdPhoneSchema.js';
 
 function roundTripRefine(schema) {
   return schema.refine((d) => d.journeyType !== 'round_trip' || d.returnDate, {
@@ -31,7 +32,7 @@ export const listQuerySchema = z.object({
 const createOrderBaseSchema = z.object({
   customerId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   customerName: z.string().min(2).max(100).trim(),
-  customerPhone: z.string().min(10).max(20).trim(),
+  customerPhone: bdPhoneString(),
   customerEmail: z.string().email().trim().toLowerCase().optional().or(z.literal('')),
   source: z.enum(ORDER_SOURCES).default('phone'),
   status: z.enum(ORDER_STATUSES).default('inquiry'),

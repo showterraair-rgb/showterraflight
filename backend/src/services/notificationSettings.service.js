@@ -10,6 +10,7 @@ import { BULKSMSBD_DEFAULTS } from '../services/sms/bulksmsbd.provider.js';
 const SMS_DEFAULTS = {
   providerName: BULKSMSBD_DEFAULTS.providerName,
   apiUrl: BULKSMSBD_DEFAULTS.apiUrl,
+  balanceUrl: BULKSMSBD_DEFAULTS.balanceUrl,
   apiKey: '',
   apiToken: '',
   senderId: '',
@@ -51,6 +52,7 @@ function formatSms(doc) {
   return {
     providerName: doc.providerName || BULKSMSBD_DEFAULTS.providerName,
     apiUrl: doc.apiUrl || SMS_DEFAULTS.apiUrl,
+    balanceUrl: doc.balanceUrl || BULKSMSBD_DEFAULTS.balanceUrl,
     apiKey: doc.apiKey ? '********' : '',
     apiToken: doc.apiToken || '',
     senderId: doc.senderId || '',

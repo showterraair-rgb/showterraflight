@@ -9,11 +9,12 @@ import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
+import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER, formatPhoneOnBlur, isValidBdMobile } from '../utils/phone';
 
 const schema = z.object({
   name: z.string().min(2, 'Name required'),
-  phone: z.string().min(10, 'Phone required'),
-  whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits').optional().or(z.literal('')),
+  phone: z.string().min(1, 'Phone required').refine(isValidBdMobile, { message: BD_PHONE_HELP }),
+  whatsapp: z.string().optional().or(z.literal('')).refine((v) => !v || isValidBdMobile(v), { message: BD_PHONE_HELP }),
   email: z.string().email().optional().or(z.literal('')),
 });
 
@@ -31,7 +32,7 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: empty,
   });
@@ -204,13 +205,23 @@ export default function CustomersPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Phone *</label>
-              <input className="input-field" placeholder="e.g. 01674533303" {...register('phone')} />
+              <input
+                className="input-field"
+                placeholder={BD_PHONE_PLACEHOLDER}
+                {...register('phone')}
+                onBlur={(e) => setValue('phone', formatPhoneOnBlur(e.target.value), { shouldValidate: true })}
+              />
               {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
-              <p className="mt-1 text-xs text-slate-500">Bangladesh mobile (01XXXXXXXXX). Used for SMS.</p>
+              <p className="mt-1 text-xs text-slate-500">{BD_PHONE_HELP}</p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">WhatsApp Number</label>
-              <input className="input-field" placeholder="e.g. 01674533303 (optional)" {...register('whatsapp')} />
+              <input
+                className="input-field"
+                placeholder={`${BD_PHONE_PLACEHOLDER} (optional)`}
+                {...register('whatsapp')}
+                onBlur={(e) => setValue('whatsapp', formatPhoneOnBlur(e.target.value), { shouldValidate: true })}
+              />
               {errors.whatsapp && <p className="mt-1 text-xs text-red-600">{errors.whatsapp.message}</p>}
               <p className="mt-1 text-xs text-slate-500">Leave blank to use phone number for WhatsApp.</p>
             </div>

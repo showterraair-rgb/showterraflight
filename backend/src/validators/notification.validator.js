@@ -26,6 +26,7 @@ export const accountStatusSchema = z.object({
 export const updateSmsSettingsSchema = z.object({
   providerName: z.string().max(120).optional(),
   apiUrl: z.string().max(500).optional(),
+  balanceUrl: z.string().max(500).optional(),
   apiKey: z.string().max(500).optional(),
   apiToken: z.string().max(500).optional(),
   senderId: z.string().max(50).optional(),

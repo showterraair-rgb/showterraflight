@@ -5,6 +5,7 @@ const smsSettingSchema = new mongoose.Schema(
     key: { type: String, required: true, unique: true, default: 'sms' },
     providerName: { type: String, default: '', trim: true },
     apiUrl: { type: String, default: '', trim: true },
+    balanceUrl: { type: String, default: 'http://bulksmsbd.net/api/getBalanceApi', trim: true },
     apiKey: { type: String, default: '', trim: true },
     apiToken: { type: String, default: '', trim: true },
     senderId: { type: String, default: '', trim: true },

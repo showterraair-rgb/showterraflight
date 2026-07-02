@@ -192,9 +192,10 @@ export async function getBulkSmsBdBalance({ apiKey, balanceUrl }) {
         raw: json,
       };
     }
+    const balance = json.balance ?? json.credit ?? json.data?.balance ?? json.data;
     return {
       success: true,
-      balance: json.balance ?? json.credit ?? json.data ?? json,
+      balance: balance ?? json,
       raw: json,
     };
   } catch {

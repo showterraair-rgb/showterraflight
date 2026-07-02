@@ -4,10 +4,12 @@ import { useForm } from 'react-hook-form';
 import { notificationsApi } from '../services/notifications.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { usePermission } from '../hooks/usePermission';
+import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER } from '../utils/phone';
 
 const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
   apiUrl: 'http://bulksmsbd.net/api/smsapi',
+  balanceUrl: 'http://bulksmsbd.net/api/getBalanceApi',
   senderId: '8809648909214',
 };
 
@@ -23,6 +25,7 @@ export default function SmsSettingsPage() {
     defaultValues: {
       providerName: BULKSMSBD_DEFAULTS.providerName,
       apiUrl: BULKSMSBD_DEFAULTS.apiUrl,
+      balanceUrl: BULKSMSBD_DEFAULTS.balanceUrl,
       apiKey: '',
       senderId: BULKSMSBD_DEFAULTS.senderId,
       isEnabled: true,
@@ -123,8 +126,13 @@ export default function SmsSettingsPage() {
         </label>
 
         <label className="block text-sm">
-          <span className="text-slate-600">API URL</span>
+          <span className="text-slate-600">API URL (send)</span>
           <input {...form.register('apiUrl')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" />
+        </label>
+
+        <label className="block text-sm">
+          <span className="text-slate-600">Balance API URL</span>
+          <input {...form.register('balanceUrl')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" placeholder="http://bulksmsbd.net/api/getBalanceApi" />
         </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -155,13 +163,13 @@ export default function SmsSettingsPage() {
       {editable && (
         <div className="card space-y-3">
           <h3 className="text-sm font-semibold text-slate-900">Test SMS</h3>
-          <p className="text-xs text-slate-500">Bangladesh format: 017XXXXXXXX or 88017XXXXXXXX</p>
+          <p className="text-xs text-slate-500">{BD_PHONE_HELP}</p>
           <div className="flex flex-wrap gap-2">
             <input
               value={testTo}
               onChange={(e) => setTestTo(e.target.value)}
               className="input min-w-[200px] flex-1"
-              placeholder="01741148529"
+              placeholder={BD_PHONE_PLACEHOLDER}
             />
             <button type="button" onClick={sendTest} className="btn-secondary">Send test</button>
           </div>

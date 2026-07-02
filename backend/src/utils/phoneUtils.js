@@ -1,23 +1,41 @@
 /**
  * Bangladesh mobile normalization.
- * - Store locally as 01XXXXXXXXX (11 digits) in CRM records.
- * - Send to SMS/WhatsApp gateways as 8801XXXXXXXXX (13 digits).
+ * Operators: 013 Teletalk, 014, 015, 016 Airtel, 017 GP, 018 Robi, 019 Banglalink.
+ *
+ * Accepted input examples:
+ *   01712345678, 01812345678, 01912345678
+ *   8801712345678, +8801712345678
+ *   1712345678 (10 digits)
+ *
+ * Storage: 01XXXXXXXXX (11 digits)
+ * SMS API:  8801XXXXXXXXX (13 digits, no +)
+ * Display:  +8801XXXXXXXXX
  */
 
+/** 01 + operator digit 3–9 + 8 subscriber digits */
 const BD_MOBILE_LOCAL = /^01[3-9]\d{8}$/;
 const BD_MOBILE_CANONICAL = /^8801[3-9]\d{8}$/;
+
+export const BD_PHONE_HELP =
+  'Bangladesh mobile: 017/018/019XXXXXXXX or +88017XXXXXXXX';
+
+export const BD_PHONE_PLACEHOLDER = '01712345678 or +8801712345678';
 
 function digitsOnly(raw) {
   return String(raw || '').replace(/\D/g, '');
 }
 
-/** International format for BulkSMSBD / WhatsApp APIs: 8801XXXXXXXXX */
+/** International format for BulkSMSBD: 8801XXXXXXXXX (no +) */
 export function canonicalBdPhone(raw) {
   const digits = digitsOnly(raw);
   if (!digits) return '';
 
-  if (digits.startsWith('880') && digits.length >= 12) {
+  if (digits.startsWith('880') && digits.length >= 13) {
     return digits.slice(0, 13);
+  }
+
+  if (digits.startsWith('880') && digits.length === 12) {
+    return digits;
   }
 
   if (digits.startsWith('0') && digits.length === 11) {
@@ -35,13 +53,21 @@ export function canonicalBdPhone(raw) {
   return digits;
 }
 
+/** E.164 with plus: +8801XXXXXXXXX */
+export function internationalBdPhone(raw) {
+  const canonical = canonicalBdPhone(raw);
+  if (!canonical || !BD_MOBILE_CANONICAL.test(canonical)) return '';
+  return `+${canonical}`;
+}
+
 /** Local display/storage format: 01XXXXXXXXX */
 export function localBdPhone(raw) {
   const canonical = canonicalBdPhone(raw);
-  if (!canonical || !canonical.startsWith('880') || canonical.length < 13) {
+  if (!canonical || !canonical.startsWith('880') || canonical.length < 12) {
     return String(raw || '').trim();
   }
-  return `0${canonical.slice(3, 13)}`;
+  const local = `0${canonical.slice(3, 13)}`;
+  return BD_MOBILE_LOCAL.test(local) ? local : '';
 }
 
 /** @deprecated Use canonicalBdPhone */
@@ -83,6 +109,8 @@ export function resolveContactChannels({ phone, whatsapp } = {}) {
   return {
     smsPhone,
     waPhone: waPhone || smsPhone,
+    smsInternational: internationalBdPhone(phone),
+    waInternational: internationalBdPhone(whatsapp || phone),
   };
 }
 
@@ -90,8 +118,9 @@ export function resolveContactChannels({ phone, whatsapp } = {}) {
 export function phoneMatchValues(raw) {
   const local = localBdPhone(raw);
   const canonical = canonicalBdPhone(raw);
+  const intl = internationalBdPhone(raw);
   const digits = digitsOnly(raw);
-  return [...new Set([String(raw || '').trim(), local, canonical, digits].filter(Boolean))];
+  return [...new Set([String(raw || '').trim(), local, canonical, intl, digits].filter(Boolean))];
 }
 
 export function phoneMatchQuery(field, raw) {
@@ -99,7 +128,10 @@ export function phoneMatchQuery(field, raw) {
 }
 
 export default {
+  BD_PHONE_HELP,
+  BD_PHONE_PLACEHOLDER,
   canonicalBdPhone,
+  internationalBdPhone,
   localBdPhone,
   normalizeBdPhone,
   normalizeWaPhone,

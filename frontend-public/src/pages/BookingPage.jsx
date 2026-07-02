@@ -10,6 +10,7 @@ import { useCompany } from '../context/CompanyContext';
 import { useCurrency } from '../hooks/useCurrency';
 import { getWhatsAppDigits } from '../utils/companyHelpers';
 import { publicApi } from '../services/api';
+import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER, formatPhoneOnBlur, isValidBdMobile } from '../utils/phone';
 
 const JOURNEY_TYPES = ['one_way', 'round_trip', 'multi_city'];
 const TRAVEL_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
@@ -17,7 +18,7 @@ const TRAVEL_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
 const bookingSchema = z
   .object({
     customerName: z.string().min(2, 'Name is required'),
-    customerPhone: z.string().min(10, 'Valid phone required'),
+    customerPhone: z.string().min(1, 'Phone required').refine(isValidBdMobile, { message: BD_PHONE_HELP }),
     customerEmail: z.string().email('Invalid email').optional().or(z.literal('')),
     journeyType: z.enum(JOURNEY_TYPES),
     fromDestination: z.string().min(2, 'From destination required'),
@@ -157,8 +158,14 @@ export default function BookingPage() {
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Phone *</label>
-                <input className="input-field" placeholder="01XXXXXXXXX" {...register('customerPhone')} />
+                <input
+                  className="input-field"
+                  placeholder={BD_PHONE_PLACEHOLDER}
+                  {...register('customerPhone')}
+                  onBlur={(e) => setValue('customerPhone', formatPhoneOnBlur(e.target.value), { shouldValidate: true })}
+                />
                 {errors.customerPhone && <p className="mt-1 text-xs text-red-600">{errors.customerPhone.message}</p>}
+                <p className="mt-1 text-xs text-slate-500">{BD_PHONE_HELP}</p>
               </div>
 
               <div>

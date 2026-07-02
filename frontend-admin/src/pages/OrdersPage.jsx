@@ -18,10 +18,11 @@ import {
 } from '../utils/constants';
 import ApprovalControls from '../components/bookings/ApprovalPanel';
 import PassportUpload from '../components/bookings/PassportUpload';
+import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER, formatPhoneOnBlur, isValidBdMobile } from '../utils/phone';
 
 const schema = z.object({
   customerName: z.string().min(2),
-  customerPhone: z.string().min(10),
+  customerPhone: z.string().min(1, 'Phone required').refine(isValidBdMobile, { message: BD_PHONE_HELP }),
   customerEmail: z.string().email().optional().or(z.literal('')),
   customerId: z.string().optional(),
   source: z.enum(['website', 'phone', 'whatsapp', 'walk_in']),
@@ -316,7 +317,7 @@ export default function OrdersPage() {
               )}
             </div>
             <div><label className="mb-1 block text-sm font-medium">Customer Name *</label><input className="input-field" {...form.register('customerName')} /></div>
-            <div><label className="mb-1 block text-sm font-medium">Phone *</label><input className="input-field" {...form.register('customerPhone')} /></div>
+            <div><label className="mb-1 block text-sm font-medium">Phone *</label><input className="input-field" placeholder={BD_PHONE_PLACEHOLDER} {...form.register('customerPhone')} onBlur={(e) => form.setValue('customerPhone', formatPhoneOnBlur(e.target.value), { shouldValidate: true })} />{form.formState.errors.customerPhone && <p className="mt-1 text-xs text-red-600">{form.formState.errors.customerPhone.message}</p>}<p className="mt-1 text-xs text-slate-500">{BD_PHONE_HELP}</p></div>
             <div><label className="mb-1 block text-sm font-medium">Email</label><input className="input-field" {...form.register('customerEmail')} /></div>
             {!editing && (
               <div>
