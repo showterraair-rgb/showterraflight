@@ -9,6 +9,7 @@ const smsSettingSchema = new mongoose.Schema(
     apiKey: { type: String, default: '', trim: true },
     apiToken: { type: String, default: '', trim: true },
     senderId: { type: String, default: '', trim: true },
+    isMasking: { type: Boolean, default: false },
     username: { type: String, default: '', trim: true },
     password: { type: String, default: '', trim: true },
     isEnabled: { type: Boolean, default: false },

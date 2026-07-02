@@ -19,6 +19,7 @@ export function resolveSmsConfig(settings = {}) {
     balanceUrl: settings.balanceUrl || env.sms.balanceUrl || BULKSMSBD_DEFAULTS.balanceUrl,
     apiKey,
     senderId,
+    isMasking: settings.isMasking ?? env.sms.isMasking ?? false,
     username: settings.username || '',
     password: settings.password || '',
     isConfigured,

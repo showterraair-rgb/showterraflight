@@ -30,6 +30,7 @@ export const updateSmsSettingsSchema = z.object({
   apiKey: z.string().max(500).optional(),
   apiToken: z.string().max(500).optional(),
   senderId: z.string().max(50).optional(),
+  isMasking: z.boolean().optional(),
   username: z.string().max(120).optional(),
   password: z.string().max(200).optional(),
   isEnabled: z.boolean().optional(),

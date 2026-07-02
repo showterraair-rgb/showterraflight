@@ -113,6 +113,7 @@ export async function sendSmsMessage({ to, message }) {
       apiUrl: settings.apiUrl,
       apiKey: settings.apiKey,
       senderId: settings.senderId,
+      isMasking: settings.isMasking,
       number: recipient,
       message,
     });

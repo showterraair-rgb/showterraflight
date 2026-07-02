@@ -54,6 +54,7 @@ export const env = {
     balanceUrl: process.env.BULKSMSBD_BALANCE_URL || 'http://bulksmsbd.net/api/getBalanceApi',
     apiKey: process.env.BULKSMSBD_API_KEY || '',
     senderId: process.env.BULKSMSBD_SENDER_ID || '',
+    isMasking: process.env.BULKSMSBD_IS_MASKING === 'true',
     enabled: process.env.BULKSMSBD_ENABLED === 'true',
   },
   whatsapp: {

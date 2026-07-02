@@ -10,7 +10,7 @@ const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
   apiUrl: 'http://bulksmsbd.net/api/smsapi',
   balanceUrl: 'http://bulksmsbd.net/api/getBalanceApi',
-  senderId: '8809648909214',
+  senderId: '09617626936',
 };
 
 export default function SmsSettingsPage() {
@@ -30,6 +30,7 @@ export default function SmsSettingsPage() {
       balanceUrl: BULKSMSBD_DEFAULTS.balanceUrl,
       apiKey: '',
       senderId: BULKSMSBD_DEFAULTS.senderId,
+      isMasking: false,
       isEnabled: true,
     },
   });
@@ -148,9 +149,12 @@ export default function SmsSettingsPage() {
       <div className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
         <p className="font-medium">BulkSMSBD API format</p>
         <p className="mt-1 font-mono text-[11px] break-all">
-          http://bulksmsbd.net/api/smsapi?api_key=KEY&amp;type=text&amp;number=88017XXXXXXXX&amp;senderid=8809648909214&amp;message=...
+          http://bulksmsbd.net/api/smsapi?api_key=KEY&amp;type=text&amp;number=88017XXXXXXXX&amp;senderid=09617626936&amp;message=...
         </p>
         <p className="mt-2 text-xs text-sky-800">
+          Non-masking: senderid must be <strong>01/09XXXXXXXXX</strong> (not 880...). Masking: approved brand name (max 11 chars).
+        </p>
+        <p className="mt-1 text-xs text-sky-800">
           Whitelist your server IP in BulkSMSBD Phonebook or SMS will fail with error 1032.
         </p>
       </div>
@@ -166,6 +170,14 @@ export default function SmsSettingsPage() {
           <input type="checkbox" {...form.register('isEnabled')} disabled={!editable} />
           Enable SMS notifications
         </label>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" {...form.register('isMasking')} disabled={!editable} />
+          Masking SMS (brand name sender)
+        </label>
+        <p className="text-xs text-slate-500">
+          Leave unchecked for <strong>non-masking</strong> dedicated number. API sends as 01/09XXXXXXXXX even if you enter 880...
+        </p>
 
         <label className="block text-sm">
           <span className="text-slate-600">API URL (send)</span>
@@ -184,7 +196,8 @@ export default function SmsSettingsPage() {
           </label>
           <label className="block text-sm">
             <span className="text-slate-600">Sender ID *</span>
-            <input {...form.register('senderId')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" placeholder="8809648909214" />
+            <input {...form.register('senderId')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" placeholder="09617626936" />
+            <p className="mt-1 text-xs text-slate-500">Non-masking: dedicated number (e.g. 09617626936). Do not use 880... prefix.</p>
           </label>
         </div>
 

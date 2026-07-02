@@ -62,6 +62,7 @@ async function sendOtpViaChannel(channel, identifier, code, userName) {
       apiKey: sms.apiKey,
       senderId: sms.senderId,
       apiUrl: sms.apiUrl,
+      isMasking: sms.isMasking,
       number: identifier,
       message,
     });

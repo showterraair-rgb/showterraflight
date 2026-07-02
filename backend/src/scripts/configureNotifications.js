@@ -37,6 +37,7 @@ async function run() {
           balanceUrl: env.sms.balanceUrl,
           apiKey: smsKey,
           senderId: smsSender,
+          isMasking: env.sms.isMasking,
           isEnabled: env.sms.enabled !== false,
         },
       },
