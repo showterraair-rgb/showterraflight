@@ -21,13 +21,14 @@ import {
   DEFAULT_NOTIFICATION_TEMPLATES,
   DEFAULT_WHATSAPP_PARAM_KEYS,
 } from '../config/constants.js';
-import { sendBulkSmsBd, getBulkSmsBdBalance } from './sms/bulksmsbd.provider.js';
+import { sendBulkSmsBd, getBulkSmsBdBalance, buildBulkSmsBdUrl, normalizeBulkSmsBdSenderId, displayBulkSmsBdSenderId, BULKSMSBD_DEFAULTS } from './sms/bulksmsbd.provider.js';
 import { sendMetaWhatsAppTemplate, sendMetaWhatsAppText } from './whatsapp/metaCloud.provider.js';
 import { sendWasenderMessage, isWasenderConfiguredAsync } from './whatsapp/wasender.provider.js';
 import { sendSmtpEmail } from './email/smtp.provider.js';
 import { resolveSmsConfig } from '../utils/smsConfig.js';
 import { resolveWhatsAppConfig } from '../utils/whatsappConfig.js';
 import { normalizeWaPhone, canonicalBdPhone } from '../utils/phoneUtils.js';
+import { getServerOutboundIp } from '../utils/serverIp.js';
 import ApiError from '../utils/ApiError.js';
 
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
@@ -146,6 +147,48 @@ export async function getSmsBalance() {
     apiKey: settings.apiKey,
     balanceUrl: settings.balanceUrl,
   });
+}
+
+export async function getSmsDiagnostics() {
+  const settings = resolveSmsConfig(await getSmsSettingsRaw());
+  const [balance, serverIp] = await Promise.all([
+    settings.apiKey
+      ? getBulkSmsBdBalance({ apiKey: settings.apiKey, balanceUrl: settings.balanceUrl })
+      : Promise.resolve({ success: false, error: 'SMS API key is not configured' }),
+    getServerOutboundIp(),
+  ]);
+
+  const apiSenderId = normalizeBulkSmsBdSenderId(
+    settings.senderId || BULKSMSBD_DEFAULTS.senderId,
+    { isMasking: settings.isMasking },
+  );
+
+  const maskedKey = settings.apiKey ? `${settings.apiKey.slice(0, 4)}…` : '';
+
+  return {
+    isConfigured: settings.isConfigured,
+    isEnabled: settings.isEnabled,
+    isMasking: settings.isMasking,
+    apiUrl: settings.apiUrl,
+    balanceUrl: settings.balanceUrl,
+    displaySenderId: displayBulkSmsBdSenderId(settings.senderId || BULKSMSBD_DEFAULTS.senderId, {
+      isMasking: settings.isMasking,
+    }),
+    apiSenderId,
+    apiKeyPreview: maskedKey,
+    balance,
+    serverIp: serverIp.success ? serverIp.ip : null,
+    sampleRequestUrl: settings.apiKey && apiSenderId
+      ? buildBulkSmsBdUrl({
+        apiUrl: settings.apiUrl,
+        apiKey: 'YOUR_API_KEY',
+        senderId: apiSenderId,
+        number: '8801674533303',
+        message: 'TestSMS',
+        isMasking: settings.isMasking,
+      })
+      : null,
+  };
 }
 
 export async function sendEmailMessage({ to, subject, message, replyTo }) {
@@ -661,4 +704,5 @@ export default {
   sendEmailMessage,
   sendWhatsAppMessage,
   getSmsBalance,
+  getSmsDiagnostics,
 };

@@ -7,10 +7,10 @@ import { logAudit } from './audit.service.js';
 
 import {
   BULKSMSBD_DEFAULTS,
+  displayBulkSmsBdSenderId,
   inferBulkSmsBdSenderMode,
   normalizeBulkSmsBdSenderId,
 } from '../services/sms/bulksmsbd.provider.js';
-import { internationalBdNumber } from '../utils/phoneUtils.js';
 
 const SMS_DEFAULTS = {
   providerName: BULKSMSBD_DEFAULTS.providerName,
@@ -54,9 +54,8 @@ const WHATSAPP_DEFAULTS = {
 };
 
 function formatSmsSenderId(doc) {
-  if (!doc?.senderId) return '';
-  if (doc.isMasking) return doc.senderId;
-  return internationalBdNumber(doc.senderId) || doc.senderId;
+  if (!doc?.senderId) return BULKSMSBD_DEFAULTS.senderId;
+  return displayBulkSmsBdSenderId(doc.senderId, { isMasking: doc.isMasking });
 }
 
 function formatSms(doc) {
@@ -127,12 +126,8 @@ export async function updateSmsSettings(data, userId, req) {
   if (update.senderId != null && String(update.senderId).trim()) {
     const isMasking = update.isMasking ?? existing?.isMasking ?? false;
     if (!isMasking && inferBulkSmsBdSenderMode(update.senderId) === 'non_masking') {
-      const intl = internationalBdNumber(update.senderId);
-      if (intl) update.senderId = intl;
-      else {
-        const local = normalizeBulkSmsBdSenderId(update.senderId, { isMasking: false });
-        if (local) update.senderId = internationalBdNumber(local) || local;
-      }
+      const api = normalizeBulkSmsBdSenderId(update.senderId, { isMasking: false });
+      if (api) update.senderId = displayBulkSmsBdSenderId(api, { isMasking: false });
     }
   }
 

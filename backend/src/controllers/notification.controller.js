@@ -7,6 +7,7 @@ import {
   listNotificationLogs,
   retryNotificationLog,
   getSmsBalance,
+  getSmsDiagnostics,
 } from '../services/notificationOrchestrator.service.js';
 import {
   buildDailyLedgerSummary,
@@ -43,6 +44,11 @@ export const smsServerIp = asyncHandler(async (_req, res) => {
   const result = await getServerOutboundIp();
   if (!result.success) throw ApiError.badRequest(result.error || 'Could not detect server IP');
   res.json({ success: true, data: result });
+});
+
+export const smsDiagnostics = asyncHandler(async (_req, res) => {
+  const data = await getSmsDiagnostics();
+  res.json({ success: true, data });
 });
 
 export const getEmailSettings = asyncHandler(async (_req, res) => {
@@ -149,6 +155,7 @@ export default {
   testSms,
   smsBalance,
   smsServerIp,
+  smsDiagnostics,
   getEmailSettings,
   updateEmailSettings,
   testEmail,

@@ -10,11 +10,14 @@ import SmsSetting from '../models/SmsSetting.js';
 import EmailSetting from '../models/EmailSetting.js';
 import WhatsAppSetting from '../models/WhatsAppSetting.js';
 import Setting from '../models/Setting.js';
-import { BULKSMSBD_DEFAULTS } from '../services/sms/bulksmsbd.provider.js';
+import { BULKSMSBD_DEFAULTS, displayBulkSmsBdSenderId } from '../services/sms/bulksmsbd.provider.js';
 
 async function run() {
   const smsKey = env.sms.apiKey;
-  const smsSender = env.sms.senderId;
+  const smsSender = displayBulkSmsBdSenderId(
+    env.sms.senderId || BULKSMSBD_DEFAULTS.senderId,
+    { isMasking: env.sms.isMasking },
+  );
   const wasenderKey = env.wasender.apiKey;
   const smtpUser = env.email.username;
   const smtpPass = env.email.password;

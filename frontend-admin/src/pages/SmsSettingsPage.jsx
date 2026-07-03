@@ -10,7 +10,7 @@ const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
   apiUrl: 'http://bulksmsbd.net/api/smsapi',
   balanceUrl: 'http://bulksmsbd.net/api/getBalanceApi',
-  senderId: '+8809617626936',
+  senderId: '+8809648909214',
 };
 
 export default function SmsSettingsPage() {
@@ -22,6 +22,8 @@ export default function SmsSettingsPage() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [serverIp, setServerIp] = useState('');
   const [serverIpLoading, setServerIpLoading] = useState(false);
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [diagLoading, setDiagLoading] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -50,6 +52,24 @@ export default function SmsSettingsPage() {
   }, [form]);
 
   useEffect(() => { load(); }, [load]);
+
+  const fetchDiagnostics = useCallback(async () => {
+    setDiagLoading(true);
+    setMsg('');
+    try {
+      const { data } = await notificationsApi.getSmsDiagnostics();
+      setDiagnostics(data.data);
+      if (data.data?.balance?.success) {
+        setBalance(data.data.balance.balance ?? '—');
+      }
+      if (data.data?.serverIp) setServerIp(data.data.serverIp);
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Diagnostics failed');
+      setDiagnostics(null);
+    } finally {
+      setDiagLoading(false);
+    }
+  }, []);
 
   const fetchServerIp = useCallback(async () => {
     setServerIpLoading(true);
@@ -154,10 +174,10 @@ export default function SmsSettingsPage() {
       <div className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
         <p className="font-medium">BulkSMSBD API format</p>
         <p className="mt-1 font-mono text-[11px] break-all">
-          http://bulksmsbd.net/api/smsapi?api_key=KEY&amp;type=text&amp;number=88017XXXXXXXX&amp;senderid=09617626936&amp;message=...
+          http://bulksmsbd.net/api/smsapi?api_key=KEY&amp;type=text&amp;number=88017XXXXXXXX&amp;senderid=8809648909214&amp;message=TestSMS
         </p>
         <p className="mt-2 text-xs text-sky-800">
-          Use <strong>+880</strong> in forms. Recipients: <strong>+88017…</strong> → API <strong>88017…</strong>. Non-masking sender: <strong>+88096…</strong> → API <strong>096…</strong>.
+          Official format from <strong>bulksmsbd.net → Developers</strong>. Number: <strong>88017…</strong>. Sender ID: <strong>8809648909214</strong> (non-masking).
         </p>
         <p className="mt-1 text-xs text-sky-800">
           Whitelist your server IP in BulkSMSBD Phonebook or SMS will fail with error 1032.
@@ -181,7 +201,7 @@ export default function SmsSettingsPage() {
           Masking SMS (brand name sender)
         </label>
         <p className="text-xs text-slate-500">
-          Leave unchecked for <strong>non-masking</strong> dedicated number. Enter sender as <strong>+880…</strong> — converted automatically for BulkSMSBD.
+          Leave unchecked for <strong>non-masking</strong>. Copy senderid exactly from BulkSMSBD Developers page.
         </p>
 
         <label className="block text-sm">
@@ -222,9 +242,25 @@ export default function SmsSettingsPage() {
             <button type="button" onClick={fetchBalance} disabled={balanceLoading} className="btn-secondary">
               {balanceLoading ? 'Checking…' : 'Check SMS balance'}
             </button>
+            <button type="button" onClick={fetchDiagnostics} disabled={diagLoading} className="btn-secondary">
+              {diagLoading ? 'Testing…' : 'Run API diagnostics'}
+            </button>
           </div>
         )}
       </form>
+
+      {diagnostics && (
+        <div className="card space-y-2 text-xs text-slate-700">
+          <p className="font-semibold text-slate-900">BulkSMSBD diagnostics</p>
+          <p>API senderid: <strong className="font-mono">{diagnostics.apiSenderId || '—'}</strong></p>
+          <p>Display sender: <strong className="font-mono">{diagnostics.displaySenderId || '—'}</strong></p>
+          <p>Balance: <strong>{diagnostics.balance?.success ? diagnostics.balance.balance : (diagnostics.balance?.error || '—')}</strong></p>
+          <p>Server IP: <strong className="font-mono">{diagnostics.serverIp || '—'}</strong></p>
+          {diagnostics.sampleRequestUrl && (
+            <p className="break-all font-mono text-[10px] text-slate-500">{diagnostics.sampleRequestUrl}</p>
+          )}
+        </div>
+      )}
 
       {balance != null && (
         <p className="text-sm text-slate-600">SMS credit balance: <strong>{String(balance)}</strong></p>
