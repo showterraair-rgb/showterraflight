@@ -17,9 +17,9 @@ const BD_MOBILE_LOCAL = /^01[3-9]\d{8}$/;
 const BD_MOBILE_CANONICAL = /^8801[3-9]\d{8}$/;
 
 export const BD_PHONE_HELP =
-  'Bangladesh mobile: 017/018/019XXXXXXXX or +88017XXXXXXXX';
+  '+880 Bangladesh — enter +88017XXXXXXXX or 017XXXXXXXX; SMS sent as 88017XXXXXXXX';
 
-export const BD_PHONE_PLACEHOLDER = '01712345678 or +8801712345678';
+export const BD_PHONE_PLACEHOLDER = '+8801712345678';
 
 function digitsOnly(raw) {
   return String(raw || '').replace(/\D/g, '');
@@ -53,11 +53,41 @@ export function canonicalBdPhone(raw) {
   return digits;
 }
 
-/** E.164 with plus: +8801XXXXXXXXX */
+/** E.164 with plus: +8801XXXXXXXXX (mobile) */
 export function internationalBdPhone(raw) {
   const canonical = canonicalBdPhone(raw);
   if (!canonical || !BD_MOBILE_CANONICAL.test(canonical)) return '';
   return `+${canonical}`;
+}
+
+/** Local 0XXXXXXXXXX for any BD number (mobile 017… or dedicated 096…). */
+export function localBdNumber(raw) {
+  const digits = digitsOnly(raw);
+  if (!digits) return '';
+
+  if (digits.startsWith('880') && digits.length >= 12) {
+    return `0${digits.slice(3, 13)}`;
+  }
+  if (digits.startsWith('0') && digits.length >= 10) {
+    return digits.slice(0, 11);
+  }
+  if (digits.length === 10) {
+    return `0${digits}`;
+  }
+  return String(raw || '').trim();
+}
+
+/** E.164 +880 for any BD number (mobile or dedicated sender line). */
+export function internationalBdNumber(raw) {
+  const local = localBdNumber(raw);
+  if (local && /^0\d{10}$/.test(local)) {
+    return `+880${local.slice(1)}`;
+  }
+  const digits = digitsOnly(raw);
+  if (digits.startsWith('880') && digits.length >= 12) {
+    return `+${digits.slice(0, 13)}`;
+  }
+  return internationalBdPhone(raw);
 }
 
 /** Local display/storage format: 01XXXXXXXXX */
@@ -132,6 +162,8 @@ export default {
   BD_PHONE_PLACEHOLDER,
   canonicalBdPhone,
   internationalBdPhone,
+  internationalBdNumber,
+  localBdNumber,
   localBdPhone,
   normalizeBdPhone,
   normalizeWaPhone,

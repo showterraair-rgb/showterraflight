@@ -4,20 +4,20 @@ import { useForm } from 'react-hook-form';
 import { notificationsApi } from '../services/notifications.api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { usePermission } from '../hooks/usePermission';
-import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER } from '../utils/phone';
+import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER, BD_SENDER_HELP, BD_SENDER_PLACEHOLDER, formatPhoneOnBlur, formatSenderIdOnBlur } from '../utils/phone';
 
 const BULKSMSBD_DEFAULTS = {
   providerName: 'BulkSMSBD',
   apiUrl: 'http://bulksmsbd.net/api/smsapi',
   balanceUrl: 'http://bulksmsbd.net/api/getBalanceApi',
-  senderId: '09617626936',
+  senderId: '+8809617626936',
 };
 
 export default function SmsSettingsPage() {
   const { can } = usePermission();
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  const [testTo, setTestTo] = useState('01741148529');
+  const [testTo, setTestTo] = useState('+8801741148529');
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [serverIp, setServerIp] = useState('');
@@ -69,8 +69,12 @@ export default function SmsSettingsPage() {
 
   const onSubmit = async (values) => {
     setMsg('');
+    const payload = {
+      ...values,
+      senderId: formatSenderIdOnBlur(values.senderId, values.isMasking),
+    };
     try {
-      await notificationsApi.updateSmsSettings(values);
+      await notificationsApi.updateSmsSettings(payload);
       setMsg('SMS settings saved');
       load();
     } catch (err) {
@@ -80,8 +84,9 @@ export default function SmsSettingsPage() {
 
   const sendTest = async () => {
     setMsg('');
+    const to = formatPhoneOnBlur(testTo) || testTo;
     try {
-      const { data } = await notificationsApi.testSms({ to: testTo, message: 'Test SMS from Show Terra Flight admin.' });
+      const { data } = await notificationsApi.testSms({ to, message: 'Test SMS from Show Terra Flight admin.' });
       if (data.mocked) {
         setMsg('SMS logged only — enable gateway and save API key + sender ID');
         return;
@@ -152,7 +157,7 @@ export default function SmsSettingsPage() {
           http://bulksmsbd.net/api/smsapi?api_key=KEY&amp;type=text&amp;number=88017XXXXXXXX&amp;senderid=09617626936&amp;message=...
         </p>
         <p className="mt-2 text-xs text-sky-800">
-          Non-masking: senderid must be <strong>01/09XXXXXXXXX</strong> (not 880...). Masking: approved brand name (max 11 chars).
+          Use <strong>+880</strong> in forms. Recipients: <strong>+88017…</strong> → API <strong>88017…</strong>. Non-masking sender: <strong>+88096…</strong> → API <strong>096…</strong>.
         </p>
         <p className="mt-1 text-xs text-sky-800">
           Whitelist your server IP in BulkSMSBD Phonebook or SMS will fail with error 1032.
@@ -176,7 +181,7 @@ export default function SmsSettingsPage() {
           Masking SMS (brand name sender)
         </label>
         <p className="text-xs text-slate-500">
-          Leave unchecked for <strong>non-masking</strong> dedicated number. API sends as 01/09XXXXXXXXX even if you enter 880...
+          Leave unchecked for <strong>non-masking</strong> dedicated number. Enter sender as <strong>+880…</strong> — converted automatically for BulkSMSBD.
         </p>
 
         <label className="block text-sm">
@@ -196,8 +201,18 @@ export default function SmsSettingsPage() {
           </label>
           <label className="block text-sm">
             <span className="text-slate-600">Sender ID *</span>
-            <input {...form.register('senderId')} disabled={!editable} className="input mt-1 w-full font-mono text-xs" placeholder="09617626936" />
-            <p className="mt-1 text-xs text-slate-500">Non-masking: dedicated number (e.g. 09617626936). Do not use 880... prefix.</p>
+            <input
+              {...form.register('senderId')}
+              disabled={!editable}
+              className="input mt-1 w-full font-mono text-xs"
+              placeholder={BD_SENDER_PLACEHOLDER}
+              onBlur={(e) => form.setValue(
+                'senderId',
+                formatSenderIdOnBlur(e.target.value, form.getValues('isMasking')),
+                { shouldDirty: true },
+              )}
+            />
+            <p className="mt-1 text-xs text-slate-500">{BD_SENDER_HELP}</p>
           </label>
         </div>
 
@@ -223,6 +238,7 @@ export default function SmsSettingsPage() {
             <input
               value={testTo}
               onChange={(e) => setTestTo(e.target.value)}
+              onBlur={(e) => setTestTo(formatPhoneOnBlur(e.target.value) || e.target.value)}
               className="input min-w-[200px] flex-1"
               placeholder={BD_PHONE_PLACEHOLDER}
             />

@@ -67,9 +67,10 @@ function formatSenderIdError(rawSenderId, isMasking) {
   if (isMasking || inferBulkSmsBdSenderMode(rawSenderId) === 'masking') {
     return 'Masking sender ID not found on BulkSMSBD. Use your approved brand name exactly as shown in the dashboard.';
   }
-  return normalized && normalized !== String(rawSenderId).trim()
-    ? `Non-masking sender ID must be local format (e.g. ${normalized}). BulkSMSBD does not accept 880... as senderid — use 01/09XXXXXXXXX.`
-    : 'Non-masking sender ID not found on BulkSMSBD. Register your dedicated number in Sender ID Management (format: 01XXXXXXXXX).';
+  const intl = normalized ? `+880${normalized.slice(1)}` : '';
+  return normalized
+    ? `Sender ID not registered on BulkSMSBD (API uses ${normalized} from ${intl || rawSenderId}). Confirm ${normalized} is Active in Sender ID Management.`
+    : 'Non-masking sender ID not found on BulkSMSBD. Register your dedicated number in Sender ID Management.';
 }
 
 function parseProviderResponse(text) {

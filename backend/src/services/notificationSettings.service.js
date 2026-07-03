@@ -5,7 +5,12 @@ import Setting from '../models/Setting.js';
 import { COMPANY_DEFAULTS } from '../config/constants.js';
 import { logAudit } from './audit.service.js';
 
-import { BULKSMSBD_DEFAULTS } from '../services/sms/bulksmsbd.provider.js';
+import {
+  BULKSMSBD_DEFAULTS,
+  inferBulkSmsBdSenderMode,
+  normalizeBulkSmsBdSenderId,
+} from '../services/sms/bulksmsbd.provider.js';
+import { internationalBdNumber } from '../utils/phoneUtils.js';
 
 const SMS_DEFAULTS = {
   providerName: BULKSMSBD_DEFAULTS.providerName,
@@ -48,6 +53,12 @@ const WHATSAPP_DEFAULTS = {
   isEnabled: false,
 };
 
+function formatSmsSenderId(doc) {
+  if (!doc?.senderId) return '';
+  if (doc.isMasking) return doc.senderId;
+  return internationalBdNumber(doc.senderId) || doc.senderId;
+}
+
 function formatSms(doc) {
   if (!doc) return { ...SMS_DEFAULTS };
   return {
@@ -56,7 +67,7 @@ function formatSms(doc) {
     balanceUrl: doc.balanceUrl || BULKSMSBD_DEFAULTS.balanceUrl,
     apiKey: doc.apiKey ? '********' : '',
     apiToken: doc.apiToken || '',
-    senderId: doc.senderId || '',
+    senderId: formatSmsSenderId(doc),
     isMasking: Boolean(doc.isMasking),
     username: doc.username || '',
     password: doc.password ? '********' : '',
@@ -112,6 +123,18 @@ export async function updateSmsSettings(data, userId, req) {
   if (update.apiKey === '********') delete update.apiKey;
   else if (!update.apiKey && existing?.apiKey) delete update.apiKey;
   if (update.password === '********') delete update.password;
+
+  if (update.senderId != null && String(update.senderId).trim()) {
+    const isMasking = update.isMasking ?? existing?.isMasking ?? false;
+    if (!isMasking && inferBulkSmsBdSenderMode(update.senderId) === 'non_masking') {
+      const intl = internationalBdNumber(update.senderId);
+      if (intl) update.senderId = intl;
+      else {
+        const local = normalizeBulkSmsBdSenderId(update.senderId, { isMasking: false });
+        if (local) update.senderId = internationalBdNumber(local) || local;
+      }
+    }
+  }
 
   const doc = await SmsSetting.findOneAndUpdate(
     { key: 'sms' },

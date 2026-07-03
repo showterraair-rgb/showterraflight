@@ -1,5 +1,5 @@
-export const BD_PHONE_PLACEHOLDER = '01712345678 or +8801712345678';
-export const BD_PHONE_HELP = '017 / 018 / 019 or +880 — saved as 01XXXXXXXXX, SMS sent as 8801XXXXXXXXX';
+export const BD_PHONE_PLACEHOLDER = '+8801712345678';
+export const BD_PHONE_HELP = '+880 Bangladesh — enter +88017… or 017…; we save and send as 88017…';
 
 function digitsOnly(raw) {
   return String(raw || '').replace(/\D/g, '');
@@ -14,19 +14,28 @@ export function isValidBdMobile(raw) {
   return false;
 }
 
-export function localBdPhone(raw) {
+export function localBdNumber(raw) {
   const digits = digitsOnly(raw);
   if (!digits) return '';
-  if (digits.startsWith('880') && digits.length >= 13) {
+  if (digits.startsWith('880') && digits.length >= 12) {
     return `0${digits.slice(3, 13)}`;
   }
-  if (digits.startsWith('0') && digits.length === 11) return digits;
-  if (digits.length === 10 && digits.startsWith('1')) return `0${digits}`;
+  if (digits.startsWith('0') && digits.length >= 10) return digits.slice(0, 11);
+  if (digits.length === 10) return `0${digits}`;
   return String(raw || '').trim();
+}
+
+export function internationalBdNumber(raw) {
+  const local = localBdNumber(raw);
+  if (local && /^0\d{10}$/.test(local)) return `+880${local.slice(1)}`;
+  const digits = digitsOnly(raw);
+  if (digits.startsWith('880') && digits.length >= 12) return `+${digits.slice(0, 13)}`;
+  return '';
 }
 
 export function formatPhoneOnBlur(value) {
   if (!value?.trim()) return '';
-  const local = localBdPhone(value);
-  return isValidBdMobile(local || value) ? local : value.trim();
+  const intl = internationalBdNumber(value);
+  if (intl && isValidBdMobile(value)) return intl;
+  return value.trim();
 }
