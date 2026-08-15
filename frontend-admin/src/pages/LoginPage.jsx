@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,6 +36,7 @@ export default function LoginPage() {
   const { login, loginWithOtp, isAuthenticated, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mode, setMode] = useState('password');
   const [otpStep, setOtpStep] = useState('request');
   const [error, setError] = useState('');
@@ -121,10 +122,7 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Staff sign in</p>
         </div>
 
-        <div className="mb-4 flex rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
-          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'password' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'}`} onClick={() => { setMode('password'); setError(''); setInfo(''); }}>Password</button>
-          <button type="button" className={`flex-1 rounded-md py-2 text-sm ${mode === 'otp' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-300'}`} onClick={() => { setMode('otp'); setError(''); setInfo(''); }}>OTP (Email/Phone)</button>
-        </div>
+        
 
         <div className="card space-y-4">
           {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{error}</div>}
@@ -166,7 +164,13 @@ export default function LoginPage() {
             </form>
           )}
         </div>
-
+<button
+  type="button"
+  onClick={() => navigate('/register')}
+  className="mt-4 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
+>
+  Register
+</button>
         <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
           Kanaighat, Sylhet — Show Terra Air Management System
         </p>

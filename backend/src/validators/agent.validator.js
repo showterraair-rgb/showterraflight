@@ -19,7 +19,17 @@ const passwordBase = z
   .regex(/[A-Z]/, 'Must contain uppercase')
   .regex(/[a-z]/, 'Must contain lowercase')
   .regex(/[0-9]/, 'Must contain number');
-
+export const agentRegisterSchema = z.object({
+  companyName: z.string().min(2).max(150).trim(),
+  contactPerson: z.string().min(2).max(100).trim(),
+  email: z.string().email().trim().toLowerCase(),
+  phone: z.string().min(10).max(20).trim(),
+  whatsapp: z.string().min(10).max(20).trim().optional().or(z.literal('')),
+  address: z.string().max(500).optional(),
+  city: z.string().max(100).optional(),
+  country: z.string().max(100).optional(),
+  password: passwordBase,
+});
 export const agentLoginSchema = z.object({
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(1),

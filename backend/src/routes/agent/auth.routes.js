@@ -4,12 +4,13 @@ import validate from '../../middlewares/validate.js';
 import loginRateLimit from '../../middlewares/loginRateLimit.js';
 import {
   agentLoginSchema,
+  agentRegisterSchema,
   agentForgotPasswordSchema,
   agentResetPasswordSchema,
 } from '../../validators/agent.validator.js';
 
 const router = Router();
-
+router.post('/register', loginRateLimit, validate(agentRegisterSchema), agentController.register);
 router.post('/login', loginRateLimit, validate(agentLoginSchema), agentController.login);
 router.post('/forgot-password', loginRateLimit, validate(agentForgotPasswordSchema), agentController.forgotPassword);
 router.post('/reset-password', validate(agentResetPasswordSchema), agentController.resetPassword);

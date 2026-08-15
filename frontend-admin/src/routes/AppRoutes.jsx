@@ -5,6 +5,7 @@ import ScrollToTop from '../components/layout/ScrollToTop';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import AdminLayout from '../components/layout/AdminLayout';
 import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
 import CustomersPage from '../pages/CustomersPage';
 import { CustomerAccountPage } from '../pages/PartyAccountPage';
@@ -25,6 +26,7 @@ import SupplierPaymentsPage from '../pages/SupplierPaymentsPage';
 import RemindersPage from '../pages/RemindersPage';
 import ReportsPage from '../pages/ReportsPage';
 import CmsPage from '../pages/CmsPage';
+import LiveStreamPage from '../pages/LiveStreamPage';
 import BackupPage from '../pages/BackupPage';
 import SecurityPage from '../pages/SecurityPage';
 import PaymentAccountsPage from '../pages/PaymentAccountsPage';
@@ -53,7 +55,7 @@ import AgentBookingDetailPage from '../pages/AgentBookingDetailPage';
 import AgentAccountingPage from '../pages/AgentAccountingPage';
 import CurrencySettingsPage from '../pages/CurrencySettingsPage';
 import UpcomingFlightsPage from '../pages/UpcomingFlightsPage';
-import { VoidBookingsPage, RefundBookingsPage, ReissueBookingsPage, InvoicesPage } from '../pages/TicketingListPages';
+import { VoidBookingsPage, RefundBookingsPage, ReissueBookingsPage, InvoicesPage, PendingRefundsPage } from '../pages/TicketingListPages';
 import LedgerPage from '../pages/LedgerPage';
 import BusinessSummaryPage from '../pages/BusinessSummaryPage';
 import BulkImportPage from '../pages/BulkImportPage';
@@ -66,7 +68,7 @@ export default function AppRoutes() {
         <AuthProvider>
           <Routes>
           <Route path="/login" element={<LoginPage />} />
-
+<Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<ProtectedRoute permissions={['dashboard:view']}><DashboardPage /></ProtectedRoute>} />
@@ -87,6 +89,7 @@ export default function AppRoutes() {
             <Route path="bookings/upcoming" element={<ProtectedRoute permissions={['bookings:view']}><UpcomingFlightsPage /></ProtectedRoute>} />
             <Route path="bookings/voids" element={<ProtectedRoute permissions={['bookings:view']}><VoidBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/refunds" element={<ProtectedRoute permissions={['bookings:view']}><RefundBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/pending-refunds" element={<ProtectedRoute permissions={['bookings:view']}><PendingRefundsPage /></ProtectedRoute>} />
             <Route path="bookings/reissues" element={<ProtectedRoute permissions={['bookings:view']}><ReissueBookingsPage /></ProtectedRoute>} />
             <Route path="bookings/invoices" element={<ProtectedRoute permissions={['bookings:view']}><InvoicesPage /></ProtectedRoute>} />
             <Route path="bookings/:id/edit" element={<ProtectedRoute permissions={['bookings:update']}><BookingFormPage /></ProtectedRoute>} />
@@ -108,6 +111,7 @@ export default function AppRoutes() {
             <Route path="reports" element={<ProtectedRoute permissions={['reports:view']}><ReportsPage /></ProtectedRoute>} />
             <Route path="reports/sales" element={<ProtectedRoute permissions={['reports:view']}><SalesReportPage /></ProtectedRoute>} />
             <Route path="cms" element={<ProtectedRoute permissions={['cms:view']}><CmsPage /></ProtectedRoute>} />
+            <Route path="livestream" element={<ProtectedRoute permissions={['livestream:view']}><LiveStreamPage /></ProtectedRoute>} />
             <Route path="backup" element={<ProtectedRoute permissions={['backup:manage']}><BackupPage /></ProtectedRoute>} />
             <Route path="security" element={<ProtectedRoute permissions={['audit:view']}><SecurityPage /></ProtectedRoute>} />
             <Route path="settings/payment" element={<ProtectedRoute permissions={['accounts:view', 'settings:manage', 'notifications:view']}><PaymentSettingsHubPage /></ProtectedRoute>} />
