@@ -1,0 +1,29 @@
+/* STA Flight Ledger design tokens — from Figma Make export */
+:root {
+  --sta-indigo: #14213d;
+  --sta-indigo-700: #1c2e52;
+  --sta-indigo-600: #243668;
+  --sta-teal: #0e9594;
+  --sta-teal-light: #e0f5f5;
+  --sta-amber: #f4a340;
+  --sta-amber-light: #fef3e2;
+  --sta-red: #e1493c;
+  --sta-red-light: #fdedec;
+  --sta-green: #3fa672;
+  --sta-green-light: #e8f6ef;
+  --sta-blue: #2f80ed;
+  --sta-blue-light: #eaf2fd;
+  --sta-violet: #7c5cbf;
+  --sta-violet-light: #f0ebf9;
+
+  --sta-bg: #f6f7fa;
+  --sta-surface: #ffffff;
+  --sta-border: #e4e7ee;
+  --sta-text: #14213d;
+  --sta-muted: #6b7280;
+  --sta-subtle: #9ca3af;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}

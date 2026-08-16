@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
+import { C, fontDisplay } from '../../theme/tokens';
 
 export default function Modal({ open, onClose, title, children, wide, footer }) {
   useEffect(() => {
@@ -23,24 +25,33 @@ export default function Modal({ open, onClose, title, children, wide, footer }) 
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6"
+      style={{ background: 'rgba(20,33,61,0.45)' }}
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
+        className={`flex max-h-[90vh] w-full flex-col overflow-hidden shadow-2xl ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
+        style={{
+          background: C.surface,
+          borderRadius: 12,
+          boxShadow: '0 24px 64px rgba(20,33,61,0.22)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <div
+          className="flex shrink-0 items-center justify-between px-5 py-4"
+          style={{ background: C.indigo, borderBottom: `1px solid ${C.indigo700}` }}
+        >
+          <h2 className="text-base font-bold text-white" style={fontDisplay}>{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-[#8FA3BF] hover:bg-white/10 hover:text-white"
             aria-label="Close"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -49,7 +60,10 @@ export default function Modal({ open, onClose, title, children, wide, footer }) 
         </div>
 
         {footer && (
-          <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-4">
+          <div
+            className="shrink-0 px-5 py-4"
+            style={{ borderTop: `1px solid ${C.border}`, background: C.bg }}
+          >
             {footer}
           </div>
         )}

@@ -70,11 +70,12 @@ export function BookingsListView({
   showRrvColumns = false,
   invoiceFocus = false,
   hideNewButton = false,
+  refundPendingOnly = false,
 }) {
   const { can } = usePermission();
   const financeFields = useFieldPermission('finance');
   const [searchParams] = useSearchParams();
-  const refundPendingFilter = searchParams.get('refundPending') === '1';
+  const refundPendingFilter = refundPendingOnly || searchParams.get('refundPending') === '1';
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -271,15 +272,15 @@ export function BookingsListView({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-          <p className="text-sm text-slate-500">{description}</p>
+          <h2 className="font-display text-xl font-bold text-sta-indigo">{title}</h2>
+          <p className="text-sm text-sta-muted">{description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {productCategory === 'air' && !fixedStatus && (
             <>
               <Link to="/bookings/partial-payments" className="btn-secondary text-sm">Partial Payments</Link>
               {!refundPendingFilter && (
-                <Link to="/bookings?refundPending=1" className="btn-secondary text-sm">Pending Refunds</Link>
+                <Link to="/bookings/pending-refunds" className="btn-secondary text-sm">Pending Refunds</Link>
               )}
             </>
           )}
@@ -290,29 +291,63 @@ export function BookingsListView({
       </div>
 
       {refundPendingFilter && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="rounded-[10px] border border-sta-amber-light bg-sta-amber-light px-4 py-3 text-sm text-amber-900">
           Showing bookings with <strong>pending refund requests</strong> awaiting approval.
-          <Link to="/bookings" className="ml-2 font-medium text-brand-600 hover:underline dark:text-brand-400">Clear filter</Link>
+          {!refundPendingOnly && (
+            <Link to="/bookings" className="ml-2 font-medium text-sta-teal hover:underline">Clear filter</Link>
+          )}
         </div>
       )}
 
-      {summary && !financeFields.hidden && !invoiceFocus && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      {summary && !financeFields.hidden && !invoiceFocus && !fixedStatus && !refundPendingFilter && (
+        <div className="flex flex-wrap gap-3">
           <SummaryStatCard label="Ticketed" amount={summary.ticketed?.amount} count={summary.ticketed?.count} color="teal" />
-          {!fixedStatus && (
-            <>
-              <SummaryStatCard label="Refund" amount={summary.refunded?.amount} count={summary.refunded?.count} color="teal" />
-              <SummaryStatCard label="Reissue" amount={summary.reissued?.amount} count={summary.reissued?.count} color="indigo" />
-              <SummaryStatCard label="Void" amount={summary.voided?.amount} count={summary.voided?.count} color="slate" />
-            </>
-          )}
+          <SummaryStatCard label="Refund" amount={summary.refunded?.amount} count={summary.refunded?.count} color="violet" />
+          <SummaryStatCard label="Reissue" amount={summary.reissued?.amount} count={summary.reissued?.count} color="indigo" />
+          <SummaryStatCard label="Void" amount={summary.voided?.amount} count={summary.voided?.count} color="red" />
           <SummaryStatCard label="Total Due" amount={summary.totalDue} color="red" />
           <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
         </div>
       )}
 
+      {summary && !financeFields.hidden && fixedStatus === 'voided' && (
+        <div className="flex flex-wrap gap-3">
+          <SummaryStatCard label="Voided" amount={summary.voided?.amount} count={summary.voided?.count ?? summary.total} color="red" />
+          <SummaryStatCard label="Total Due" amount={summary.totalDue} color="amber" />
+          <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
+          <SummaryStatCard label="Total Sale" amount={summary.totalSale} color="indigo" />
+        </div>
+      )}
+
+      {summary && !financeFields.hidden && fixedStatus === 'refunded' && (
+        <div className="flex flex-wrap gap-3">
+          <SummaryStatCard label="Refunded" amount={summary.refunded?.amount} count={summary.refunded?.count ?? summary.total} color="violet" />
+          <SummaryStatCard label="Total Due" amount={summary.totalDue} color="amber" />
+          <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
+          <SummaryStatCard label="Total Sale" amount={summary.totalSale} color="teal" />
+        </div>
+      )}
+
+      {summary && !financeFields.hidden && fixedStatus === 'reissued' && (
+        <div className="flex flex-wrap gap-3">
+          <SummaryStatCard label="Reissued" amount={summary.reissued?.amount} count={summary.reissued?.count ?? summary.total} color="teal" />
+          <SummaryStatCard label="Total Due" amount={summary.totalDue} color="amber" />
+          <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
+          <SummaryStatCard label="Total Sale" amount={summary.totalSale} color="blue" />
+        </div>
+      )}
+
+      {summary && !financeFields.hidden && refundPendingFilter && (
+        <div className="flex flex-wrap gap-3">
+          <SummaryStatCard label="Pending Refunds" count={summary.total ?? pagination?.total} color="amber" />
+          <SummaryStatCard label="Total Due" amount={summary.totalDue} color="red" />
+          <SummaryStatCard label="Total Paid" amount={summary.totalPaid} color="green" />
+          <SummaryStatCard label="Total Sale" amount={summary.totalSale} color="indigo" />
+        </div>
+      )}
+
       {summary && invoiceFocus && !financeFields.hidden && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-wrap gap-3">
           <SummaryStatCard label="Invoiced tickets" amount={summary.ticketed?.amount} count={summary.ticketed?.count} color="teal" />
           <SummaryStatCard label="Total sale" amount={summary.totalSale} color="indigo" />
           <SummaryStatCard label="Collected" amount={summary.totalPaid} color="green" />
@@ -320,24 +355,24 @@ export function BookingsListView({
         </div>
       )}
 
-      <div className="card p-0">
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
         {!hideStatusTabs && !fixedStatus && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-sta-border p-4">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key || 'all'}
               type="button"
               onClick={() => { setFilters((f) => ({ ...f, status: tab.key })); setPage(1); }}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${filters.status === tab.key ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${filters.status === tab.key ? 'bg-sta-teal text-white' : 'bg-sta-bg text-sta-muted hover:bg-sta-teal-light hover:text-sta-teal'}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
         )}
-        <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
+        <div className="flex flex-wrap items-end gap-3 border-b border-sta-border p-4">
           <div className="min-w-[200px] flex-1">
-            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Search</label>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-sta-muted">Search</label>
             <input
               type="search"
               placeholder="Booking #, PNR, ticket, passenger..."
@@ -392,9 +427,9 @@ export function BookingsListView({
             </select>
           </div>
         </div>
-        <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4">
+        <div className="flex flex-wrap items-end gap-3 border-b border-sta-border p-4">
           <div>
-            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">Flight from</label>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-sta-muted">Flight from</label>
             <input type="date" className="input-field w-auto" value={filters.dateFrom} onChange={(e) => { setFilters((f) => ({ ...f, dateFrom: e.target.value })); setPage(1); }} />
           </div>
           <div>
@@ -428,7 +463,7 @@ export function BookingsListView({
           <button type="button" className="btn-secondary mb-0.5 text-sm" onClick={resetFilters}>Clear filters</button>
         </div>
         <DataTable columns={columns} data={items} loading={loading} emptyTitle="No bookings" emptyDescription="Create a booking or adjust filters." />
-        {pagination && <div className="border-t border-slate-200 p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
+        {pagination && <div className="border-t border-sta-border p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
       </div>
     </div>
   );

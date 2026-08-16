@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { Plus } from 'lucide-react';
 import { agentsApi } from '../services/agents.api';
 import DataTable from '../components/common/DataTable';
 import Modal from '../components/common/Modal';
 import RowActions from '../components/common/RowActions';
 import StatusBadge from '../components/common/StatusBadge';
+import SummaryStatCard from '../components/common/SummaryStatCard';
+import PrimaryBtn from '../components/ui/PrimaryBtn';
 import { usePermission } from '../hooks/usePermission';
+import { C, fontDisplay, fontSans } from '../theme/tokens';
 
 const AGENT_TYPES = { regular: 'Regular', corporate: 'Corporate', franchise: 'Franchise' };
 
@@ -56,15 +60,30 @@ export default function AgentsPage() {
     }
   };
 
+  const activeCount = items.filter((r) => r.isActive).length;
+  const balanceSum = items.reduce((s, r) => s + Number(r.currentBalance || 0), 0);
+  const bookingsSum = items.reduce((s, r) => s + Number(r.bookingsCount || 0), 0);
+
   const columns = [
-    { key: 'agentId', label: 'Agent ID', render: (r) => <span className="font-mono text-xs font-medium">{r.agentId}</span> },
-    { key: 'companyName', label: 'Company' },
+    { key: 'agentId', label: 'Agent ID', render: (r) => <span className="font-mono text-xs font-semibold text-sta-teal">{r.agentId}</span> },
+    { key: 'companyName', label: 'Company', render: (r) => (
+      <Link to={`/agents/${r.id}`} className="font-semibold text-sta-indigo hover:text-sta-teal">{r.companyName}</Link>
+    ) },
     { key: 'contactPerson', label: 'Contact' },
     { key: 'email', label: 'Email' },
-    { key: 'agentType', label: 'Type', render: (r) => AGENT_TYPES[r.agentType] || r.agentType },
-    { key: 'currentBalance', label: 'Balance', render: (r) => `৳${(r.currentBalance || 0).toLocaleString()}` },
+    { key: 'agentType', label: 'Type', render: (r) => (
+      <span
+        className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+        style={{ background: C.violetLight, color: C.violet }}
+      >
+        {AGENT_TYPES[r.agentType] || r.agentType}
+      </span>
+    ) },
+    { key: 'currentBalance', label: 'Balance', render: (r) => (
+      <span className="font-mono text-xs font-semibold tabular-nums">৳{(r.currentBalance || 0).toLocaleString()}</span>
+    ) },
     { key: 'isActive', label: 'Active', render: (r) => <StatusBadge status={r.isActive ? 'success' : 'cancelled'} label={r.isActive ? 'Yes' : 'No'} /> },
-    { key: 'bookingsCount', label: 'Bookings' },
+    { key: 'bookingsCount', label: 'Bookings', render: (r) => <span className="font-mono text-xs">{r.bookingsCount ?? 0}</span> },
     {
       key: 'actions',
       label: 'Actions',
@@ -82,37 +101,67 @@ export default function AgentsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold">B2B Agents</h2>
-          <p className="text-sm text-slate-500">Travel agencies who purchase tickets from Show Terra Flight</p>
+          <h2 className="text-xl font-bold" style={{ color: C.indigo, ...fontDisplay }}>B2B Agents</h2>
+          <p className="text-sm" style={{ color: C.muted, ...fontSans }}>Travel agencies who purchase tickets from Show Terra Flight</p>
         </div>
-        {can('agents:manage') && <button type="button" onClick={() => { reset(); setError(''); setModalOpen(true); }} className="btn-primary">New Agent</button>}
+        {can('agents:manage') && (
+          <PrimaryBtn
+            label="New Agent"
+            icon={<Plus size={12} />}
+            onClick={() => { reset(); setError(''); setModalOpen(true); }}
+          />
+        )}
       </div>
-      <input type="search" placeholder="Search…" className="input-field max-w-xs" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-      <DataTable columns={columns} data={items} loading={loading} emptyMessage="No agents yet" />
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button type="button" disabled={page <= 1} className="btn-secondary" onClick={() => setPage(page - 1)}>Prev</button>
-          <span className="py-2 text-sm">Page {page} / {pagination.totalPages}</span>
-          <button type="button" disabled={page >= pagination.totalPages} className="btn-secondary" onClick={() => setPage(page + 1)}>Next</button>
+
+      <div className="flex flex-wrap gap-3">
+        <SummaryStatCard label="On this page" count={items.length} color="indigo" />
+        <SummaryStatCard label="Active" count={activeCount} color="green" />
+        <SummaryStatCard label="Bookings (page)" count={bookingsSum} color="teal" />
+        <SummaryStatCard label="Balance sum" amount={balanceSum} color="amber" />
+        <SummaryStatCard label="All agents" count={pagination?.total} color="blue" />
+      </div>
+
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
+        <div className="border-b border-sta-border p-4">
+          <input
+            type="search"
+            placeholder="Search…"
+            className="input-field max-w-xs"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
         </div>
-      )}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Agent">
+        <DataTable columns={columns} data={items} loading={loading} emptyMessage="No agents yet" />
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center gap-2 border-t border-sta-border p-4">
+            <button type="button" disabled={page <= 1} className="btn-secondary" onClick={() => setPage(page - 1)}>Prev</button>
+            <span className="py-2 text-sm text-sta-muted">Page {page} / {pagination.totalPages}</span>
+            <button type="button" disabled={page >= pagination.totalPages} className="btn-secondary" onClick={() => setPage(page + 1)}>Next</button>
+          </div>
+        )}
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Create Agent" wide>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm" style={{ color: C.red }}>{error}</p>}
           <input className="input-field" placeholder="Company name *" {...register('companyName', { required: true })} />
           <input className="input-field" placeholder="Contact person *" {...register('contactPerson', { required: true })} />
           <input type="email" className="input-field" placeholder="Email *" {...register('email', { required: true })} />
           <input className="input-field" placeholder="Phone *" {...register('phone', { required: true })} />
           <input className="input-field" placeholder="WhatsApp number" {...register('whatsapp')} />
-          <p className="text-xs text-slate-500 -mt-2">Optional. Used for WhatsApp contact if different from phone.</p>
-          <select className="input-field" {...register('agentType')}><option value="regular">Regular</option><option value="corporate">Corporate</option><option value="franchise">Franchise</option></select>
-          <input type="number" className="input-field" placeholder="Credit limit" {...register('creditLimit')} />
+          <p className="-mt-2 text-xs" style={{ color: C.muted }}>Optional. Used for WhatsApp contact if different from phone.</p>
+          <select className="input-field" {...register('agentType')}>
+            <option value="regular">Regular</option>
+            <option value="corporate">Corporate</option>
+            <option value="franchise">Franchise</option>
+          </select>
+          <input type="number" className="input-field font-mono" placeholder="Credit limit" {...register('creditLimit')} />
           <div>
             <input type="password" className="input-field" placeholder="Password *" {...register('password', { required: true, minLength: 10 })} />
-            <p className="mt-1 text-xs text-slate-500">At least 10 characters with uppercase, lowercase, and a number (e.g. Agent@123456)</p>
+            <p className="mt-1 text-xs" style={{ color: C.muted }}>At least 10 characters with uppercase, lowercase, and a number (e.g. Agent@123456)</p>
           </div>
           <textarea className="input-field" placeholder="Internal notes" {...register('notes')} />
-          <button type="submit" disabled={isSubmitting} className="btn-primary w-full">Create Agent</button>
+          <PrimaryBtn type="submit" label={isSubmitting ? 'Creating…' : 'Create Agent'} disabled={isSubmitting} />
         </form>
       </Modal>
     </div>

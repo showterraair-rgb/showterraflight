@@ -7,6 +7,7 @@ import ServicesPage from './pages/ServicesPage';
 import BookingPage from './pages/BookingPage';
 import ContactPage from './pages/ContactPage';
 import FAQPage from './pages/FAQPage';
+import LivePage from './pages/LivePage';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/live" element={<LivePage />} />
           </Routes>
         </BrowserRouter>
       </CompanyProvider>

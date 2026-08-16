@@ -4,7 +4,15 @@ import * as agentReportService from '../services/agentReport.service.js';
 import * as agentNotificationService from '../services/agentNotification.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import env from '../config/env.js';
+export const register = asyncHandler(async (req, res) => {
+  const result = await agentAuthService.agentRegister(req.body);
 
+  res.status(201).json({
+    success: true,
+    data: result.agent,
+    message: result.message,
+  });
+});
 export const login = asyncHandler(async (req, res) => {
   const result = await agentAuthService.agentLogin(req.body);
   res.cookie(env.jwt.agentCookieName, result.token, result.cookieOptions);
@@ -123,6 +131,7 @@ export const markAllNotificationsRead = asyncHandler(async (req, res) => {
 });
 
 export default {
+  register,
   login,
   logout,
   forgotPassword,

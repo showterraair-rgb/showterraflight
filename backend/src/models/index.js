@@ -20,6 +20,7 @@ export { default as Transfer } from './Transfer.js';
 export { default as Reminder } from './Reminder.js';
 export { default as CmsPage } from './CmsPage.js';
 export { default as CmsNotice } from './CmsNotice.js';
+export { default as LiveStream } from './LiveStream.js';
 export { default as Setting } from './Setting.js';
 export { default as BackupLog } from './BackupLog.js';
 export { default as AuditLog } from './AuditLog.js';

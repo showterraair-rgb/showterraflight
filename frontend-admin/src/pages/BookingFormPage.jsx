@@ -9,8 +9,12 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import DualCurrencyAmount from '../components/common/DualCurrencyAmount';
 import { useCurrency } from '../hooks/useCurrency';
 import { useFieldPermission } from '../hooks/useFieldPermission';
+import { User, DollarSign, Receipt } from 'lucide-react';
 import { PRODUCT_CATEGORY_LABELS } from '../utils/constants';
 import { ACCOUNT_TYPE_LABELS } from '../utils/finance';
+import { FormSection } from '../components/ui/FormPrimitives';
+import PrimaryBtn from '../components/ui/PrimaryBtn';
+import { C, fontDisplay, fontSans } from '../theme/tokens';
 
 function defaultDueDate() {
   const d = new Date();
@@ -361,23 +365,24 @@ export default function BookingFormPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <Link to={backLink} className="text-sm text-brand-600 hover:underline">← Back</Link>
-        <h2 className="mt-2 text-xl font-bold text-slate-900">{title}</h2>
+        <Link to={backLink} className="text-sm font-medium hover:underline" style={{ color: C.teal }}>← Back</Link>
+        <h2 className="mt-2 text-xl font-bold" style={{ color: C.indigo, ...fontDisplay }}>{title}</h2>
         {!isEdit && (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm" style={{ color: C.muted, ...fontSans }}>
             No customer yet?{' '}
-            <Link to="/customers" className="font-medium text-brand-600 hover:underline">Add a customer first</Link>
+            <Link to="/customers" className="font-medium hover:underline" style={{ color: C.teal }}>Add a customer first</Link>
           </p>
         )}
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="card space-y-4">
-        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-        {loadError && <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{loadError}</div>}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+        {error && <div className="mb-4 rounded-lg px-3 py-2 text-sm" style={{ background: C.redLight, color: C.red }}>{error}</div>}
+        {loadError && <div className="mb-4 rounded-lg px-3 py-2 text-sm" style={{ background: C.amberLight, color: '#92400e' }}>{loadError}</div>}
 
+        <FormSection title="Passenger & Route" icon={<User size={14} />}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Customer *</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Customer *</label>
             <select className="input-field" {...form.register('customerId')}>
               <option value="">Select customer</option>
               {customers.map((c) => (
@@ -389,7 +394,7 @@ export default function BookingFormPage() {
             )}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Supplier / Agent</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Supplier / Agent</label>
             <select className="input-field" {...form.register('supplierId')}>
               <option value="">Select supplier</option>
               {suppliers.map((s) => (
@@ -399,21 +404,21 @@ export default function BookingFormPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">{fieldLabels.airline}</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>{fieldLabels.airline}</label>
             <input className="input-field" placeholder={productCategory === 'air' ? 'e.g. Emirates, Biman' : ''} {...form.register('airline')} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">{fieldLabels.route}</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>{fieldLabels.route}</label>
             <input className="input-field uppercase" placeholder={fieldLabels.routePh} {...form.register('route')} />
           </div>
         </div>
+        </FormSection>
 
         {!financeFields.hidden && (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Pricing (BRL)</h3>
-          <p className="mt-1 text-xs text-slate-500">
+        <FormSection title="Pricing (BRL)" icon={<DollarSign size={14} />}>
+          <p className="mb-3 text-xs" style={{ color: C.muted }}>
             Enter amounts in BRL. Payment records update account balances automatically.
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
@@ -501,14 +506,13 @@ export default function BookingFormPage() {
               </p>
             </div>
           )}
-        </div>
+        </FormSection>
         )}
 
         {!isEdit && !paymentFields.hidden && (
-          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
+          <FormSection title="Payments at booking" icon={<Receipt size={14} />}>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Payments at booking</h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mb-4 text-xs" style={{ color: C.muted }}>
                 Optional. Paid amounts create customer/supplier payment records and update the selected account balance.
               </p>
             </div>
@@ -590,11 +594,11 @@ export default function BookingFormPage() {
                 )}
               </div>
             </div>
-          </div>
+          </FormSection>
         )}
 
         {isEdit && paymentSummary && (
-          <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <div className="mb-4 rounded-lg px-3 py-2 text-xs" style={{ background: C.amberLight, color: '#92400e', border: `1px solid ${C.amber}44` }}>
             Payments are managed under{' '}
             <Link to="/payments/customers" className="font-medium underline">Customer Payments</Link>
             {' '}and{' '}
@@ -603,15 +607,17 @@ export default function BookingFormPage() {
           </div>
         )}
 
+        <FormSection title="Documents & Notes" icon={<Receipt size={14} />}>
         <div>
-          <label className="mb-1 block text-sm font-medium">Original Ticket</label>
-          <p className="mb-2 text-xs text-slate-500">Upload PDF or image of the issued ticket. Included as a download link on the invoice PDF.</p>
+          <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Original Ticket</label>
+          <p className="mb-2 text-xs" style={{ color: C.muted }}>Upload PDF or image of the issued ticket. Included as a download link on the invoice PDF.</p>
           {existingTicket?.url && (
             <a
               href={existingTicket.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mb-2 inline-block text-sm font-medium text-brand-600 hover:underline"
+              className="mb-2 inline-block text-sm font-medium hover:underline"
+              style={{ color: C.teal }}
             >
               {existingTicket.name || 'View current ticket'}
             </a>
@@ -619,26 +625,28 @@ export default function BookingFormPage() {
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+            className="block w-full text-sm text-sta-muted file:mr-3 file:rounded-md file:border-0 file:bg-sta-indigo file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
             onChange={(e) => setTicketFile(e.target.files?.[0] || null)}
           />
           {ticketFile && (
-            <p className="mt-1 text-xs text-slate-500">Selected: {ticketFile.name}</p>
+            <p className="mt-1 text-xs" style={{ color: C.muted }}>Selected: {ticketFile.name}</p>
           )}
         </div>
 
         {!notesFields.hidden && (
-        <div>
-          <label className="mb-1 block text-sm font-medium">Notes</label>
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Notes</label>
           <textarea rows={3} disabled={notesFields.readOnly} className="input-field" {...form.register('notes')} />
         </div>
         )}
+        </FormSection>
 
-        <div className="flex justify-end gap-2">
+        <div
+          className="flex justify-end gap-2 rounded-[10px] border px-5 py-4"
+          style={{ background: C.surface, borderColor: C.border }}
+        >
           <Link to={backLink} className="btn-secondary">Cancel</Link>
-          <button type="submit" className="btn-primary" disabled={Boolean(loadError)}>
-            {isEdit ? 'Save Changes' : 'Create Booking'}
-          </button>
+          <PrimaryBtn type="submit" label={isEdit ? 'Save Changes' : 'Create Booking'} disabled={Boolean(loadError)} />
         </div>
       </form>
     </div>

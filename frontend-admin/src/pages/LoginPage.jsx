@@ -129,6 +129,7 @@ export default function LoginPage() {
           {info && <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-950/50 dark:text-green-300">{info}</div>}
 
           {mode === 'password' ? (
+            
             <form onSubmit={passwordForm.handleSubmit(onPasswordLogin)} className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium">Email</label>

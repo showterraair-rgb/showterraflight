@@ -41,3 +41,7 @@ coverage/
 # Backup temp
 *.tmp
 *.bak
+
+# Local design reference (Figma Make export)
+Design System for Show Terra Air.zip
+design-reference/

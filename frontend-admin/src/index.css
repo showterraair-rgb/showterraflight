@@ -1,3 +1,6 @@
+@import './styles/fonts.css';
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,71 +11,82 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    font-family: var(--font-sans);
+    @apply bg-sta-bg text-sta-text;
   }
 
   .dark {
     color-scheme: dark;
   }
 
-  table {
-    @apply tabular-nums;
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
+  table, .tabular-nums, .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
   .bg-surface {
-    @apply bg-slate-50 dark:bg-slate-950;
+    @apply bg-sta-bg;
   }
 
   .bg-surface-raised {
-    @apply bg-white dark:bg-slate-900;
+    @apply bg-sta-surface;
   }
 
   .text-primary {
-    @apply text-slate-900 dark:text-slate-100;
+    @apply text-sta-text;
   }
 
   .text-muted {
-    @apply text-slate-500 dark:text-slate-400;
+    @apply text-sta-muted;
   }
 
   .border-default {
-    @apply border-slate-200 dark:border-slate-700;
+    @apply border-sta-border;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-sta-indigo px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-sta-indigo-700 disabled:cursor-not-allowed disabled:opacity-60;
+    font-family: var(--font-sans);
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-default bg-surface-raised px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800;
+    @apply inline-flex items-center justify-center rounded-md border border-sta-border bg-sta-surface px-4 py-2 text-sm font-medium text-sta-muted transition hover:bg-sta-bg;
+    font-family: var(--font-sans);
   }
 
   .input-field,
   .input {
-    @apply w-full min-h-[2.75rem] rounded-lg border border-default bg-surface-raised px-3 py-2.5 text-sm leading-normal text-primary outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-slate-700;
+    @apply w-full min-h-[2.75rem] rounded-md border border-sta-border bg-sta-surface px-3 py-2.5 text-sm leading-normal text-sta-text outline-none transition focus:border-sta-teal focus:ring-2 focus:ring-sta-teal/20;
+    font-family: var(--font-sans);
   }
 
   input[type='number'].input-field,
   input[type='number'].input {
     @apply tabular-nums;
+    font-family: var(--font-mono);
   }
 
   .card {
-    @apply rounded-xl border border-default bg-surface-raised p-5 shadow-sm;
+    @apply rounded-[10px] border border-sta-border bg-sta-surface p-5 shadow-sm;
   }
 
   .card-compact {
-    @apply rounded-xl border border-default bg-surface-raised p-4 shadow-sm;
+    @apply rounded-[10px] border border-sta-border bg-sta-surface p-4 shadow-sm;
   }
 
   .dual-currency .amount-primary {
     @apply tabular-nums;
+    font-family: var(--font-mono);
   }
 
   .dual-currency .amount-secondary {
-    @apply tabular-nums text-muted;
+    @apply tabular-nums text-sta-muted;
+    font-family: var(--font-mono);
   }
 
   /* Scoped dark fixes for pages that still use light Tailwind tokens */

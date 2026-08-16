@@ -74,6 +74,16 @@ export default function Header() {
               {item.label}
             </button>
           ))}
+          <Link
+            to="/live"
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              scrolled || !isHome
+                ? 'text-slate-600 hover:bg-brand-50 hover:text-brand-700'
+                : 'text-white/90 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            Live
+          </Link>
           <Link to="/booking" className="btn-accent ml-2 !px-4 !py-2.5 !text-sm">
             Book Your Ticket
           </Link>
@@ -117,6 +127,13 @@ export default function Header() {
                   {item.label}
                 </button>
               ))}
+              <Link
+                to="/live"
+                onClick={() => setMenuOpen(false)}
+                className="block w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-slate-700 hover:bg-brand-50"
+              >
+                Live
+              </Link>
               <Link
                 to="/booking"
                 onClick={() => setMenuOpen(false)}

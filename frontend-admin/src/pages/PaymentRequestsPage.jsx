@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { Plus } from 'lucide-react';
 import { paymentRequestsApi, accountsApi } from '../services/finance.api';
 import { startOnlinePayment } from '../utils/gatewayPay';
 import { customersApi, bookingsApi } from '../services/crm.api';
@@ -8,9 +9,13 @@ import DataTable from '../components/common/DataTable';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import StatusBadge from '../components/common/StatusBadge';
+import SummaryStatCard from '../components/common/SummaryStatCard';
+import PrimaryBtn from '../components/ui/PrimaryBtn';
+import { ActionBtn } from '../components/ui/TablePrimitives';
 import { usePermission } from '../hooks/usePermission';
 import MoneyAmount from '../components/common/MoneyAmount';
 import { formatDate } from '../utils/date';
+import { C, fontDisplay, fontSans } from '../theme/tokens';
 
 const STATUS_LABELS = { pending: 'Pending', paid: 'Paid', cancelled: 'Cancelled' };
 
@@ -125,23 +130,37 @@ export default function PaymentRequestsPage() {
     }
   };
 
+  const pendingCount = items.filter((r) => r.status === 'pending').length;
+  const paidCount = items.filter((r) => r.status === 'paid').length;
+  const cancelledCount = items.filter((r) => r.status === 'cancelled').length;
+  const pageRequested = items.reduce((s, r) => s + Number(r.amount || 0), 0);
+
   const columns = [
-    { key: 'number', label: 'Request #', render: (r) => <span className="font-mono text-xs">{r.requestNumber}</span> },
+    { key: 'number', label: 'Request #', render: (r) => <span className="font-mono text-xs font-semibold text-sta-teal">{r.requestNumber}</span> },
     { key: 'customer', label: 'Customer', render: (r) => r.customerName },
     { key: 'booking', label: 'Booking', render: (r) => r.bookingNumber ? (
-      <Link to={`/bookings/${r.booking}`} className="text-brand-600 hover:underline">{r.bookingNumber}</Link>
+      <Link to={`/bookings/${r.booking}`} className="font-mono text-xs text-sta-teal hover:underline">{r.bookingNumber}</Link>
     ) : '—' },
     { key: 'amount', label: 'Amount', render: (r) => <MoneyAmount amount={r.amount} size="sm" className="font-medium" /> },
     { key: 'dueDate', label: 'Due Date', render: (r) => formatDate(r.dueDate) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status === 'paid' ? 'success' : r.status === 'pending' ? 'pending' : 'cancelled'} label={STATUS_LABELS[r.status]} /> },
     {
       key: 'actions',
-      label: '',
+      label: 'Actions',
       render: (r) => r.status === 'pending' && can('payments:customer') ? (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => handlePayOnline(r)} className="text-xs text-violet-700 hover:underline">Pay Online</button>
-          <button type="button" onClick={() => { setSelected(r); setError(''); recordForm.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Bank Transfer' }); setRecordOpen(true); }} className="text-xs text-brand-600 hover:underline">Record</button>
-          <button type="button" onClick={() => handleCancel(r)} className="text-xs text-red-600 hover:underline">Cancel</button>
+          <ActionBtn label="Pay Online" color={C.violet} onClick={() => handlePayOnline(r)} />
+          <ActionBtn
+            label="Record"
+            color={C.teal}
+            onClick={() => {
+              setSelected(r);
+              setError('');
+              recordForm.reset({ paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: 'Bank Transfer' });
+              setRecordOpen(true);
+            }}
+          />
+          <ActionBtn label="Cancel" color={C.red} onClick={() => handleCancel(r)} />
         </div>
       ) : null,
     },
@@ -151,12 +170,20 @@ export default function PaymentRequestsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Payment Requests</h2>
-          <p className="text-sm text-slate-500">Send due payment reminders to customers via SMS/WhatsApp</p>
+          <h2 className="text-xl font-bold" style={{ color: C.indigo, ...fontDisplay }}>Payment Requests</h2>
+          <p className="text-sm" style={{ color: C.muted, ...fontSans }}>Send due payment reminders to customers via SMS/WhatsApp</p>
         </div>
         {can('payments:customer') && (
-          <button type="button" onClick={() => { setError(''); setCreateOpen(true); }} className="btn-primary">Send Payment Request</button>
+          <PrimaryBtn label="Send Payment Request" icon={<Plus size={12} />} onClick={() => { setError(''); setCreateOpen(true); }} />
         )}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <SummaryStatCard label="On this page" count={items.length} color="blue" />
+        <SummaryStatCard label="Pending" count={pendingCount} color="amber" />
+        <SummaryStatCard label="Paid" count={paidCount} color="green" />
+        <SummaryStatCard label="Cancelled" count={cancelledCount} color="red" />
+        <SummaryStatCard label="Page total" amount={pageRequested} color="teal" />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -165,19 +192,27 @@ export default function PaymentRequestsPage() {
             key={s || 'all'}
             type="button"
             onClick={() => { setStatusFilter(s); setPage(1); }}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${statusFilter === s ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusFilter === s ? 'bg-sta-teal text-white' : 'bg-sta-bg text-sta-muted hover:bg-sta-teal-light hover:text-sta-teal'}`}
           >
             {s ? STATUS_LABELS[s] : 'All'}
           </button>
         ))}
       </div>
 
-      <div className="card p-0">
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
         <DataTable columns={columns} data={items} loading={loading} emptyTitle="No payment requests" />
-        <Pagination pagination={pagination} onPageChange={setPage} />
+        {pagination && (
+          <div className="border-t border-sta-border p-4">
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </div>
+        )}
       </div>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Send Payment Request" wide
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Send Payment Request"
+        wide
         footer={(
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setCreateOpen(false)} className="btn-secondary">Cancel</button>
@@ -186,41 +221,44 @@ export default function PaymentRequestsPage() {
         )}
       >
         <form id="payment-request-form" onSubmit={createForm.handleSubmit(onCreate)} className="grid gap-3 sm:grid-cols-2">
-          {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="sm:col-span-2 text-sm" style={{ color: C.red }}>{error}</p>}
           <div>
-            <label className="mb-1 block text-sm font-medium">Customer *</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Customer *</label>
             <select className="input-field" {...createForm.register('customerId', { required: true })}>
               <option value="">Select customer</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Booking (optional)</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Booking (optional)</label>
             <select className="input-field" {...createForm.register('bookingId')}>
               <option value="">On-account / no booking</option>
               {bookings.map((b) => <option key={b.id} value={b.id}>{b.bookingNumber} — Due ৳{b.customerDue?.toLocaleString()}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Amount (৳) *</label>
-            <input type="number" min="0.01" step="0.01" className="input-field" {...createForm.register('amount', { required: true })} />
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Amount (৳) *</label>
+            <input type="number" min="0.01" step="0.01" className="input-field font-mono" {...createForm.register('amount', { required: true })} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Due Date *</label>
-            <input type="date" className="input-field" {...createForm.register('dueDate', { required: true })} />
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Due Date *</label>
+            <input type="date" className="input-field font-mono" {...createForm.register('dueDate', { required: true })} />
           </div>
           <div className="sm:col-span-2">
-            <label className="mb-1 block text-sm font-medium">Notes</label>
+            <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Notes</label>
             <textarea rows={2} className="input-field" {...createForm.register('notes')} />
           </div>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm sm:col-span-2" style={{ color: C.text }}>
             <input type="checkbox" {...createForm.register('sendNotification')} />
             Notify customer (SMS / email / WhatsApp if configured)
           </label>
         </form>
       </Modal>
 
-      <Modal open={recordOpen} onClose={() => setRecordOpen(false)} title={`Record payment — ${selected?.requestNumber || ''}`}
+      <Modal
+        open={recordOpen}
+        onClose={() => setRecordOpen(false)}
+        title={`Record payment — ${selected?.requestNumber || ''}`}
         footer={(
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setRecordOpen(false)} className="btn-secondary">Cancel</button>
@@ -230,18 +268,20 @@ export default function PaymentRequestsPage() {
       >
         {selected && (
           <form id="record-request-form" onSubmit={recordForm.handleSubmit(onRecord)} className="space-y-3">
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <p className="text-sm text-slate-600">Amount: <strong>৳{selected.amount?.toLocaleString()}</strong> from {selected.customerName}</p>
+            {error && <p className="text-sm" style={{ color: C.red }}>{error}</p>}
+            <p className="text-sm" style={{ color: C.muted }}>
+              Amount: <strong style={{ color: C.indigo }}>৳{selected.amount?.toLocaleString()}</strong> from {selected.customerName}
+            </p>
             <div>
-              <label className="mb-1 block text-sm font-medium">Receiving Account *</label>
+              <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Receiving Account *</label>
               <select className="input-field" {...recordForm.register('accountId', { required: true })}>
                 <option value="">Select account</option>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Payment Date</label>
-              <input type="date" className="input-field" {...recordForm.register('paymentDate')} />
+              <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Payment Date</label>
+              <input type="date" className="input-field font-mono" {...recordForm.register('paymentDate')} />
             </div>
           </form>
         )}

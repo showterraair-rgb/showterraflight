@@ -145,16 +145,16 @@ export default function CustomersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Customers</h2>
-          <p className="text-sm text-slate-500">Manage customer profiles and contact details</p>
+          <h2 className="font-display text-xl font-bold text-sta-indigo">Customers</h2>
+          <p className="text-sm text-sta-muted">Manage customer profiles and contact details</p>
         </div>
         {can('customers:create') && (
           <button type="button" onClick={openCreate} className="btn-primary">Add Customer</button>
         )}
       </div>
 
-      <div className="card p-0">
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
+        <div className="flex flex-wrap items-center gap-3 border-b border-sta-border p-4">
           <input
             type="search"
             placeholder="Search name, phone, email..."
@@ -162,7 +162,7 @@ export default function CustomersPage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-sta-muted">
             <input
               type="checkbox"
               checked={showArchived}

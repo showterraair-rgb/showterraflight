@@ -1,28 +1,62 @@
 import MoneyAmount from './MoneyAmount';
+import { C, fontMono, fontSans } from '../../theme/tokens';
+
+const COLOR_MAP = {
+  green: C.green,
+  red: C.red,
+  blue: C.blue,
+  amber: C.amber,
+  teal: C.teal,
+  slate: C.muted,
+  indigo: C.indigo,
+  violet: C.violet,
+};
 
 export default function SummaryStatCard({ label, amount, count, color = 'slate', subtitle }) {
-  const colors = {
-    green: 'border-emerald-500 bg-emerald-50 text-emerald-900',
-    red: 'border-red-500 bg-red-50 text-red-900',
-    blue: 'border-blue-500 bg-blue-50 text-blue-900',
-    amber: 'border-amber-500 bg-amber-50 text-amber-900',
-    teal: 'border-teal-500 bg-teal-50 text-teal-900',
-    slate: 'border-slate-400 bg-slate-50 text-slate-900',
-    indigo: 'border-indigo-500 bg-indigo-50 text-indigo-900',
-  };
+  const accent = COLOR_MAP[color] || C.muted;
 
   return (
-    <div className={`rounded-lg border-l-4 p-4 ${colors[color] || colors.slate}`}>
-      <p className="text-xs font-semibold uppercase opacity-80">{label}</p>
+    <div
+      style={{
+        flex: '1 1 0',
+        minWidth: 120,
+        padding: '12px 16px',
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 10,
+        borderTop: `3px solid ${accent}`,
+      }}
+    >
+      <p
+        style={{
+          fontSize: 9,
+          fontWeight: 600,
+          color: C.muted,
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
+          ...fontSans,
+        }}
+      >
+        {label}
+      </p>
       {amount != null && (
         <div className="mt-1">
           <MoneyAmount amount={amount} size="lg" />
         </div>
       )}
-      {count != null && (
-        <p className="mt-1 text-lg font-bold">{count.toLocaleString()}</p>
+      {count != null && amount == null && (
+        <p style={{ marginTop: 4, fontSize: 22, fontWeight: 700, color: accent, ...fontMono }}>
+          {count.toLocaleString()}
+        </p>
       )}
-      {subtitle && <p className="mt-1 text-xs opacity-75">{subtitle}</p>}
+      {count != null && amount != null && (
+        <p style={{ marginTop: 2, fontSize: 11, color: C.subtle, ...fontSans }}>
+          {count.toLocaleString()} bookings
+        </p>
+      )}
+      {subtitle && (
+        <p style={{ marginTop: 4, fontSize: 11, color: C.subtle, ...fontSans }}>{subtitle}</p>
+      )}
     </div>
   );
 }

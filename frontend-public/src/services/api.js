@@ -10,6 +10,7 @@ export const publicApi = {
   getCompanySettings: () => api.get('/public/settings/company'),
   getCmsPage: (pageKey) => api.get(`/public/cms/pages/${pageKey}`),
   getNotices: (params) => api.get('/public/cms/notices', { params }),
+  getLiveStreams: () => api.get('/public/livestreams'),
   submitBookingRequest: (data) => api.post('/public/booking-requests', data),
   uploadPassport: (orderNumber, file) => {
     const form = new FormData();

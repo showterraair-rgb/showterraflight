@@ -4,7 +4,7 @@ import ApiError from '../utils/ApiError.js';
 import { signToken, getCookieOptions } from '../utils/jwt.js';
 import { validatePasswordStrength } from '../utils/passwordPolicy.js';
 import env from '../config/env.js';
-
+import { generateAgentId } from './numberGenerator.service.js';
 function sanitizeAgent(agent) {
   return {
     id: agent._id.toString(),
@@ -25,7 +25,38 @@ function sanitizeAgent(agent) {
     createdAt: agent.createdAt,
   };
 }
+export async function agentRegister(data) {
+  const email = data.email.trim().toLowerCase();
 
+  const existingAgent = await Agent.findOne({ email });
+  if (existingAgent) {
+    throw ApiError.badRequest('Agent already exists with this email');
+  }
+
+  validatePasswordStrength(data.password);
+
+  const agentId = await generateAgentId();
+
+  const agent = await Agent.create({
+    agentId,
+    companyName: data.companyName,
+    contactPerson: data.contactPerson,
+    email,
+    password: data.password,
+    phone: data.phone || '',
+    whatsapp: data.whatsapp || '',
+    address: data.address || '',
+    city: data.city || '',
+    country: data.country || 'Bangladesh',
+    agentType: data.agentType,
+    isActive: false,
+  });
+
+  return {
+    agent: sanitizeAgent(agent),
+    message: 'Registration successful. Please wait for admin approval.',
+  };
+}
 export async function agentLogin({ email, password }) {
   const agent = await Agent.findOne({ email: email.toLowerCase() }).select('+password');
 

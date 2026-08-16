@@ -11,6 +11,10 @@ import RowActions from '../components/common/RowActions';
 import { usePermission } from '../hooks/usePermission';
 import { SUPPLIER_TYPES } from '../utils/constants';
 import { BD_PHONE_HELP, BD_PHONE_PLACEHOLDER, formatPhoneOnBlur, isValidBdMobile } from '../utils/phone';
+import PrimaryBtn from '../components/ui/PrimaryBtn';
+import SummaryStatCard from '../components/common/SummaryStatCard';
+import { C, fontDisplay, fontSans } from '../theme/tokens';
+import { Plus } from 'lucide-react';
 
 const schema = z.object({
   company: z.string().min(2, 'Company name required'),
@@ -101,14 +105,26 @@ export default function SuppliersPage() {
     }
   };
 
+  const typeCounts = SUPPLIER_TYPES.reduce((acc, t) => {
+    acc[t] = items.filter((r) => r.type === t).length;
+    return acc;
+  }, {});
+
   const columns = [
     { key: 'company', label: 'Company', render: (r) => (
-      <Link to={`/suppliers/${r.id}/account`} className="font-medium hover:text-brand-600">{r.company || r.name}</Link>
+      <Link to={`/suppliers/${r.id}/account`} className="font-semibold text-sta-indigo hover:text-sta-teal">{r.company || r.name}</Link>
     ) },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
     { key: 'whatsapp', label: 'WhatsApp', render: (r) => r.whatsapp || '—' },
     { key: 'email', label: 'Email', render: (r) => r.email || '—' },
-    { key: 'type', label: 'Type', render: (r) => <span className="capitalize">{r.type?.replace('_', ' ')}</span> },
+    { key: 'type', label: 'Type', render: (r) => (
+      <span
+        className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase capitalize"
+        style={{ background: C.blueLight, color: C.blue }}
+      >
+        {r.type?.replace('_', ' ')}
+      </span>
+    ) },
     {
       key: 'actions',
       label: 'Actions',
@@ -130,21 +146,37 @@ export default function SuppliersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Suppliers</h2>
-          <p className="text-sm text-slate-500">GDS portals, airline offices, and ticket sources you buy from — not B2B agents</p>
+          <h2 className="text-xl font-bold" style={{ color: C.indigo, ...fontDisplay }}>Suppliers</h2>
+          <p className="text-sm" style={{ color: C.muted, ...fontSans }}>GDS portals, airline offices, and ticket sources you buy from — not B2B agents</p>
         </div>
         {can('suppliers:create') && (
-          <button type="button" onClick={openCreate} className="btn-primary">Add Supplier</button>
+          <PrimaryBtn label="Add Supplier" icon={<Plus size={12} />} onClick={openCreate} />
         )}
       </div>
 
-      <div className="card p-0">
-        <div className="border-b border-slate-200 p-4">
-          <input type="search" placeholder="Search..." className="input-field max-w-sm" value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+      <div className="flex flex-wrap gap-3">
+        <SummaryStatCard label="On this page" count={items.length} color="indigo" />
+        <SummaryStatCard label="Airlines / offices" count={(typeCounts.airline_office || 0) + (typeCounts.supplier || 0)} color="blue" />
+        <SummaryStatCard label="Agents (type)" count={typeCounts.agent || 0} color="teal" />
+        <SummaryStatCard label="All suppliers" count={pagination?.total} color="green" />
+      </div>
+
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
+        <div className="border-b border-sta-border p-4">
+          <input
+            type="search"
+            placeholder="Search..."
+            className="input-field max-w-sm"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
         </div>
         <DataTable columns={columns} data={items} loading={loading} emptyTitle="No suppliers" emptyDescription="Add a supplier to get started." />
-        <Pagination pagination={pagination} onPageChange={setPage} />
+        {pagination && (
+          <div className="border-t border-sta-border p-4">
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </div>
+        )}
       </div>
 
       <Modal
@@ -160,10 +192,10 @@ export default function SuppliersPage() {
         )}
       >
         <form id="supplier-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <div className="rounded-lg px-3 py-2 text-sm" style={{ background: C.redLight, color: C.red }}>{error}</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Company *</label>
+              <label className="mb-1 block text-sm font-medium" style={{ color: C.indigo }}>Company *</label>
               <input className="input-field" {...register('company')} />
               {errors.company && <p className="mt-1 text-xs text-red-600">{errors.company.message}</p>}
             </div>

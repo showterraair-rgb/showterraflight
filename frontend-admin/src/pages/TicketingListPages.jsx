@@ -54,3 +54,18 @@ export function InvoicesPage() {
     />
   );
 }
+
+/** Pending refunds — same live filter as /bookings?refundPending=1 */
+export function PendingRefundsPage() {
+  return (
+    <BookingsListView
+      productCategory="air"
+      title="Pending Refunds"
+      description="Refund requests awaiting approval — open a booking to process."
+      hideStatusTabs
+      showRrvColumns
+      hideNewButton
+      refundPendingOnly
+    />
+  );
+}

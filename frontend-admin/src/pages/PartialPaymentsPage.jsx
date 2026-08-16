@@ -93,12 +93,12 @@ export default function PartialPaymentsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">Partial Payment History</h2>
-        <p className="text-sm text-slate-500">Track bookings with partial or outstanding customer payments.</p>
+        <h2 className="font-display text-xl font-bold text-sta-indigo">Partial Payment History</h2>
+        <p className="text-sm text-sta-muted">Track bookings with partial or outstanding customer payments.</p>
       </div>
 
       {summary && !financeFields.hidden && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-wrap gap-3">
           <SummaryStatCard label="Partial Due" amount={summary.partialDue?.amount} count={summary.partialDue?.count} color="amber" />
           <SummaryStatCard label="Today Due" amount={summary.todayDue?.amount} count={summary.todayDue?.count} color="blue" />
           <SummaryStatCard label="Overdue" amount={summary.overdueDue?.amount} count={summary.overdueDue?.count} color="red" />
@@ -106,20 +106,20 @@ export default function PartialPaymentsPage() {
         </div>
       )}
 
-      <div className="card p-0">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-4">
+      <div className="overflow-hidden rounded-[10px] border border-sta-border bg-sta-surface">
+        <div className="flex flex-wrap items-center gap-2 border-b border-sta-border p-4">
           {PAYMENT_TABS.map((tab) => (
             <button
               key={tab.key || 'all'}
               type="button"
               onClick={() => setPaymentTab(tab.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${filters.paymentStatus === tab.key ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${filters.paymentStatus === tab.key ? 'bg-sta-teal text-white' : 'bg-sta-bg text-sta-muted hover:bg-sta-teal-light hover:text-sta-teal'}`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-3 border-b border-slate-200 p-4">
+        <div className="flex flex-wrap gap-3 border-b border-sta-border p-4">
           <input
             type="search"
             placeholder="Search booking #, PNR, customer..."
@@ -129,7 +129,7 @@ export default function PartialPaymentsPage() {
           />
         </div>
         <DataTable columns={columns} data={items} loading={loading} emptyMessage="No bookings match this filter" />
-        {pagination && <div className="border-t border-slate-200 p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
+        {pagination && <div className="border-t border-sta-border p-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
       </div>
     </div>
   );
