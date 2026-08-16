@@ -10,7 +10,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const passwordSchema = z.object({
   email: z.string().email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(1, 'Login is required'),
 });
 
 const otpRequestSchema = z.object({
@@ -59,7 +59,7 @@ export default function LoginPage() {
     return <Navigate to={location.state?.from?.pathname || '/dashboard'} replace />;
   }
 
-  const onPasswordLogin = async (data) => {
+  const onLoginLogin = async (data) => {
     setError('');
     setSubmitting(true);
     try {
@@ -130,13 +130,13 @@ export default function LoginPage() {
 
           {mode === 'password' ? (
             
-            <form onSubmit={passwordForm.handleSubmit(onPasswordLogin)} className="space-y-4">
+            <form onSubmit={passwordForm.handleSubmit(onLoginLogin)} className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium">Email</label>
                 <input type="email" className="input-field" {...passwordForm.register('email')} />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Password</label>
+                <label className="mb-1 block text-sm font-medium">Login</label>
                 <input type="password" className="input-field" {...passwordForm.register('password')} />
               </div>
               <button type="submit" disabled={submitting} className="btn-primary w-full">{submitting ? 'Signing in…' : 'Sign In'}</button>
@@ -179,3 +179,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
