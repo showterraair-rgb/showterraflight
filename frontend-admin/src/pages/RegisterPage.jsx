@@ -89,7 +89,11 @@ contactPerson: form.contactPerson,
             </div>
           )}
 
-          <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          
+
+  <div>
             <label className="mb-1 block text-sm font-medium">
             Name="CompanyName
             </label>
@@ -167,9 +171,9 @@ contactPerson: form.contactPerson,
               onChange={handleChange}
               className="input-field"
               placeholder="Enter password again"
-            />
+         />       
           </div>
-
+          </div>
           <button
             type="submit"
             className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"

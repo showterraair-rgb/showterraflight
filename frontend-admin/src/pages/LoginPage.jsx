@@ -37,7 +37,7 @@ export default function LoginPage() {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState('password');
+  const [mode, setMode] = useState('');
   const [otpStep, setOtpStep] = useState('request');
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -107,19 +107,29 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-950">
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="absolute right-4 top-4 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-        aria-label="Toggle theme"
-      >
-        {isDark ? 'Light' : 'Dark'}
-      </button>
+      
+      <div className="absolute right-20 top-4 flex gap-2">
+  <button
+    type="button"
+    onClick={() => setMode('password')}
+    className="rounded-lg border px-4 py-2 font-medium"
+  >
+    Login
+  </button>
+
+  <button
+    type="button"
+    onClick={() => navigate('/register')}
+    className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white"
+  >
+    Register
+  </button>
+</div>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">STA</div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Show Terra Air</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Staff sign in</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Welcome Login into your account</p>
         </div>
 
         
@@ -131,6 +141,7 @@ export default function LoginPage() {
           {mode === 'password' ? (
             
             <form onSubmit={passwordForm.handleSubmit(onPasswordLogin)} className="space-y-4">
+              
               <div>
                 <label className="mb-1 block text-sm font-medium">Email</label>
                 <input type="email" className="input-field" {...passwordForm.register('email')} />
@@ -138,8 +149,16 @@ export default function LoginPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium">Password</label>
                 <input type="password" className="input-field" {...passwordForm.register('password')} />
-              </div>
-              <button type="submit" disabled={submitting} className="btn-primary w-full">{submitting ? 'Signing in…' : 'Sign In'}</button>
+              </div><div className="text-right">
+  <button
+    type="button"
+    onClick={() => setMode('otp')}
+    className="text-sm font-medium"
+  >
+    Forgot password?
+  </button>
+</div>
+              <button type="submit" disabled={submitting} className="btn-primary w-full">{submitting ? 'Signing in…' : 'Login'}</button>
             </form>
           ) : otpStep === 'request' ? (
             <form onSubmit={otpRequestForm.handleSubmit(onRequestOtp)} className="space-y-4">
@@ -165,13 +184,7 @@ export default function LoginPage() {
             </form>
           )}
         </div>
-<button
-  type="button"
-  onClick={() => navigate('/register')}
-  className="mt-4 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
->
-  Register
-</button>
+
         <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
           Kanaighat, Sylhet — Show Terra Air Management System
         </p>
